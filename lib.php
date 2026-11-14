@@ -1,0 +1,81 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Library callbacks for Evidence Reporter.
+ *
+ * @package    report_evidencereporter
+ * @copyright  2026 Daniel Maloney
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/**
+ * Add a link to the printable evidence summary on the user's profile, in the Reports section.
+ *
+ * @param core_user\output\myprofile\tree $tree
+ * @param stdClass $user The profile being viewed
+ * @param bool $iscurrentuser
+ * @param stdClass|null $course
+ * @return void
+ */
+function report_evidencereporter_myprofile_navigation(core_user\output\myprofile\tree $tree, $user, $iscurrentuser, $course) {
+    if (!\core_competency\api::is_enabled() || isguestuser($user) || !isloggedin()) {
+        return;
+    }
+    if (!\report_evidencereporter\local\summary::has_visible_evidence((int) $user->id)) {
+        return;
+    }
+    $url = new moodle_url('/report/evidencereporter/print.php', ['userid' => $user->id]);
+    $node = new core_user\output\myprofile\node(
+        'reports',
+        'evidencesummary',
+        get_string('summarytitle', 'report_evidencereporter'),
+        null,
+        $url
+    );
+    $tree->add_node($node);
+}
+
+/**
+ * Serve bulk downloads, only to the person who requested them.
+ *
+ * @param stdClass $course
+ * @param stdClass|null $cm
+ * @param context $context
+ * @param string $filearea
+ * @param array $args
+ * @param bool $forcedownload
+ * @param array $options
+ * @return bool false if the file isn't found or isn't theirs
+ */
+function report_evidencereporter_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
+    global $USER;
+    if ($context->contextlevel != CONTEXT_USER || $filearea !== \report_evidencereporter\local\bulk::FILEAREA) {
+        return false;
+    }
+    require_login(null, false);
+    if ((int) $context->instanceid !== (int) $USER->id) {
+        return false;
+    }
+    $itemid = (int) array_shift($args);
+    $filename = array_pop($args);
+    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+    $file = get_file_storage()->get_file($context->id, 'report_evidencereporter', $filearea, $itemid, $filepath, $filename);
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+    send_stored_file($file, 0, 0, true, $options);
+}

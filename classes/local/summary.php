@@ -1,0 +1,389 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace report_evidencereporter\local;
+
+use core_competency\evidence;
+use moodle_url;
+use stdClass;
+
+/**
+ * Gathers one learner's competency evidence for one framework, for the printable evidence summary.
+ *
+ * Applies the same row access rules as the report ({@see access}), so a viewer only ever sees evidence they could
+ * see in the report.
+ *
+ * @package    report_evidencereporter
+ * @copyright  2026 Daniel Maloney
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class summary {
+    /**
+     * Frameworks the learner has evidence in that the current user may see, keyed by ID.
+     *
+     * @param int $userid
+     * @return stdClass[] id, shortname, idnumber, evidencecount
+     */
+    public static function get_frameworks(int $userid): array {
+        global $DB;
+        [$from, $where, $params] = self::get_base_sql($userid);
+        $sql = "SELECT cf.id, cf.shortname, cf.idnumber, COUNT(ev.id) AS evidencecount
+                  {$from}
+                  JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
+                 WHERE {$where}
+              GROUP BY cf.id, cf.shortname, cf.idnumber
+              ORDER BY cf.shortname";
+        $frameworks = $DB->get_records_sql($sql, $params);
+
+        // Frameworks where the learner only has assessment attempts (e.g. failed attempts never logged as evidence).
+        $attemptframeworks = array_unique(array_column(self::get_linked_activities($userid), 'frameworkid'));
+        foreach (array_diff($attemptframeworks, array_keys($frameworks)) as $frameworkid) {
+            $framework = $DB->get_record('competency_framework', ['id' => $frameworkid], 'id, shortname, idnumber');
+            $framework->evidencecount = 0;
+            $frameworks[$framework->id] = $framework;
+        }
+        uasort($frameworks, fn($a, $b) => strcmp($a->shortname, $b->shortname));
+        return $frameworks;
+    }
+
+    /**
+     * Assignments and quizzes linked to competencies where the learner has assessed attempts, in courses the current
+     * user may see.
+     *
+     * @param int $userid
+     * @param int|null $frameworkid Limit to one framework
+     * @return stdClass[] id (module-competency link), competencyid, cmid, course, frameworkid
+     */
+    public static function get_linked_activities(int $userid, ?int $frameworkid = null): array {
+        global $DB;
+        $sql = "SELECT mc.id, mc.competencyid, mc.cmid, cm.course, c.competencyframeworkid AS frameworkid
+                  FROM {competency_modulecomp} mc
+                  JOIN {competency} c ON c.id = mc.competencyid
+                  JOIN {course_modules} cm ON cm.id = mc.cmid
+                  JOIN {modules} m ON m.id = cm.module
+                 WHERE ((m.name = 'assign' AND EXISTS (SELECT 1 FROM {assign_grades} lag
+                                                        WHERE lag.assignment = cm.instance AND lag.userid = :u1
+                                                          AND lag.grade >= 0))
+                     OR (m.name = 'quiz' AND EXISTS (SELECT 1 FROM {quiz_attempts} lqa
+                                                      WHERE lqa.quiz = cm.instance AND lqa.userid = :u2
+                                                        AND lqa.state = 'finished' AND lqa.preview = 0))
+                     OR (m.name = 'data' AND EXISTS (SELECT 1 FROM {data_records} ldr
+                                                      WHERE ldr.dataid = cm.instance AND ldr.userid = :u3
+                                                        AND " . data_entries::rated_sql('ldr.id', 'ldrt') . ")))";
+        $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid];
+        if ($frameworkid) {
+            $sql .= ' AND c.competencyframeworkid = :frameworkid';
+            $params['frameworkid'] = $frameworkid;
+        }
+        if ($access = access::get_sql((string) $userid, 'cm.course')) {
+            $sql .= ' AND ' . $access[0];
+            $params += $access[1];
+        }
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Does the current user have access to any of this learner's evidence?
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function has_visible_evidence(int $userid): bool {
+        global $DB;
+        [$from, $where, $params] = self::get_base_sql($userid);
+        return $DB->record_exists_sql("SELECT 1 {$from} WHERE {$where}", $params)
+            || !empty(self::get_linked_activities($userid));
+    }
+
+    /**
+     * Shared FROM / WHERE: evidence for the learner, restricted by row access.
+     *
+     * @param int $userid
+     * @return array [$from, $where, $params]
+     */
+    private static function get_base_sql(int $userid): array {
+        $modulelevel = CONTEXT_MODULE;
+        $courselevel = CONTEXT_COURSE;
+        $from = "FROM {competency_evidence} ev
+                  JOIN {competency_usercomp} uc ON uc.id = ev.usercompetencyid
+                  JOIN {competency} c ON c.id = uc.competencyid
+             LEFT JOIN {context} ctx ON ctx.id = ev.contextid
+             LEFT JOIN {course_modules} cm ON ctx.contextlevel = {$modulelevel} AND cm.id = ctx.instanceid
+             LEFT JOIN {modules} m ON m.id = cm.module";
+        $where = 'uc.userid = :learnerid';
+        $params = ['learnerid' => $userid];
+        $courseidsql = "COALESCE(cm.course, CASE WHEN ctx.contextlevel = {$courselevel} THEN ctx.instanceid ELSE NULL END)";
+        if ($access = access::get_sql('uc.userid', $courseidsql)) {
+            $where .= ' AND ' . $access[0];
+            $params += $access[1];
+        }
+        return [$from, $where, $params];
+    }
+
+    /**
+     * Build the summary for a learner and framework.
+     *
+     * @param int $userid
+     * @param int $frameworkid
+     * @param identity|null $identity Redaction for names and generated text
+     * @return stdClass competencies (framework order, each with ->evidence rows), restricted (bool)
+     */
+    public static function build(int $userid, int $frameworkid, ?identity $identity = null): stdClass {
+        global $DB, $USER;
+
+        [$from, $where, $params] = self::get_base_sql($userid);
+        $courselevel = CONTEXT_COURSE;
+        $namefields = \core_user\fields::get_name_fields();
+        $assessorfields = implode(', ', array_map(fn($f) => "au.{$f} AS a_{$f}", $namefields));
+        $graderfields = implode(', ', array_map(fn($f) => "gu.{$f} AS g_{$f}", $namefields));
+
+        $sql = "SELECT ev.id, ev.action, ev.timecreated, ev.descidentifier, ev.desccomponent, ev.desca, ev.url,
+                       ev.grade, ev.note, uc.userid, uc.competencyid, uc.grade AS currentgrade, uc.proficiency,
+                       cm.id AS cmid, m.name AS modname,
+                       COALESCE(cm.course, CASE WHEN ctx.contextlevel = {$courselevel} THEN ctx.instanceid ELSE NULL END)
+                           AS courseid,
+                       gg.id AS gradeid, gi.id AS gradeitemid, gg.finalgrade, gg.feedback, gg.feedbackformat,
+                       gg.hidden AS gradehidden, gi.hidden AS gradeitemhidden, asg.markingworkflow, auf.workflowstate,
+                       au.id AS assessorid, {$assessorfields}, gu.id AS graderid, {$graderfields},
+                       CASE WHEN ev.id = (SELECT MAX(ev2.id) FROM {competency_evidence} ev2
+                                           WHERE ev2.usercompetencyid = ev.usercompetencyid
+                                             AND ev2.contextid = ev.contextid) THEN 1 ELSE 0 END AS islatest,
+                       CASE WHEN m.name = 'quiz' THEN (SELECT MAX(qa.id) FROM {quiz_attempts} qa
+                                                        WHERE qa.quiz = cm.instance AND qa.userid = uc.userid
+                                                          AND qa.state = 'finished') ELSE NULL END AS quizattemptid,
+                       CASE WHEN m.name = 'data' THEN " . data_entries::latest_entry_sql('cm.instance', 'uc.userid') . "
+                            ELSE NULL END AS datarecordid
+                  {$from}
+             LEFT JOIN {grade_items} gi ON gi.courseid = cm.course AND gi.itemtype = 'mod' AND gi.itemmodule = m.name
+                                       AND gi.iteminstance = cm.instance AND gi.itemnumber = 0
+             LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = uc.userid
+             LEFT JOIN {assign} asg ON m.name = 'assign' AND asg.id = cm.instance
+             LEFT JOIN {assign_user_flags} auf ON auf.assignment = asg.id AND auf.userid = uc.userid
+             LEFT JOIN {user} au ON au.id = ev.actionuserid
+             LEFT JOIN {user} gu ON gu.id = gg.usermodified AND gg.usermodified <> uc.userid AND gg.finalgrade IS NOT NULL
+                 WHERE {$where} AND c.competencyframeworkid = :frameworkid
+              ORDER BY ev.timecreated, ev.id";
+        $params['frameworkid'] = $frameworkid;
+        $rows = $DB->get_records_sql($sql, $params);
+
+        $viewfullnames = has_capability('moodle/site:viewfullnames', \context_system::instance());
+        $evidencebycomp = [];
+        $current = [];
+        foreach ($rows as $row) {
+            $evidencebycomp[$row->competencyid][] = self::format_row($row, $viewfullnames, $identity);
+            $current[$row->competencyid] = $row;
+        }
+
+        // Assessed attempts (failed ones included) at activities linked to each competency, in courses the viewer may see.
+        $attemptsbycomp = self::get_attempts($userid, $frameworkid, $viewfullnames, $identity);
+
+        // Every competency in the framework, in framework order, so gaps show up.
+        $competencies = [];
+        foreach (self::get_framework_order($frameworkid) as $comp) {
+            $evidence = $evidencebycomp[$comp->id] ?? [];
+            $judgement = null;
+            foreach ($evidence as $item) {
+                if ($item->isjudgement) {
+                    $judgement = $item;
+                }
+            }
+            $latest = $current[$comp->id] ?? null;
+            $competencies[] = (object) [
+                'id' => $comp->id,
+                'idnumber' => $comp->idnumber,
+                'name' => format_string($comp->shortname, true, ['context' => \context_system::instance()]),
+                'depth' => $comp->depth,
+                'currentrating' => $latest ? rating::name((int) $comp->id, $latest->currentgrade === null ? null
+                    : (int) $latest->currentgrade) : '',
+                'proficient' => $latest && (int) $latest->proficiency === 1,
+                'judgementdate' => $judgement ? $judgement->timecreated : null,
+                'judgementby' => $judgement ? $judgement->assessor : '',
+                'judgementrating' => $judgement ? $judgement->ratinggiven : '',
+                'evidence' => $evidence,
+                'attempts' => $attemptsbycomp[$comp->id] ?? [],
+            ];
+        }
+
+        return (object) [
+            'competencies' => $competencies,
+            // Restricted: the viewer isn't the learner and doesn't have site-wide access.
+            'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
+        ];
+    }
+
+    /**
+     * Attempts at activities linked to the framework's competencies, grouped by competency ID.
+     *
+     * @param int $userid
+     * @param int $frameworkid
+     * @param bool $viewfullnames
+     * @param identity|null $identity
+     * @return array competencyid => stdClass[] (activity, attemptno, submitted, graded, grade, marker, feedback, url)
+     */
+    private static function get_attempts(int $userid, int $frameworkid, bool $viewfullnames, ?identity $identity): array {
+        $links = self::get_linked_activities($userid, $frameworkid);
+        if (!$links) {
+            return [];
+        }
+        $byactivity = attempts::get_for_user($userid, array_column($links, 'cmid'));
+        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
+
+        $result = [];
+        foreach ($links as $link) {
+            foreach ($byactivity[(int) $link->cmid] ?? [] as $raw) {
+                $attempt = attempts::format($raw, $viewfullnames);
+                try {
+                    $cminfo = get_fast_modinfo((int) $link->course)->get_cm((int) $link->cmid);
+                    $activity = $cminfo->get_formatted_name();
+                } catch (\Throwable $e) {
+                    $activity = '';
+                }
+                $result[$link->competencyid][] = (object) [
+                    'activity' => $activity,
+                    'label' => get_string(
+                        $attempt->isentry ? 'entrysummary' : 'attemptsummary',
+                        'report_evidencereporter',
+                        $attempt->attemptno
+                    ),
+                    'attemptno' => $attempt->attemptno,
+                    'submitted' => $attempt->submitted ? userdate($attempt->submitted, $datefmt) : '',
+                    'graded' => $attempt->graded ? userdate($attempt->graded, $datefmt) : '',
+                    'grade' => $attempt->grade,
+                    'marker' => $identity ? attempts::marker($attempt, $identity) : $attempt->marker,
+                    'feedback' => !$identity ? $attempt->feedback : ($attempt->isentry
+                        ? data_entries::comments_html($attempt->comments, $identity) : $identity->text($attempt->feedback)),
+                    'url' => $attempt->url ? $attempt->url->out(false) : '',
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Competencies of a framework in tree order (parents before children, by sort order).
+     *
+     * @param int $frameworkid
+     * @return stdClass[] with depth (0 = top level)
+     */
+    private static function get_framework_order(int $frameworkid): array {
+        global $DB;
+        $all = $DB->get_records(
+            'competency',
+            ['competencyframeworkid' => $frameworkid],
+            'sortorder, id',
+            'id, parentid, shortname, idnumber, sortorder'
+        );
+        $children = [];
+        foreach ($all as $comp) {
+            $children[(int) $comp->parentid][] = $comp;
+        }
+        $ordered = [];
+        $walk = function (int $parentid, int $depth) use (&$walk, &$ordered, $children): void {
+            foreach ($children[$parentid] ?? [] as $comp) {
+                $comp->depth = $depth;
+                $ordered[] = $comp;
+                $walk((int) $comp->id, $depth + 1);
+            }
+        };
+        $walk(0, 0);
+        return $ordered;
+    }
+
+    /**
+     * Prepare one evidence row for display.
+     *
+     * @param stdClass $row
+     * @param bool $viewfullnames
+     * @param identity|null $identity
+     * @return stdClass
+     */
+    private static function format_row(stdClass $row, bool $viewfullnames, ?identity $identity = null): stdClass {
+        $types = [
+            evidence::ACTION_LOG => get_string('actionlog', 'report_evidencereporter'),
+            evidence::ACTION_COMPLETE => get_string('actioncomplete', 'report_evidencereporter'),
+            evidence::ACTION_OVERRIDE => get_string('actionoverride', 'report_evidencereporter'),
+        ];
+
+        // Where the evidence came from.
+        $source = '';
+        if (!empty($row->cmid) && !empty($row->courseid)) {
+            try {
+                $cminfo = get_fast_modinfo((int) $row->courseid)->get_cm((int) $row->cmid);
+                $source = $cminfo->get_formatted_name() . ' (' . get_string('modulename', 'mod_' . $cminfo->modname) . ')';
+            } catch (\Throwable $e) {
+                $source = '';
+            }
+        } else if (!empty($row->courseid)) {
+            $course = get_course((int) $row->courseid);
+            $source = format_string($course->fullname, true, ['context' => \context_course::instance($course->id)]);
+        }
+
+        // Description string from core.
+        $description = '';
+        if (!empty($row->descidentifier) && get_string_manager()->string_exists($row->descidentifier, $row->desccomponent)) {
+            $a = $row->desca === null || $row->desca === '' ? null : json_decode($row->desca);
+            $description = get_string($row->descidentifier, $row->desccomponent, $a);
+        }
+
+        // Feedback, with the same release and superseded rules as the report. Database entries: the entry's comments.
+        $feedback = '';
+        $releasestatus = '';
+        if ($row->modname === 'data' && !empty($row->datarecordid)) {
+            $feedback = data_entries::comments_html(data_entries::get_comments(
+                (int) $row->datarecordid,
+                (int) $row->cmid,
+                $viewfullnames
+            ), $identity);
+        } else if ($row->feedback !== null && trim($row->feedback) !== '') {
+            $released = feedback_visibility::is_released($row);
+            $canseeunreleased = !empty($row->cmid)
+                && feedback_visibility::can_view_unreleased((int) $row->cmid, (string) $row->modname);
+            if (empty($row->islatest)) {
+                $feedback = s(get_string('feedbacksuperseded', 'report_evidencereporter'));
+            } else if ($released || $canseeunreleased) {
+                $context = \context_course::instance((int) $row->courseid, IGNORE_MISSING) ?: \context_system::instance();
+                $feedback = format_text($row->feedback, (int) $row->feedbackformat, ['context' => $context]);
+                $feedback = $identity ? $identity->text($feedback) : $feedback;
+                $releasestatus = get_string($released ? 'released' : 'notreleased', 'report_evidencereporter');
+            } else {
+                $feedback = s(get_string('pendingrelease', 'report_evidencereporter'));
+                $releasestatus = get_string('pendingrelease', 'report_evidencereporter');
+            }
+        }
+
+        $url = evidence_link::get_url($row);
+        $action = (int) $row->action;
+        $assessor = assessor::name($row, $viewfullnames);
+        if ($identity && $description !== '') {
+            $description = $identity->text($description);
+        }
+        return (object) [
+            'timecreated' => (int) $row->timecreated,
+            'date' => userdate($row->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
+            'type' => $types[$action] ?? (string) $action,
+            'isjudgement' => in_array($action, [evidence::ACTION_COMPLETE, evidence::ACTION_OVERRIDE]),
+            'source' => $source,
+            'description' => $description,
+            'url' => $url ? $url->out(false) : '',
+            'grade' => activity_grade::format($row),
+            'ratinggiven' => rating::name((int) $row->competencyid, $row->grade === null ? null : (int) $row->grade),
+            'assessor' => $identity ? $identity->staff($assessor) : $assessor,
+            'note' => $row->note === null ? '' : s($identity ? $identity->text($row->note) : $row->note),
+            'feedback' => $feedback,
+            'releasestatus' => $releasestatus,
+        ];
+    }
+}

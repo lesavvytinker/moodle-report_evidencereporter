@@ -1,0 +1,217 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template report_evidencereporter/summary
+
+    Printable competency evidence summary for one learner and one framework.
+
+    Example context (json):
+    {
+        "learnername": "Ethan Brown",
+        "learnerusername": "erseed_s10",
+        "learneridnumber": "ER-S10",
+        "learnerreference": "L-3F9A12C0",
+        "redactionnote": "",
+        "formurl": "https://example.com/report/evidencereporter/print.php",
+        "userid": 2,
+        "frameworkid": 1,
+        "redactoptions": [{"name": "redactname", "label": "Learner name", "checked": false}],
+        "frameworkname": "CHCEDS055 Coordinate e-learning programs",
+        "frameworkidnumber": "0101",
+        "sitename": "Equip English",
+        "generatedon": "Wednesday, 11 November 2026, 11:30 AM",
+        "generatedby": "Daniel Maloney",
+        "restricted": false,
+        "totalcompetencies": 2,
+        "withevidence": 1,
+        "proficientcount": 1,
+        "rows": [
+            {"idnumber": "0101.1", "name": "1. Establish online learning environment", "indent": false,
+             "currentrating": "", "proficient": false, "judgementdate": "", "judgementby": "", "judgementrating": "",
+             "evidencecount": 0, "noevidence": true, "attemptcount": 0},
+            {"idnumber": "0101.1.1", "name": "1.1 Confirm scope", "indent": true, "currentrating": "Competent",
+             "proficient": true, "judgementdate": "10 November 2026", "judgementby": "Priya Raman", "judgementrating": "Competent",
+             "evidencecount": 2, "noevidence": false, "attemptcount": 2}
+        ],
+        "hasdetails": true,
+        "packurl": "https://example.com/report/evidencereporter/pack.php?userid=2&frameworkid=1&includefeedback=1&sesskey=abc",
+        "details": [
+            {"idnumber": "0101.1.1", "name": "1.1 Confirm scope", "currentrating": "Competent", "hasevidence": true,
+             "hasattempts": true, "attempts": [
+                {"activity": "AT1 Project", "attemptno": 1, "label": "Attempt 1", "submitted": "2/10/26, 09:00", "graded": "3/10/26, 14:00",
+                 "grade": "40.00 / 100.00 (Fail)", "marker": "Priya Raman", "feedback": "<p>Controls missing.</p>",
+                 "url": "https://example.com/mod/assign/view.php?id=1&action=grader&userid=2"},
+                {"activity": "AT1 Project", "attemptno": 2, "label": "Attempt 2", "submitted": "", "graded": "9/10/26, 10:00",
+                 "grade": "80.00 / 100.00 (Pass)", "marker": "Priya Raman", "feedback": "<p>Well done.</p>",
+                 "url": "https://example.com/mod/assign/view.php?id=1&action=grader&userid=2"}
+             ],
+             "evidence": [
+                {"date": "9/11/26, 21:54", "type": "Logged", "source": "AT1 Project (Assignment)",
+                 "description": "The activity 'AT1 Project' was completed.",
+                 "url": "https://example.com/mod/assign/view.php?id=1&action=grader&userid=2",
+                 "grade": "80.00 / 100.00 (Pass)", "ratinggiven": "", "assessor": "Priya Raman", "note": "",
+                 "feedback": "<p>Well done.</p>", "releasestatus": "Released"}
+            ]}
+        ]
+    }
+}}
+<div class="report-evidencereporter-summary">
+    <div class="er-noprint mb-3 d-flex flex-wrap align-items-center">
+        <button type="button" class="btn btn-primary me-2" data-action="report_evidencereporter-print">{{#str}} printsummary, report_evidencereporter {{/str}}</button>
+        <a class="btn btn-secondary me-4" href="{{packurl}}" data-action="report_evidencereporter-pack" title="{{#str}} packbuilding, report_evidencereporter {{/str}}">{{#str}} downloadpack, report_evidencereporter {{/str}}</a>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="report_evidencereporter-includefeedback" checked data-action="report_evidencereporter-togglefeedback">
+            <label class="form-check-label" for="report_evidencereporter-includefeedback">{{#str}} includefeedback, report_evidencereporter {{/str}}</label>
+        </div>
+    </div>
+    <form method="get" action="{{formurl}}" class="er-noprint er-redactform mb-3 d-flex flex-wrap align-items-center" data-region="report_evidencereporter-redact">
+        <input type="hidden" name="userid" value="{{userid}}">
+        <input type="hidden" name="frameworkid" value="{{frameworkid}}">
+        <span class="me-3 fw-bold">{{#str}} redactoptions, report_evidencereporter {{/str}}</span>
+        {{#redactoptions}}
+        <div class="form-check me-3">
+            <input type="checkbox" class="form-check-input" id="report_evidencereporter-{{name}}" name="{{name}}" value="1"{{#checked}} checked{{/checked}}>
+            <label class="form-check-label" for="report_evidencereporter-{{name}}">{{label}}</label>
+        </div>
+        {{/redactoptions}}
+        <button type="submit" class="btn btn-outline-secondary btn-sm">{{#str}} applyredaction, report_evidencereporter {{/str}}</button>
+    </form>
+
+    <h2 class="h3">{{#str}} summarytitle, report_evidencereporter {{/str}}</h2>
+    <table class="table table-sm er-meta">
+        <tbody>
+            <tr><th scope="row">{{#str}} entitylearner, report_evidencereporter {{/str}}</th><td>{{learnername}}</td></tr>
+            <tr><th scope="row">{{#str}} username {{/str}}</th><td>{{learnerusername}}</td></tr>
+            {{#learneridnumber}}<tr><th scope="row">{{#str}} idnumber {{/str}}</th><td>{{.}}</td></tr>{{/learneridnumber}}
+            <tr><th scope="row">{{#str}} learnerreference, report_evidencereporter {{/str}}</th><td>{{learnerreference}}</td></tr>
+            <tr><th scope="row">{{#str}} framework, report_evidencereporter {{/str}}</th><td>{{frameworkname}}{{#frameworkidnumber}} ({{.}}){{/frameworkidnumber}}</td></tr>
+            <tr><th scope="row">{{#str}} generated, report_evidencereporter {{/str}}</th><td>{{generatedon}} &middot; {{generatedby}} &middot; {{sitename}}</td></tr>
+            <tr><th scope="row">{{#str}} overview, report_evidencereporter {{/str}}</th><td>{{#str}} overviewcounts, report_evidencereporter, { "total": {{totalcompetencies}}, "evidence": {{withevidence}}, "proficient": {{proficientcount}} } {{/str}}</td></tr>
+        </tbody>
+    </table>
+    {{#redactionnote}}<p class="er-redactionnote fst-italic">{{.}}</p>{{/redactionnote}}
+    <p class="er-feedbackexcluded fst-italic">{{#str}} feedbackexcluded, report_evidencereporter {{/str}}</p>
+    {{#restricted}}
+        <div class="alert alert-info">{{#str}} restrictednotice, report_evidencereporter {{/str}}</div>
+    {{/restricted}}
+
+    <h3 class="h4 mt-4">{{#str}} summaryheading, report_evidencereporter {{/str}}</h3>
+    <table class="table table-sm table-bordered er-summary">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}} competency, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} currentrating, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} judgement, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} evidenceitems, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} attemptcount, report_evidencereporter {{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#rows}}
+            <tr class="{{^indent}}er-parent{{/indent}}">
+                <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}</td>
+                <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{#str}} proficient, report_evidencereporter {{/str}}</span>{{/proficient}}</td>
+                <td>{{#judgementrating}}{{.}} &middot; {{/judgementrating}}{{judgementdate}}{{#judgementby}}<br><span class="small">{{.}}</span>{{/judgementby}}</td>
+                <td>{{#noevidence}}<span class="text-muted">{{#str}} noevidence, report_evidencereporter {{/str}}</span>{{/noevidence}}{{^noevidence}}{{evidencecount}}{{/noevidence}}</td>
+                <td>{{#attemptcount}}{{.}}{{/attemptcount}}</td>
+            </tr>
+            {{/rows}}
+        </tbody>
+    </table>
+
+    {{#hasdetails}}
+    <h3 class="h4 mt-4 er-pagebreak">{{#str}} detailheading, report_evidencereporter {{/str}}</h3>
+    {{/hasdetails}}
+    {{#details}}
+    <section class="er-competency mb-4">
+        <h4 class="h5"><span class="er-idnumber">{{idnumber}}</span> {{name}}{{#currentrating}} &middot; {{.}}{{/currentrating}}</h4>
+        {{#hasevidence}}
+        <table class="table table-sm table-bordered er-evidence">
+            <colgroup>
+                <col class="er-col-date"><col class="er-col-source"><col class="er-col-rating"><col class="er-col-assessor"><col class="er-col-feedback er-feedback">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} timecreated, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} evidencesource, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} rating, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} assessor, report_evidencereporter {{/str}}</th>
+                    <th scope="col" class="er-feedback">{{#str}} feedback, report_evidencereporter {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#evidence}}
+                <tr>
+                    <td>{{date}}<br><span class="small">{{type}}</span></td>
+                    <td>
+                        {{source}}
+                        {{#description}}<br><span class="small text-muted">{{.}}</span>{{/description}}
+                        {{#grade}}<br><span class="small">{{#str}} activitygrade, report_evidencereporter {{/str}}: <strong>{{.}}</strong></span>{{/grade}}
+                        {{#url}}<br><a href="{{.}}" class="er-link">{{#str}} viewevidence, report_evidencereporter {{/str}}</a><span class="er-printurl">{{.}}</span>{{/url}}
+                    </td>
+                    <td>{{ratinggiven}}</td>
+                    <td>{{assessor}}{{#note}}<br><span class="small">{{#str}} note, report_evidencereporter {{/str}}: {{{.}}}</span>{{/note}}</td>
+                    <td class="er-feedback">{{{feedback}}}{{#releasestatus}}<br><span class="small text-muted">{{.}}</span>{{/releasestatus}}</td>
+                </tr>
+                {{/evidence}}
+            </tbody>
+        </table>
+        {{/hasevidence}}
+        {{#hasattempts}}
+        <p class="fw-bold mb-1">{{#str}} attemptsheading, report_evidencereporter {{/str}}</p>
+        <table class="table table-sm table-bordered er-attempts">
+            <colgroup>
+                <col class="er-col-activity"><col class="er-col-attempt"><col class="er-col-dates"><col class="er-col-grade"><col class="er-col-assessor"><col class="er-col-feedback er-feedback">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} activity, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} attemptnumber, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} timegraded, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} activitygrade, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} marker, report_evidencereporter {{/str}}</th>
+                    <th scope="col" class="er-feedback">{{#str}} feedback, report_evidencereporter {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#attempts}}
+                <tr>
+                    <td>{{activity}}{{#url}}<br><a href="{{.}}" class="er-link">{{#str}} viewattempt, report_evidencereporter {{/str}}</a><span class="er-printurl">{{.}}</span>{{/url}}</td>
+                    <td>{{label}}</td>
+                    <td>{{graded}}{{#submitted}}<br><span class="small text-muted">{{#str}} timesubmitted, report_evidencereporter {{/str}}: {{.}}</span>{{/submitted}}</td>
+                    <td>{{grade}}</td>
+                    <td>{{marker}}</td>
+                    <td class="er-feedback">{{{feedback}}}</td>
+                </tr>
+                {{/attempts}}
+            </tbody>
+        </table>
+        {{/hasattempts}}
+    </section>
+    {{/details}}
+
+    <div class="er-signoff mt-5">
+        <p class="fw-bold">{{#str}} reviewheading, report_evidencereporter {{/str}}</p>
+        <table class="table table-borderless">
+            <tbody>
+                <tr><td>{{#str}} reviewedby, report_evidencereporter {{/str}}: ______________________________</td><td>{{#str}} signature, report_evidencereporter {{/str}}: ______________________</td><td>{{#str}} date {{/str}}: ____________</td></tr>
+            </tbody>
+        </table>
+        <p class="small text-muted">{{#str}} judgementnotice, report_evidencereporter {{/str}}</p>
+        <p class="small text-muted">{{#str}} linknotice, report_evidencereporter {{/str}}</p>
+    </div>
+</div>

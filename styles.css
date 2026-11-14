@@ -1,0 +1,133 @@
+.report-evidencereporter-summary .er-idnumber {
+    font-weight: 600;
+    margin-right: .25rem;
+}
+
+.report-evidencereporter-summary .er-indent {
+    display: inline-block;
+    width: 1.5rem;
+}
+
+.report-evidencereporter-summary .er-summary tr.er-parent td {
+    background-color: #f2f4f7;
+    font-weight: 600;
+}
+
+.report-evidencereporter-summary .er-printurl {
+    display: none;
+}
+
+.report-evidencereporter-summary .er-feedbackexcluded {
+    display: none;
+}
+
+.report-evidencereporter-summary.er-hidefeedback .er-feedback {
+    display: none;
+}
+
+.report-evidencereporter-summary.er-hidefeedback .er-feedbackexcluded {
+    display: block;
+}
+
+.report-evidencereporter-summary.er-hidefeedback .er-evidence {
+    table-layout: auto;
+}
+
+.report-evidencereporter-summary .er-evidence {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.report-evidencereporter-summary .er-evidence td {
+    overflow-wrap: break-word;
+}
+
+.report-evidencereporter-summary .er-printurl {
+    overflow-wrap: anywhere;
+}
+
+.report-evidencereporter-summary .er-attempts {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.report-evidencereporter-summary .er-attempts td {
+    overflow-wrap: break-word;
+}
+
+.report-evidencereporter-summary.er-hidefeedback .er-attempts {
+    table-layout: auto;
+}
+
+.report-evidencereporter-summary .er-col-activity {
+    width: 20%;
+}
+
+.report-evidencereporter-summary .er-col-attempt {
+    width: 8%;
+}
+
+.report-evidencereporter-summary .er-col-dates {
+    width: 15%;
+}
+
+.report-evidencereporter-summary .er-col-grade {
+    width: 13%;
+}
+
+.report-evidencereporter-summary .er-col-date {
+    width: 15%;
+}
+
+.report-evidencereporter-summary .er-col-source {
+    width: 28%;
+}
+
+.report-evidencereporter-summary .er-col-rating {
+    width: 13%;
+}
+
+.report-evidencereporter-summary .er-col-assessor {
+    width: 14%;
+}
+
+.report-evidencereporter-summary .er-col-feedback {
+    width: 30%;
+}
+
+@media print {
+    .report-evidencereporter-summary .er-noprint,
+    #page-header,
+    .navbar,
+    #page-footer,
+    .drawer,
+    .drawer-toggles,
+    .secondary-navigation,
+    #top-footer,
+    .btn-footer-popover {
+        display: none !important;
+    }
+
+    .report-evidencereporter-summary {
+        font-size: 10pt;
+    }
+
+    .report-evidencereporter-summary .er-link {
+        display: none;
+    }
+
+    .report-evidencereporter-summary .er-printurl {
+        display: block;
+        font-size: 8pt;
+        word-break: break-all;
+    }
+
+    .report-evidencereporter-summary .er-competency,
+    .report-evidencereporter-summary tr {
+        break-inside: avoid;
+    }
+
+    .report-evidencereporter-summary .er-pagebreak {
+        break-before: page;
+    }
+}
