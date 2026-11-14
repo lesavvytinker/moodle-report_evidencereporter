@@ -105,7 +105,8 @@ class summary {
         global $DB;
         [$from, $where, $params] = self::get_base_sql($userid);
         return $DB->record_exists_sql("SELECT 1 {$from} WHERE {$where}", $params)
-            || !empty(self::get_linked_activities($userid));
+            || !empty(self::get_linked_activities($userid))
+            || !empty(checklist_items::get_linked($userid));
     }
 
     /**
@@ -347,6 +348,19 @@ class summary {
                 (int) $row->cmid,
                 $viewfullnames
             ), $identity);
+        } else if ($row->modname === 'checklist' && !empty($row->cmid)) {
+            $released = feedback_visibility::is_released($row);
+            if ($released || feedback_visibility::can_view_unreleased((int) $row->cmid, 'checklist')) {
+                $checklist = checklist_items::get_for_user((int) $row->cmid, (int) $row->userid, $viewfullnames);
+                $feedback = $checklist ? checklist_items::feedback_html($checklist, $identity) : '';
+                $releasestatus = $feedback === '' ? '' : get_string(
+                    $released ? 'released' : 'notreleased',
+                    'report_evidencereporter'
+                );
+            } else {
+                $feedback = s(get_string('pendingrelease', 'report_evidencereporter'));
+                $releasestatus = get_string('pendingrelease', 'report_evidencereporter');
+            }
         } else if ($row->feedback !== null && trim($row->feedback) !== '') {
             $released = feedback_visibility::is_released($row);
             $canseeunreleased = !empty($row->cmid)

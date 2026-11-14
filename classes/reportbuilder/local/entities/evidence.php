@@ -25,8 +25,8 @@ use core_reportbuilder\local\helpers\{database, format};
 use core_reportbuilder\local\report\{column, filter};
 use html_writer;
 use lang_string;
-use report_evidencereporter\local\{activity_grade, assessor, attempts, data_entries, evidence_link, feedback_visibility,
-    rating};
+use report_evidencereporter\local\{activity_grade, assessor, attempts, checklist_items, data_entries, evidence_link,
+    feedback_visibility, rating};
 use stdClass;
 
 /**
@@ -513,6 +513,17 @@ class evidence extends base {
                         (int) $row->cmid,
                         $viewfullnames
                     ));
+                }
+                // Checklists: each item, its mark and the comments on it.
+                if ($row->modname === 'checklist' && !empty($row->cmid)) {
+                    if (
+                        !feedback_visibility::is_released($row)
+                            && !feedback_visibility::can_view_unreleased((int) $row->cmid, 'checklist')
+                    ) {
+                        return get_string('pendingrelease', 'report_evidencereporter');
+                    }
+                    $checklist = checklist_items::get_for_user((int) $row->cmid, (int) $row->userid, $viewfullnames);
+                    return $checklist ? checklist_items::feedback_html($checklist) : '';
                 }
                 if ($feedback === null || trim($feedback) === '') {
                     return '';

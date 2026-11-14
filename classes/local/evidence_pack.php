@@ -133,6 +133,7 @@ class evidence_pack {
         );
 
         $this->add_assessments();
+        $this->add_checklists();
         $this->add_prior_learning();
         $this->add_readme();
 
@@ -448,6 +449,52 @@ class evidence_pack {
             $folder . '/' . get_string('packattemptrecord', 'report_evidencereporter') . '.pdf',
             $this->html_to_pdf($cm->get_formatted_name(), $record)
         );
+    }
+
+    /**
+     * Checklist activities linked to the framework's competencies: a record of every item, its mark and comments.
+     */
+    private function add_checklists(): void {
+        $competenciesbycm = [];
+        foreach (checklist_items::get_linked($this->userid, $this->frameworkid) as $link) {
+            $competenciesbycm[$link->cmid][] = (int) $link->competencyid;
+        }
+        foreach ($competenciesbycm as $cmid => $competencyids) {
+            try {
+                [$course, $cm] = get_course_and_cm_from_cmid($cmid);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            $checklist = checklist_items::get_for_user((int) $cmid, $this->userid, $this->viewfullnames);
+            if (!$checklist) {
+                continue;
+            }
+            $folder = '02 ' . get_string('packassessments', 'report_evidencereporter') . '/'
+                . $this->safe_name(format_string($course->shortname) . ' - ' . $cm->get_formatted_name());
+            $url = checklist_items::url((int) $cmid, $this->userid);
+            $html = '<h2>' . s($cm->get_formatted_name()) . '</h2>'
+                . '<table border="1" cellpadding="4" width="100%">'
+                . $this->learner_rows()
+                . $this->table_row(
+                    get_string('competency', 'report_evidencereporter'),
+                    s(implode('; ', $this->competency_names($competencyids)))
+                )
+                . $this->table_row(
+                    get_string('activitytype', 'report_evidencereporter'),
+                    s(get_string('modulename', 'mod_checklist'))
+                )
+                . $this->table_row('URL', s($url->out(false)))
+                . '</table>'
+                . '<h3>' . s(get_string('checklistitems', 'report_evidencereporter')) . '</h3>'
+                . checklist_items::record_table($checklist, $this->identity, $this->includefeedback);
+            if (!$this->includefeedback) {
+                $html .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
+            }
+            $this->add_content(
+                $folder . '/' . get_string('packchecklistrecord', 'report_evidencereporter') . '.pdf',
+                $this->html_to_pdf($cm->get_formatted_name(), $html)
+            );
+        }
     }
 
     /**

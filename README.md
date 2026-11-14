@@ -49,6 +49,16 @@ The download contains one file per learner, `index.csv` (every learner and wheth
 
 Needs the capability `report/evidencereporter:bulkdownload` (given to Manager by default). Moodle's background tasks (cron) must be running.
 
+## Checklist activities
+
+If the [Checklist](https://moodle.org/plugins/mod_checklist) activity is installed and a checklist is linked to a competency:
+
+- **View evidence** opens the learner's checklist report, with their marks and comments on one page.
+- **Feedback** lists every item with its mark and the comments on it, with who wrote them. Teacher-marked checklists show the assessor's Yes or No; learner-marked ones show which items the learner ticked.
+- The **evidence pack** includes a Checklist record PDF per checklist.
+
+Checklists record competency evidence when they're completed, so set the checklist's activity completion (for example, a required percentage of items) to match what counts as competent.
+
 ## Learner identity and redaction
 
 Every official document (the printable summary, each PDF in an evidence pack, the pack README and the bulk index) shows the learner's **name, username, ID number** (if set) and **learner reference**. The reference (e.g. `L-3F9A12C0`) is worked out from the learner's ID and the site, so it's the same on every document for that learner, but it doesn't say who they are.

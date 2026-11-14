@@ -98,6 +98,10 @@ class evidence_link {
                 }
                 return new moodle_url('/mod/data/view.php', ['id' => $cmid]);
 
+            case 'checklist':
+                // The learner's checklist report: each item's mark and the comments on it.
+                return checklist_items::url($cmid, $userid);
+
             default:
                 return null;
         }

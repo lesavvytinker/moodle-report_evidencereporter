@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 (2026-11-17)
+- **Checklist activities** (the mod_checklist add-on): when a checklist is linked to a competency, the evidence link opens the learner's checklist report (their marks and comments on one page), and the feedback shows every item with its mark (assessor Yes / No, or the learner's tick for learner-marked checklists) and the comments on it, with who wrote them. Hidden items are left out.
+- The evidence pack adds a **Checklist record** PDF for each linked checklist: every item, its mark, the assessor, the date and the comments. Without feedback, the comments are left out and the marks stay.
+- Redaction covers checklist comments and assessor names.
+- Sites without the Checklist plugin are unaffected.
+
 ## 0.8.0 (2026-11-16)
 - **Username on every official document**: the printable summary, every PDF in the evidence pack (summary, attempt and entry records, prior learning details), the pack README and the bulk index now show the learner's name, username, ID number (if set) and a **learner reference** (e.g. L-3F9A12C0). The reference stays the same for a learner on this site but doesn't reveal who they are, so redacted documents can still be matched up.
 - **Redaction** on the summary page, the evidence pack and bulk downloads, with three tick-boxes:
