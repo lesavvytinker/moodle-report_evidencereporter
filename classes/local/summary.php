@@ -342,7 +342,11 @@ class summary {
         // Feedback, with the same release and superseded rules as the report. Database entries: the entry's comments.
         $feedback = '';
         $releasestatus = '';
-        if ($row->modname === 'data' && !empty($row->datarecordid)) {
+        if (in_array($row->modname, ['data', 'checklist']) && empty($row->islatest)) {
+            // Database entries and checklists show the activity as it is now, so only the latest evidence row from the
+            // activity carries it; every rated entry is still listed under the attempts.
+            $feedback = s(get_string('feedbacksupersededlater', 'report_evidencereporter'));
+        } else if ($row->modname === 'data' && !empty($row->datarecordid)) {
             $feedback = data_entries::comments_html(data_entries::get_comments(
                 (int) $row->datarecordid,
                 (int) $row->cmid,

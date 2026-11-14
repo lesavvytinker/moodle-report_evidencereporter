@@ -349,6 +349,20 @@ final class attempts_test extends core_reportbuilder_testcase {
         $this->assertStringContainsString('Entry 1 · Not satisfactory (Fail)', $evidence[3]);
         $this->assertStringContainsString('Entry 2 · Satisfactory (Pass)', $evidence[3]);
 
+        // Completion logged a second time (e.g. Complete, then Complete (pass) once rated): the earlier row says it's
+        // superseded rather than repeating the comments.
+        $gen->get_plugin_generator('report_evidencereporter')->create_evidence(['userid' => $student->id,
+            'competencyid' => $compid, 'cmid' => $data->cmid]);
+        $this->reset_caches();
+        $rows = array_values(array_filter(array_map(
+            'array_values',
+            $this->get_custom_report_content($evidencereport->get('id'))
+        ), fn($r) => $r[0] === 'Database'));
+        $this->assertCount(2, $rows);
+        $feedback = array_column($rows, 2);
+        $this->assertCount(1, array_filter($feedback, fn($f) => str_contains($f, 'Seen on site, agreed.')));
+        $this->assertContains('Superseded by later evidence from this activity', $feedback);
+
         // The evidence pack has a record for each rated entry.
         $frameworkid = (int) $DB->get_field('competency', 'competencyframeworkid', ['id' => $compid]);
         $pack = new \report_evidencereporter\local\evidence_pack((int) $student->id, $frameworkid);

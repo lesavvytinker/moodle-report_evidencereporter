@@ -107,6 +107,7 @@ $string['feedback'] = 'Feedback';
 $string['feedbackexcluded'] = 'Assessor feedback has been left out of this printout.';
 $string['feedbackinattempt'] = 'Feedback is on the attempt review';
 $string['feedbacksuperseded'] = 'Superseded by a later attempt';
+$string['feedbacksupersededlater'] = 'Superseded by later evidence from this activity';
 $string['framework'] = 'Competency framework';
 $string['generated'] = 'Generated';
 $string['gradefail'] = 'Fail';

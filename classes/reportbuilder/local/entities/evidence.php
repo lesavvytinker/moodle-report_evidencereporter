@@ -511,6 +511,11 @@ class evidence extends base {
             ->set_is_sortable(false)
             ->add_callback(static function (?string $feedback, stdClass $row) use ($viewfullnames): string {
                 // Database entries: every comment on the entry, with who wrote it and when.
+                // Database entries and checklists show the activity as it is now, so only the latest evidence row from
+                // the activity carries it; every rated entry is still listed in Assessment attempts.
+                if (in_array($row->modname, ['data', 'checklist']) && empty($row->islatest)) {
+                    return get_string('feedbacksupersededlater', 'report_evidencereporter');
+                }
                 if ($row->modname === 'data' && !empty($row->datarecordid)) {
                     return data_entries::comments_html(data_entries::get_comments(
                         (int) $row->datarecordid,

@@ -136,6 +136,25 @@ final class checklist_items_test extends core_reportbuilder_testcase {
     }
 
     /**
+     * Completion logged twice (e.g. Complete, then Complete (pass) when the grade arrives): only the latest row has
+     * the checklist, the earlier one says it's superseded.
+     */
+    public function test_logged_twice(): void {
+        $this->resetAfterTest();
+        [$framework, $student, , $cmid] = $this->setup_data();
+        $this->setAdminUser();
+        $comp = \core_competency\competency::get_record(['idnumber' => 'PA1']);
+        $this->getDataGenerator()->get_plugin_generator('report_evidencereporter')->create_evidence(['userid' => $student->id,
+            'competencyid' => $comp->get('id'), 'cmid' => $cmid, 'action' => \core_competency\evidence::ACTION_LOG]);
+
+        $rows = summary::build((int) $student->id, $framework->get('id'))->competencies[0]->evidence;
+        $this->assertCount(2, $rows);
+        $feedback = array_column($rows, 'feedback');
+        $this->assertCount(1, array_filter($feedback, fn($f) => str_contains($f, 'Dancing: <strong>Yes</strong>')));
+        $this->assertCount(1, array_filter($feedback, fn($f) => $f === 'Superseded by later evidence from this activity'));
+    }
+
+    /**
      * The report's feedback and link columns show the checklist.
      */
     public function test_report_columns(): void {

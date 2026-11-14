@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.2 (2026-11-17)
+- When Moodle logs completion evidence more than once for the same database or checklist activity (for example, Complete and then Complete (pass) once the grade arrives), only the latest row shows the entry's comments or the checklist's marks. Earlier rows say "Superseded by later evidence from this activity" instead of repeating them. Every rated database entry is still listed in the assessment attempts.
+
 ## 0.9.1 (2026-11-17)
 - Every link in the report, the evidence summary and the attempts report now opens in a new tab: View evidence, View attempt, activity names, Print evidence summary, quiz feedback, and links that assessors put in their feedback. Each tells screen reader users it opens in a new window.
 
