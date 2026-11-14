@@ -180,6 +180,7 @@ final class summary_test extends \advanced_testcase {
         };
 
         $html = $render(new identity($learner));
+        $this->assertStringContainsString('class="er-link" target="_blank" rel="noopener"', $html);
         $this->assertStringContainsString(fullname($learner), $html);
         $this->assertStringContainsString($learner->username, $html);
         $this->assertStringContainsString(fullname($teacher), $html);

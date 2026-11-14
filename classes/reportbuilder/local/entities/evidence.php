@@ -140,6 +140,10 @@ class evidence extends base {
      */
     public function initialise(): base {
         foreach ($this->get_all_columns() as $column) {
+            if (in_array($column->get_name(), ['feedback', 'attempthistory', 'note'])) {
+                // Links in feedback (the assessor's own, or ours) open in a new tab, like every other link here.
+                $column->add_callback(static fn($value): string => evidence_link::new_tab_html((string) $value));
+            }
             $this->add_column($column);
         }
         foreach ($this->get_all_filters() as $filter) {
@@ -284,7 +288,7 @@ class evidence extends base {
                 } catch (\Throwable $e) {
                     return '';
                 }
-                return html_writer::link($cminfo->url, $cminfo->get_formatted_name());
+                return evidence_link::new_tab($cminfo->url, $cminfo->get_formatted_name());
             });
 
         // Activity type.
@@ -332,7 +336,7 @@ class evidence extends base {
             if ($name === 'evidencelink') {
                 $column->add_callback(static function ($value, stdClass $row): string {
                     $url = evidence_link::get_url($row);
-                    return $url ? html_writer::link($url, get_string('viewevidence', 'report_evidencereporter')) : '';
+                    return $url ? evidence_link::new_tab($url, get_string('viewevidence', 'report_evidencereporter')) : '';
                 });
             } else {
                 $column->add_callback(static function ($value, stdClass $row): string {
@@ -394,7 +398,7 @@ class evidence extends base {
                     '/report/evidencereporter/print.php',
                     ['userid' => $row->learnerid, 'frameworkid' => $row->frameworkid]
                 );
-                return html_writer::link($url, get_string('printsummarylink', 'report_evidencereporter'));
+                return evidence_link::new_tab($url, get_string('printsummarylink', 'report_evidencereporter'));
             });
 
         // Note added by the assessor when rating manually.

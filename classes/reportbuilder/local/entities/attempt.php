@@ -25,6 +25,7 @@ use core_reportbuilder\local\report\{column, filter};
 use html_writer;
 use lang_string;
 use report_evidencereporter\local\attempts;
+use report_evidencereporter\local\evidence_link;
 use stdClass;
 
 /**
@@ -142,6 +143,10 @@ class attempt extends base {
      */
     public function initialise(): base {
         foreach ($this->get_all_columns() as $column) {
+            if (in_array($column->get_name(), ['feedback'])) {
+                // Links in feedback (the assessor's own, or ours) open in a new tab, like every other link here.
+                $column->add_callback(static fn($value): string => evidence_link::new_tab_html((string) $value));
+            }
             $this->add_column($column);
         }
         foreach ($this->get_all_filters() as $filter) {
@@ -211,7 +216,7 @@ class attempt extends base {
                 } catch (\Throwable $e) {
                     return '';
                 }
-                return html_writer::link($cminfo->url, $cminfo->get_formatted_name());
+                return evidence_link::new_tab($cminfo->url, $cminfo->get_formatted_name());
             });
 
         $columns[] = $this->attempt_column('activitytype', 'activitytype')
@@ -280,7 +285,7 @@ class attempt extends base {
             ->set_is_sortable(false)
             ->add_callback(static function ($value, stdClass $row) use ($formatted): string {
                 $url = $formatted($row)->url;
-                return $url ? html_writer::link($url, get_string('viewattempt', 'report_evidencereporter')) : '';
+                return $url ? evidence_link::new_tab($url, get_string('viewattempt', 'report_evidencereporter')) : '';
             });
 
         $columns[] = $this->attempt_column('url', 'attempturl')

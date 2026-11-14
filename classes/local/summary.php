@@ -264,8 +264,8 @@ class summary {
                     'graded' => $attempt->graded ? userdate($attempt->graded, $datefmt) : '',
                     'grade' => $attempt->grade,
                     'marker' => $identity ? attempts::marker($attempt, $identity) : $attempt->marker,
-                    'feedback' => !$identity ? $attempt->feedback : ($attempt->isentry
-                        ? data_entries::comments_html($attempt->comments, $identity) : $identity->text($attempt->feedback)),
+                    'feedback' => evidence_link::new_tab_html(!$identity ? $attempt->feedback : ($attempt->isentry
+                        ? data_entries::comments_html($attempt->comments, $identity) : $identity->text($attempt->feedback))),
                     'url' => $attempt->url ? $attempt->url->out(false) : '',
                 ];
             }
@@ -396,7 +396,7 @@ class summary {
             'ratinggiven' => rating::name((int) $row->competencyid, $row->grade === null ? null : (int) $row->grade),
             'assessor' => $identity ? $identity->staff($assessor) : $assessor,
             'note' => $row->note === null ? '' : s($identity ? $identity->text($row->note) : $row->note),
-            'feedback' => $feedback,
+            'feedback' => evidence_link::new_tab_html((string) $feedback),
             'releasestatus' => $releasestatus,
         ];
     }

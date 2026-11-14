@@ -342,7 +342,7 @@ class attempts {
         if (!empty($result->feedbacklink)) {
             // Quiz feedback lives on the attempt review page.
             if ($showfeedback) {
-                $result->feedback = \html_writer::link(
+                $result->feedback = evidence_link::new_tab(
                     $result->url,
                     get_string('viewattemptfeedback', 'report_evidencereporter'),
                     ['class' => 'er-feedbacklink']

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.1 (2026-11-17)
+- Every link in the report, the evidence summary and the attempts report now opens in a new tab: View evidence, View attempt, activity names, Print evidence summary, quiz feedback, and links that assessors put in their feedback. Each tells screen reader users it opens in a new window.
+
 ## 0.9.0 (2026-11-17)
 - **Checklist activities** (the mod_checklist add-on): when a checklist is linked to a competency, the evidence link opens the learner's checklist report (their marks and comments on one page), and the feedback shows every item with its mark (assessor Yes / No, or the learner's tick for learner-marked checklists) and the comments on it, with who wrote them. Hidden items are left out.
 - The evidence pack adds a **Checklist record** PDF for each linked checklist: every item, its mark, the assessor, the date and the comments. Without feedback, the comments are left out and the marks stay.

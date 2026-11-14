@@ -161,7 +161,7 @@
                         {{source}}
                         {{#description}}<br><span class="small text-muted">{{.}}</span>{{/description}}
                         {{#grade}}<br><span class="small">{{#str}} activitygrade, report_evidencereporter {{/str}}: <strong>{{.}}</strong></span>{{/grade}}
-                        {{#url}}<br><a href="{{.}}" class="er-link">{{#str}} viewevidence, report_evidencereporter {{/str}}</a><span class="er-printurl">{{.}}</span>{{/url}}
+                        {{#url}}<br><a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} viewevidence, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a><span class="er-printurl">{{.}}</span>{{/url}}
                     </td>
                     <td>{{ratinggiven}}</td>
                     <td>{{assessor}}{{#note}}<br><span class="small">{{#str}} note, report_evidencereporter {{/str}}: {{{.}}}</span>{{/note}}</td>
@@ -190,7 +190,7 @@
             <tbody>
                 {{#attempts}}
                 <tr>
-                    <td>{{activity}}{{#url}}<br><a href="{{.}}" class="er-link">{{#str}} viewattempt, report_evidencereporter {{/str}}</a><span class="er-printurl">{{.}}</span>{{/url}}</td>
+                    <td>{{activity}}{{#url}}<br><a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} viewattempt, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a><span class="er-printurl">{{.}}</span>{{/url}}</td>
                     <td>{{label}}</td>
                     <td>{{graded}}{{#submitted}}<br><span class="small text-muted">{{#str}} timesubmitted, report_evidencereporter {{/str}}: {{.}}</span>{{/submitted}}</td>
                     <td>{{grade}}</td>

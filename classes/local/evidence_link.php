@@ -106,4 +106,38 @@ class evidence_link {
                 return null;
         }
     }
+
+    /**
+     * A link that opens in a new tab, so the report stays open behind it.
+     *
+     * @param \moodle_url|string $url
+     * @param string $text Link text (already formatted)
+     * @param array $attributes Extra attributes, e.g. class
+     * @return string HTML
+     */
+    public static function new_tab(\moodle_url|string $url, string $text, array $attributes = []): string {
+        return \html_writer::link(
+            $url,
+            $text . \html_writer::span(' ' . get_string('opensinnewwindowbracketed'), 'visually-hidden'),
+            $attributes + ['target' => '_blank', 'rel' => 'noopener']
+        );
+    }
+
+    /**
+     * Make every link in a piece of HTML open in a new tab (links that already choose a target are left alone).
+     *
+     * @param string $html
+     * @return string
+     */
+    public static function new_tab_html(string $html): string {
+        if (stripos($html, '<a') === false) {
+            return $html;
+        }
+        return preg_replace_callback('/<a\b([^>]*)>/i', static function (array $match): string {
+            if (preg_match('/\btarget\s*=/i', $match[1])) {
+                return $match[0];
+            }
+            return '<a' . $match[1] . ' target="_blank" rel="noopener">';
+        }, $html);
+    }
 }
