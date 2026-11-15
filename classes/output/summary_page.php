@@ -17,37 +17,44 @@
 namespace report_evidencereporter\output;
 
 use report_evidencereporter\local\identity;
+use report_evidencereporter\local\scope;
 use renderable;
 use renderer_base;
 use stdClass;
 use templatable;
 
 /**
- * Printable evidence summary for one learner and one competency framework.
+ * Printable evidence summary for one learner: a learning plan, their active plans, or a competency framework.
  *
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class summary_page implements renderable, templatable {
+    /** @var scope What the summary covers. */
+    protected scope $scope;
+
     /**
      * Constructor.
      *
      * @param stdClass $learner
-     * @param stdClass $framework
+     * @param scope|stdClass $scope What the summary covers (a framework record is short for that framework)
      * @param stdClass $summary From {@see \report_evidencereporter\local\summary::build()}
      * @param identity|null $identity Learner identity and redaction choices
+     * @param array $frameworks From {@see \report_evidencereporter\local\summary::get_frameworks()}, for the scope choice
      */
     public function __construct(
         /** @var stdClass The learner. */
         protected stdClass $learner,
-        /** @var stdClass The competency framework. */
-        protected stdClass $framework,
+        scope|stdClass $scope,
         /** @var stdClass The summary data. */
         protected stdClass $summary,
         /** @var identity|null Learner identity and redaction choices. */
-        protected ?identity $identity = null
+        protected ?identity $identity = null,
+        /** @var array Frameworks the viewer may choose. */
+        protected array $frameworks = []
     ) {
+        $this->scope = $scope instanceof scope ? $scope : scope::for_framework((int) $learner->id, (int) $scope->id);
         $this->identity = $identity ?? new identity($learner);
     }
 
@@ -72,6 +79,7 @@ class summary_page implements renderable, templatable {
             $withevidence += $count ? 1 : 0;
             $proficient += $comp->proficient ? 1 : 0;
             $rows[] = [
+                'group' => $comp->group ?? '',
                 'idnumber' => $comp->idnumber,
                 'name' => $comp->name,
                 'indent' => $comp->depth > 0,
@@ -113,9 +121,26 @@ class summary_page implements renderable, templatable {
             'redactoptions' => $redactoptions,
             'formurl' => (new \moodle_url('/report/evidencereporter/print.php'))->out(false),
             'userid' => $this->learner->id,
-            'frameworkid' => $this->framework->id,
-            'frameworkname' => format_string($this->framework->shortname, true, ['context' => $syscontext]),
-            'frameworkidnumber' => s($this->framework->idnumber),
+            'scopeparams' => array_map(
+                fn($name, $value) => ['name' => $name, 'value' => $value],
+                array_keys($this->scope->get_params()),
+                $this->scope->get_params()
+            ),
+            'scopeoptions' => array_map(fn($option) => [
+                'value' => implode(':', array_values($option['params'])),
+                'name' => $option['name'],
+                'selected' => $option['selected'],
+            ], $this->scope->get_options((int) $this->learner->id, $this->frameworks)),
+            'scoperows' => array_map(
+                fn($label, $value) => ['label' => $label, 'value' => $value],
+                array_keys($this->scope->describe()),
+                $this->scope->describe()
+            ),
+            'redactflags' => array_values(array_map(
+                fn($flag) => ['name' => $flag],
+                array_keys(array_filter($flags))
+            )),
+            'frozennote' => (bool) array_filter($this->summary->competencies, fn($comp) => !empty($comp->frozen)),
             'sitename' => format_string($SITE->fullname, true, ['context' => $syscontext]),
             'generatedon' => userdate(time(), get_string('strftimedatetime', 'core_langconfig')),
             'generatedby' => $identity->staff(fullname($USER)),
@@ -127,7 +152,7 @@ class summary_page implements renderable, templatable {
             'details' => $details,
             'hasdetails' => !empty($details),
             'packurl' => (new \moodle_url('/report/evidencereporter/pack.php', ['userid' => $this->learner->id,
-                'frameworkid' => $this->framework->id, 'includefeedback' => 1, 'sesskey' => sesskey()] + $flags))->out(false),
+                'includefeedback' => 1, 'sesskey' => sesskey()] + $this->scope->get_params() + $flags))->out(false),
         ];
     }
 }

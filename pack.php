@@ -24,10 +24,12 @@
 
 require(__DIR__ . '/../../config.php');
 
-use report_evidencereporter\local\{evidence_pack, summary};
+use report_evidencereporter\local\{evidence_pack, scope, summary};
 
 $userid = required_param('userid', PARAM_INT);
-$frameworkid = required_param('frameworkid', PARAM_INT);
+$frameworkid = optional_param('frameworkid', 0, PARAM_INT);
+$planid = optional_param('planid', 0, PARAM_INT);
+$scopetype = optional_param('scope', '', PARAM_ALPHA);
 $includefeedback = optional_param('includefeedback', 1, PARAM_BOOL);
 $redact = [
     'redactname' => optional_param('redactname', 0, PARAM_BOOL),
@@ -44,20 +46,23 @@ if (!\core_competency\api::is_enabled()) {
 $learner = core_user::get_user($userid, '*', MUST_EXIST);
 $context = context_user::instance($learner->id);
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/report/evidencereporter/pack.php', ['userid' => $userid, 'frameworkid' => $frameworkid]));
+$PAGE->set_url(new moodle_url('/report/evidencereporter/pack.php', ['userid' => $userid]));
 
-// The same access as the summary: something visible for this learner in this framework.
-if (!isset(summary::get_frameworks($learner->id)[$frameworkid])) {
+// The same access as the summary: the plan or framework must be visible to the current user.
+$frameworks = summary::get_frameworks($learner->id);
+$scope = scope::from_params($learner->id, $scopetype, $planid, $frameworkid, $frameworks)
+    ?? scope::get_default($learner->id, $frameworks);
+if (!$scope || (!$scope->is_plan() && !summary::has_visible_evidence($learner->id))) {
     throw new moodle_exception('nopermissiontoviewevidence', 'report_evidencereporter');
 }
 
-$pack = new evidence_pack($learner->id, $frameworkid, (bool) $includefeedback, $redact);
+$pack = new evidence_pack($learner->id, $scope, (bool) $includefeedback, $redact);
 $zippath = $pack->build();
 
 \report_evidencereporter\event\pack_downloaded::create([
     'context' => $context,
     'relateduserid' => $learner->id,
-    'other' => ['frameworkid' => $frameworkid, 'includefeedback' => (int) $includefeedback] + array_map('intval', $redact),
+    'other' => $scope->get_event_data() + ['includefeedback' => (int) $includefeedback] + array_map('intval', $redact),
 ])->trigger();
 
 send_temp_file($zippath, $pack->get_filename());

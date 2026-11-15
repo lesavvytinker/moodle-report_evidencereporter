@@ -17,7 +17,7 @@
 {{!
     @template report_evidencereporter/summary
 
-    Printable competency evidence summary for one learner and one framework.
+    Printable competency evidence summary for one learner: a learning plan, their active plans, or a framework.
 
     Example context (json):
     {
@@ -28,10 +28,14 @@
         "redactionnote": "",
         "formurl": "https://example.com/report/evidencereporter/print.php",
         "userid": 2,
-        "frameworkid": 1,
+        "scopeparams": [{"name": "scope", "value": "plan"}, {"name": "planid", "value": 4}],
+        "scopeoptions": [{"value": "plans", "name": "Active learning plans", "selected": false},
+            {"value": "plan:4", "name": "Learning plan: Diploma core (Active)", "selected": true},
+            {"value": "framework:1", "name": "Framework: CHCEDS055", "selected": false}],
+        "scoperows": [{"label": "Learning plan", "value": "Diploma core (Active, from template: Diploma)"}],
+        "redactflags": [],
+        "frozennote": false,
         "redactoptions": [{"name": "redactname", "label": "Learner name", "checked": false}],
-        "frameworkname": "CHCEDS055 Coordinate e-learning programs",
-        "frameworkidnumber": "0101",
         "sitename": "Equip English",
         "generatedon": "Wednesday, 11 November 2026, 11:30 AM",
         "generatedby": "Daniel Maloney",
@@ -40,10 +44,10 @@
         "withevidence": 1,
         "proficientcount": 1,
         "rows": [
-            {"idnumber": "0101.1", "name": "1. Establish online learning environment", "indent": false,
+            {"group": "", "idnumber": "0101.1", "name": "1. Establish online learning environment", "indent": false,
              "currentrating": "", "proficient": false, "judgementdate": "", "judgementby": "", "judgementrating": "",
              "evidencecount": 0, "noevidence": true, "attemptcount": 0},
-            {"idnumber": "0101.1.1", "name": "1.1 Confirm scope", "indent": true, "currentrating": "Competent",
+            {"group": "", "idnumber": "0101.1.1", "name": "1.1 Confirm scope", "indent": true, "currentrating": "Competent",
              "proficient": true, "judgementdate": "10 November 2026", "judgementby": "Priya Raman", "judgementrating": "Competent",
              "evidencecount": 2, "noevidence": false, "attemptcount": 2}
         ],
@@ -78,9 +82,18 @@
             <label class="form-check-label" for="report_evidencereporter-includefeedback">{{#str}} includefeedback, report_evidencereporter {{/str}}</label>
         </div>
     </div>
+    <form method="get" action="{{formurl}}" class="er-noprint mb-3 d-flex flex-wrap align-items-center" data-region="report_evidencereporter-scope">
+        <input type="hidden" name="userid" value="{{userid}}">
+        {{#redactflags}}<input type="hidden" name="{{name}}" value="1">{{/redactflags}}
+        <label class="me-3 fw-bold" for="report_evidencereporter-scopechoice">{{#str}} scopechoice, report_evidencereporter {{/str}}</label>
+        <select class="form-select w-auto me-2" id="report_evidencereporter-scopechoice" name="scopechoice">
+            {{#scopeoptions}}<option value="{{value}}"{{#selected}} selected{{/selected}}>{{name}}</option>{{/scopeoptions}}
+        </select>
+        <button type="submit" class="btn btn-outline-secondary btn-sm">{{#str}} scopeshow, report_evidencereporter {{/str}}</button>
+    </form>
     <form method="get" action="{{formurl}}" class="er-noprint er-redactform mb-3 d-flex flex-wrap align-items-center" data-region="report_evidencereporter-redact">
         <input type="hidden" name="userid" value="{{userid}}">
-        <input type="hidden" name="frameworkid" value="{{frameworkid}}">
+        {{#scopeparams}}<input type="hidden" name="{{name}}" value="{{value}}">{{/scopeparams}}
         <span class="me-3 fw-bold">{{#str}} redactoptions, report_evidencereporter {{/str}}</span>
         {{#redactoptions}}
         <div class="form-check me-3">
@@ -98,12 +111,13 @@
             <tr><th scope="row">{{#str}} username {{/str}}</th><td>{{learnerusername}}</td></tr>
             {{#learneridnumber}}<tr><th scope="row">{{#str}} idnumber {{/str}}</th><td>{{.}}</td></tr>{{/learneridnumber}}
             <tr><th scope="row">{{#str}} learnerreference, report_evidencereporter {{/str}}</th><td>{{learnerreference}}</td></tr>
-            <tr><th scope="row">{{#str}} framework, report_evidencereporter {{/str}}</th><td>{{frameworkname}}{{#frameworkidnumber}} ({{.}}){{/frameworkidnumber}}</td></tr>
+            {{#scoperows}}<tr><th scope="row">{{label}}</th><td>{{value}}</td></tr>{{/scoperows}}
             <tr><th scope="row">{{#str}} generated, report_evidencereporter {{/str}}</th><td>{{generatedon}} &middot; {{generatedby}} &middot; {{sitename}}</td></tr>
             <tr><th scope="row">{{#str}} overview, report_evidencereporter {{/str}}</th><td>{{#str}} overviewcounts, report_evidencereporter, { "total": {{totalcompetencies}}, "evidence": {{withevidence}}, "proficient": {{proficientcount}} } {{/str}}</td></tr>
         </tbody>
     </table>
     {{#redactionnote}}<p class="er-redactionnote fst-italic">{{.}}</p>{{/redactionnote}}
+    {{#frozennote}}<p class="er-frozennote fst-italic">{{#str}} frozenratings, report_evidencereporter {{/str}}</p>{{/frozennote}}
     <p class="er-feedbackexcluded fst-italic">{{#str}} feedbackexcluded, report_evidencereporter {{/str}}</p>
     {{#restricted}}
         <div class="alert alert-info">{{#str}} restrictednotice, report_evidencereporter {{/str}}</div>
@@ -122,6 +136,7 @@
         </thead>
         <tbody>
             {{#rows}}
+            {{#group}}<tr class="er-group"><th colspan="5" scope="rowgroup">{{.}}</th></tr>{{/group}}
             <tr class="{{^indent}}er-parent{{/indent}}">
                 <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}</td>
                 <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{#str}} proficient, report_evidencereporter {{/str}}</span>{{/proficient}}</td>

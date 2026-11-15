@@ -65,9 +65,10 @@ class summary {
      *
      * @param int $userid
      * @param int|null $frameworkid Limit to one framework
+     * @param int[]|null $competencyids Limit to these competencies
      * @return stdClass[] id (module-competency link), competencyid, cmid, course, frameworkid
      */
-    public static function get_linked_activities(int $userid, ?int $frameworkid = null): array {
+    public static function get_linked_activities(int $userid, ?int $frameworkid = null, ?array $competencyids = null): array {
         global $DB;
         $sql = "SELECT mc.id, mc.competencyid, mc.cmid, cm.course, c.competencyframeworkid AS frameworkid
                   FROM {competency_modulecomp} mc
@@ -87,6 +88,14 @@ class summary {
         if ($frameworkid) {
             $sql .= ' AND c.competencyframeworkid = :frameworkid';
             $params['frameworkid'] = $frameworkid;
+        }
+        if ($competencyids !== null) {
+            if (!$competencyids) {
+                return [];
+            }
+            [$insql, $inparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'lc');
+            $sql .= " AND c.id {$insql}";
+            $params += $inparams;
         }
         if ($access = access::get_sql((string) $userid, 'cm.course')) {
             $sql .= ' AND ' . $access[0];
@@ -135,15 +144,25 @@ class summary {
     }
 
     /**
-     * Build the summary for a learner and framework.
+     * Build the summary for a learner: a framework, a learning plan, or their active plans.
      *
      * @param int $userid
-     * @param int $frameworkid
+     * @param scope|int $scope What to cover (a framework ID is short for that framework)
      * @param identity|null $identity Redaction for names and generated text
-     * @return stdClass competencies (framework order, each with ->evidence rows), restricted (bool)
+     * @return stdClass competencies (in order, each with ->evidence rows), restricted (bool), scope
      */
-    public static function build(int $userid, int $frameworkid, ?identity $identity = null): stdClass {
+    public static function build(int $userid, scope|int $scope, ?identity $identity = null): stdClass {
         global $DB, $USER;
+        if (is_int($scope)) {
+            $scope = scope::for_framework($userid, $scope);
+        }
+        $ordered = $scope->get_competencies();
+        $competencyids = array_map(fn($comp) => (int) $comp->id, $ordered);
+        if (!$competencyids) {
+            return (object) ['competencies' => [], 'scope' => $scope,
+                'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
+        }
+        [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'sc');
 
         [$from, $where, $params] = self::get_base_sql($userid);
         $courselevel = CONTEXT_COURSE;
@@ -175,9 +194,9 @@ class summary {
              LEFT JOIN {assign_user_flags} auf ON auf.assignment = asg.id AND auf.userid = uc.userid
              LEFT JOIN {user} au ON au.id = ev.actionuserid
              LEFT JOIN {user} gu ON gu.id = gg.usermodified AND gg.usermodified <> uc.userid AND gg.finalgrade IS NOT NULL
-                 WHERE {$where} AND c.competencyframeworkid = :frameworkid
+                 WHERE {$where} AND c.id {$compinsql}
               ORDER BY ev.timecreated, ev.id";
-        $params['frameworkid'] = $frameworkid;
+        $params += $compparams;
         $rows = $DB->get_records_sql($sql, $params);
 
         $viewfullnames = has_capability('moodle/site:viewfullnames', \context_system::instance());
@@ -189,11 +208,14 @@ class summary {
         }
 
         // Assessed attempts (failed ones included) at activities linked to each competency, in courses the viewer may see.
-        $attemptsbycomp = self::get_attempts($userid, $frameworkid, $viewfullnames, $identity);
+        $attemptsbycomp = self::get_attempts($userid, $competencyids, $viewfullnames, $identity);
 
-        // Every competency in the framework, in framework order, so gaps show up.
+        // Ratings frozen when a plan was completed take the place of current ones.
+        $frozen = $scope->get_frozen_ratings();
+
+        // Every competency covered, in order, so gaps show up.
         $competencies = [];
-        foreach (self::get_framework_order($frameworkid) as $comp) {
+        foreach ($ordered as $comp) {
             $evidence = $evidencebycomp[$comp->id] ?? [];
             $judgement = null;
             foreach ($evidence as $item) {
@@ -202,14 +224,23 @@ class summary {
                 }
             }
             $latest = $current[$comp->id] ?? null;
+            if (isset($frozen[$comp->id])) {
+                $currentrating = rating::name((int) $comp->id, $frozen[$comp->id]->grade);
+                $isproficient = $frozen[$comp->id]->proficiency === 1;
+            } else {
+                $currentrating = $latest ? rating::name((int) $comp->id, $latest->currentgrade === null ? null
+                    : (int) $latest->currentgrade) : '';
+                $isproficient = $latest && (int) $latest->proficiency === 1;
+            }
             $competencies[] = (object) [
                 'id' => $comp->id,
                 'idnumber' => $comp->idnumber,
                 'name' => format_string($comp->shortname, true, ['context' => \context_system::instance()]),
                 'depth' => $comp->depth,
-                'currentrating' => $latest ? rating::name((int) $comp->id, $latest->currentgrade === null ? null
-                    : (int) $latest->currentgrade) : '',
-                'proficient' => $latest && (int) $latest->proficiency === 1,
+                'group' => $comp->group ?? '',
+                'frozen' => isset($frozen[$comp->id]),
+                'currentrating' => $currentrating,
+                'proficient' => $isproficient,
                 'judgementdate' => $judgement ? $judgement->timecreated : null,
                 'judgementby' => $judgement ? $judgement->assessor : '',
                 'judgementrating' => $judgement ? $judgement->ratinggiven : '',
@@ -220,22 +251,23 @@ class summary {
 
         return (object) [
             'competencies' => $competencies,
+            'scope' => $scope,
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
         ];
     }
 
     /**
-     * Attempts at activities linked to the framework's competencies, grouped by competency ID.
+     * Attempts at activities linked to the competencies, grouped by competency ID.
      *
      * @param int $userid
-     * @param int $frameworkid
+     * @param int[] $competencyids
      * @param bool $viewfullnames
      * @param identity|null $identity
      * @return array competencyid => stdClass[] (activity, attemptno, submitted, graded, grade, marker, feedback, url)
      */
-    private static function get_attempts(int $userid, int $frameworkid, bool $viewfullnames, ?identity $identity): array {
-        $links = self::get_linked_activities($userid, $frameworkid);
+    private static function get_attempts(int $userid, array $competencyids, bool $viewfullnames, ?identity $identity): array {
+        $links = self::get_linked_activities($userid, null, $competencyids);
         if (!$links) {
             return [];
         }
@@ -271,36 +303,6 @@ class summary {
             }
         }
         return $result;
-    }
-
-    /**
-     * Competencies of a framework in tree order (parents before children, by sort order).
-     *
-     * @param int $frameworkid
-     * @return stdClass[] with depth (0 = top level)
-     */
-    private static function get_framework_order(int $frameworkid): array {
-        global $DB;
-        $all = $DB->get_records(
-            'competency',
-            ['competencyframeworkid' => $frameworkid],
-            'sortorder, id',
-            'id, parentid, shortname, idnumber, sortorder'
-        );
-        $children = [];
-        foreach ($all as $comp) {
-            $children[(int) $comp->parentid][] = $comp;
-        }
-        $ordered = [];
-        $walk = function (int $parentid, int $depth) use (&$walk, &$ordered, $children): void {
-            foreach ($children[$parentid] ?? [] as $comp) {
-                $comp->depth = $depth;
-                $ordered[] = $comp;
-                $walk((int) $comp->id, $depth + 1);
-            }
-        };
-        $walk(0, 0);
-        return $ordered;
     }
 
     /**

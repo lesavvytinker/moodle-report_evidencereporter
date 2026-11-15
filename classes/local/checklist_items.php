@@ -300,9 +300,10 @@ class checklist_items {
      *
      * @param int $userid
      * @param int|null $frameworkid
+     * @param int[]|null $competencyids Limit to these competencies
      * @return stdClass[] id, competencyid, cmid, course
      */
-    public static function get_linked(int $userid, ?int $frameworkid = null): array {
+    public static function get_linked(int $userid, ?int $frameworkid = null, ?array $competencyids = null): array {
         global $DB;
         if (!self::is_installed()) {
             return [];
@@ -323,6 +324,14 @@ class checklist_items {
         if ($frameworkid) {
             $sql .= ' AND c.competencyframeworkid = :frameworkid';
             $params['frameworkid'] = $frameworkid;
+        }
+        if ($competencyids !== null) {
+            if (!$competencyids) {
+                return [];
+            }
+            [$insql, $inparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'cc');
+            $sql .= " AND c.id {$insql}";
+            $params += $inparams;
         }
         if ($access = access::get_sql((string) $userid, 'cm.course')) {
             $sql .= ' AND ' . $access[0];

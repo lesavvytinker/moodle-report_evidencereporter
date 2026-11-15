@@ -95,8 +95,8 @@ class bulk {
     /**
      * Build the bulk download as the current user and store it in their file area.
      *
-     * @param array $options sourcetype, sourceid, frameworkid, mode, includefeedback, redactname, redactusername,
-     *     redactstaff
+     * @param array $options sourcetype, sourceid, frameworkid (0: each learner's learning plans), mode, includefeedback,
+     *     redactname, redactusername, redactstaff
      * @return \stored_file
      */
     public static function build(array $options): \stored_file {
@@ -116,7 +116,10 @@ class bulk {
         ];
 
         $learners = array_slice(self::get_learners($sourcetype, $sourceid), 0, self::MAX_LEARNERS, true);
-        $framework = \core_competency\competency_framework::get_record(['id' => $frameworkid], MUST_EXIST);
+        $framework = $frameworkid ? \core_competency\competency_framework::get_record(['id' => $frameworkid], MUST_EXIST)
+            : null;
+        $coveringname = $framework ? format_string($framework->get('shortname'))
+            : get_string('bulkplans', 'report_evidencereporter');
         $sourcename = self::get_source_name($sourcetype, $sourceid);
 
         $dir = make_request_directory();
@@ -129,12 +132,20 @@ class bulk {
         foreach ($learners as $learner) {
             $identity = identity::from_flags($learner, $redact);
             $row = [$identity->name(), $identity->username(), $identity->idnumber(), $identity->reference()];
-            if (!isset(summary::get_frameworks((int) $learner->id)[$frameworkid])) {
-                $index[] = array_merge($row, [get_string('bulkskipped', 'report_evidencereporter'), '']);
+            $frameworks = summary::get_frameworks((int) $learner->id);
+            if ($framework) {
+                $scope = isset($frameworks[$frameworkid]) ? scope::for_framework((int) $learner->id, $frameworkid) : null;
+            } else {
+                // The same default as the summary page: their active plans, otherwise their latest plan.
+                $scope = scope::get_default((int) $learner->id, []);
+            }
+            if (!$scope) {
+                $index[] = array_merge($row, [get_string($framework ? 'bulkskipped' : 'bulknoplan', 'report_evidencereporter'),
+                    '']);
                 continue;
             }
             $base = clean_filename($identity->file_label());
-            $pack = new evidence_pack((int) $learner->id, $frameworkid, $includefeedback, $redact);
+            $pack = new evidence_pack((int) $learner->id, $scope, $includefeedback, $redact);
             try {
                 if ($mode === self::MODE_PACKS) {
                     $filename = $base . '.zip';
@@ -165,7 +176,7 @@ class bulk {
             get_string($mode === self::MODE_PACKS ? 'bulkpacks' : 'bulksummaries', 'report_evidencereporter'),
             str_repeat('=', 40),
             get_string('bulksource', 'report_evidencereporter') . ': ' . $sourcename,
-            get_string('framework', 'report_evidencereporter') . ': ' . format_string($framework->get('shortname')),
+            get_string('scopechoice', 'report_evidencereporter') . ': ' . $coveringname,
             get_string('generated', 'report_evidencereporter') . ': ' . userdate(time()) . ' · '
                 . $redactidentity->staff(fullname($USER)),
             get_string('includefeedback', 'report_evidencereporter') . ': ' . get_string($includefeedback ? 'yes' : 'no'),
@@ -184,7 +195,8 @@ class bulk {
         $filename = clean_filename(implode(' - ', [
             get_string($mode === self::MODE_PACKS ? 'bulkpacks' : 'bulksummaries', 'report_evidencereporter'),
             $sourcename,
-            $framework->get('idnumber') ?: $framework->get('shortname'),
+            $framework ? ($framework->get('idnumber') ?: $framework->get('shortname'))
+                : get_string('bulkplans', 'report_evidencereporter'),
             userdate(time(), '%Y-%m-%d %H%M'),
         ])) . '.zip';
         // Each download gets its own item ID, so two downloads with the same name never clash.

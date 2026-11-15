@@ -376,7 +376,8 @@ class evidence extends base {
             ->set_disabled_aggregation(['avg', 'max', 'min', 'percent', 'sum'])
             ->add_callback($ratingcallback);
 
-        // Link to the learner's printable evidence summary for this competency's framework.
+        // Link to the learner's printable evidence summary: their learning plans by default (or the framework, if they
+        // have no plans); the page lets the viewer choose another plan or framework.
         $c = $this->get_table_alias('competency');
         $columns[] = (new column(
             'printsummary',
@@ -394,9 +395,10 @@ class evidence extends base {
                 if (empty($row->learnerid) || empty($row->frameworkid)) {
                     return '';
                 }
+                // The framework is the fallback for learners without a learning plan.
                 $url = new \moodle_url(
                     '/report/evidencereporter/print.php',
-                    ['userid' => $row->learnerid, 'frameworkid' => $row->frameworkid]
+                    ['userid' => $row->learnerid, 'fallbackframeworkid' => $row->frameworkid]
                 );
                 return evidence_link::new_tab($url, get_string('printsummarylink', 'report_evidencereporter'));
             });

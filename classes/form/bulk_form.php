@@ -66,10 +66,11 @@ class bulk_form extends \moodleform {
         $mform->addElement(
             'select',
             'frameworkid',
-            get_string('framework', 'report_evidencereporter'),
-            ['' => get_string('choosedots')] + $frameworks
+            get_string('bulkcovering', 'report_evidencereporter'),
+            [0 => get_string('bulkplans', 'report_evidencereporter')] + $frameworks
         );
-        $mform->addRule('frameworkid', null, 'required', null, 'client');
+        $mform->setDefault('frameworkid', 0);
+        $mform->addHelpButton('frameworkid', 'bulkcovering', 'report_evidencereporter');
 
         $mform->addElement(
             'radio',

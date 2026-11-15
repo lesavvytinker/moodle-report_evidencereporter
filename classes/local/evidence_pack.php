@@ -48,8 +48,8 @@ class evidence_pack {
     /** @var stdClass The learner. */
     private stdClass $learner;
 
-    /** @var stdClass The framework. */
-    private stdClass $framework;
+    /** @var scope What the pack covers: a framework, a learning plan, or the learner's active plans. */
+    private scope $scope;
 
     /** @var bool Whether the viewer may see full names. */
     private bool $viewfullnames;
@@ -64,22 +64,20 @@ class evidence_pack {
      * Constructor.
      *
      * @param int $userid Learner
-     * @param int $frameworkid Competency framework
+     * @param scope|int $scope What to cover (a framework ID is short for that framework)
      * @param bool $includefeedback Include assessor feedback, feedback files and quiz feedback
      * @param array $redact Redaction flags: redactname, redactusername, redactstaff
      */
     public function __construct(
         /** @var int Learner ID. */
         protected int $userid,
-        /** @var int Framework ID. */
-        protected int $frameworkid,
+        scope|int $scope,
         /** @var bool Include feedback. */
         protected bool $includefeedback = true,
         array $redact = []
     ) {
-        global $DB;
         $this->learner = \core_user::get_user($userid, '*', MUST_EXIST);
-        $this->framework = $DB->get_record('competency_framework', ['id' => $frameworkid], '*', MUST_EXIST);
+        $this->scope = is_int($scope) ? scope::for_framework($userid, $scope) : $scope;
         $this->viewfullnames = has_capability('moodle/site:viewfullnames', \context_system::instance());
         $this->identity = identity::from_flags($this->learner, $redact);
     }
@@ -111,7 +109,7 @@ class evidence_pack {
         $parts = [
             get_string('evidencepack', 'report_evidencereporter'),
             $this->identity->file_label(),
-            $this->framework->idnumber ?: $this->framework->shortname,
+            $this->scope->get_file_label(),
             userdate(time(), '%Y-%m-%d'),
         ];
         return clean_filename(implode(' - ', $parts)) . '.zip';
@@ -126,7 +124,7 @@ class evidence_pack {
         \core_php_time_limit::raise(300);
         raise_memory_limit(MEMORY_EXTRA);
 
-        $summary = summary::build($this->userid, $this->frameworkid, $this->identity);
+        $summary = summary::build($this->userid, $this->scope, $this->identity);
         $this->add_content(
             '01 ' . get_string('summarytitle', 'report_evidencereporter') . '.pdf',
             $this->html_to_pdf(get_string('summarytitle', 'report_evidencereporter'), $this->summary_html($summary))
@@ -160,7 +158,7 @@ class evidence_pack {
      */
     public function build_summary_pdf(): string {
         \core_php_time_limit::raise(120);
-        $summary = summary::build($this->userid, $this->frameworkid, $this->identity);
+        $summary = summary::build($this->userid, $this->scope, $this->identity);
         return $this->html_to_pdf(get_string('summarytitle', 'report_evidencereporter'), $this->summary_html($summary));
     }
 
@@ -177,7 +175,7 @@ class evidence_pack {
      * Every assessed attempt at assignments and quizzes linked to the framework's competencies.
      */
     private function add_assessments(): void {
-        $links = summary::get_linked_activities($this->userid, $this->frameworkid);
+        $links = summary::get_linked_activities($this->userid, null, $this->scope->get_competency_ids());
         $competenciesbycm = [];
         foreach ($links as $link) {
             $competenciesbycm[$link->cmid][] = (int) $link->competencyid;
@@ -456,7 +454,7 @@ class evidence_pack {
      */
     private function add_checklists(): void {
         $competenciesbycm = [];
-        foreach (checklist_items::get_linked($this->userid, $this->frameworkid) as $link) {
+        foreach (checklist_items::get_linked($this->userid, null, $this->scope->get_competency_ids()) as $link) {
             $competenciesbycm[$link->cmid][] = (int) $link->competencyid;
         }
         foreach ($competenciesbycm as $cmid => $competencyids) {
@@ -506,14 +504,18 @@ class evidence_pack {
         if ((int) $USER->id !== $this->userid && !has_capability('moodle/competency:userevidenceview', $usercontext)) {
             return;
         }
+        if (!$competencyids = $this->scope->get_competency_ids()) {
+            return;
+        }
+        [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'pl');
         $sql = "SELECT DISTINCT ue.*
                   FROM {competency_userevidence} ue
                   JOIN {competency_userevidencecomp} uec ON uec.userevidenceid = ue.id
                   JOIN {competency} c ON c.id = uec.competencyid
-                 WHERE ue.userid = :userid AND c.competencyframeworkid = :frameworkid
+                 WHERE ue.userid = :userid AND c.id {$compinsql}
               ORDER BY ue.timecreated";
         $fs = get_file_storage();
-        foreach ($DB->get_records_sql($sql, ['userid' => $this->userid, 'frameworkid' => $this->frameworkid]) as $ue) {
+        foreach ($DB->get_records_sql($sql, ['userid' => $this->userid] + $compparams) as $ue) {
             $folder = '03 ' . get_string('packpriorlearning', 'report_evidencereporter') . '/'
                 . $this->safe_name($this->identity->text($ue->name, true));
             $compids = $DB->get_fieldset_select('competency_userevidencecomp', 'competencyid', 'userevidenceid = ?', [$ue->id]);
@@ -563,9 +565,10 @@ class evidence_pack {
         foreach ($this->identity->rows() as $label => $value) {
             $lines[] = $label . ': ' . $value;
         }
+        foreach ($this->scope->describe() as $label => $value) {
+            $lines[] = $label . ': ' . $value;
+        }
         $lines = array_merge($lines, [
-            get_string('framework', 'report_evidencereporter') . ': ' . format_string($this->framework->shortname)
-                . ($this->framework->idnumber ? " ({$this->framework->idnumber})" : ''),
             get_string('generated', 'report_evidencereporter') . ': ' . userdate(time()) . ' · '
                 . $this->identity->staff(fullname($USER)) . ' · ' . format_string($SITE->fullname),
             get_string('includefeedback', 'report_evidencereporter') . ': '
@@ -622,8 +625,7 @@ class evidence_pack {
         $html = '<h1>' . s(get_string('summarytitle', 'report_evidencereporter')) . '</h1>'
             . '<table border="1" cellpadding="4" width="100%">'
             . $this->learner_rows()
-            . $this->table_row(get_string('framework', 'report_evidencereporter'), s(format_string($this->framework->shortname))
-                . ($this->framework->idnumber ? ' (' . s($this->framework->idnumber) . ')' : ''))
+            . $this->scope_rows()
             . $this->table_row(
                 get_string('generated', 'report_evidencereporter'),
                 s(userdate(time()) . ' · ' . $this->identity->staff(fullname($USER)) . ' · ' . format_string($SITE->fullname))
@@ -647,6 +649,9 @@ class evidence_pack {
             . '<td width="10%">' . s(get_string('evidenceitems', 'report_evidencereporter')) . '</td>'
             . '<td width="10%">' . s(get_string('attemptcount', 'report_evidencereporter')) . '</td></tr>';
         foreach ($summary->competencies as $comp) {
+            if (!empty($comp->group)) {
+                $html .= '<tr><td colspan="5" style="background-color:#f8f9fa;"><strong>' . s($comp->group) . '</strong></td></tr>';
+            }
             $judgement = $comp->judgementdate ? trim(($comp->judgementrating ? $comp->judgementrating . ' · ' : '')
                 . userdate($comp->judgementdate, get_string('strftimedate', 'core_langconfig'))
                 . ($comp->judgementby ? ' · ' . $comp->judgementby : '')) : '';
@@ -728,6 +733,19 @@ class evidence_pack {
             $names[] = trim($c->idnumber . ' ' . format_string($c->shortname));
         }
         return $names;
+    }
+
+    /**
+     * Rows describing what the pack covers: the framework, or the learning plans with their status.
+     *
+     * @return string HTML
+     */
+    private function scope_rows(): string {
+        $html = '';
+        foreach ($this->scope->describe() as $label => $value) {
+            $html .= $this->table_row($label, s($value));
+        }
+        return $html;
     }
 
     /**

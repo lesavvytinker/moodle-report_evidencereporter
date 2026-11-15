@@ -94,3 +94,20 @@ Feature: Competency evidence report source
     Then I should see "Competency evidence summary"
     And I should see "Identify hazards"
     And I should not see "This summary only includes evidence you have access to"
+
+  Scenario: The summary covers the learner's learning plan by default, and can switch to the framework
+    Given the following "core_competency > plans" exist:
+      | name         | user     | status |
+      | Hazards plan | student1 | active |
+    And the following "core_competency > plan_competencies" exist:
+      | plan         | competency |
+      | Hazards plan | C-1        |
+    And I am on the "Evidence report" "reportbuilder > View" page logged in as "admin"
+    When I click on "Print evidence summary" "link" in the "Identify hazards" "table_row"
+    Then I should see "Hazards plan (Active)" in the "Learning plan" "table_row"
+    And I should see "Identify hazards" in the ".er-summary" "css_element"
+    And I should not see "Control risks" in the ".er-summary" "css_element"
+    And I set the field "Covering" to "Competency framework: Framework"
+    And I press "Show"
+    And I should see "Control risks" in the ".er-summary" "css_element"
+    And I should see "Framework (FW1)" in the "Competency framework" "table_row"

@@ -20,7 +20,9 @@ namespace report_evidencereporter\event;
  * Event: a learner's printable evidence summary was viewed.
  *
  * @property-read array $other {
- *      - int frameworkid: the competency framework shown
+ *      - string scope: framework, plan or plans (active plans)
+ *      - int frameworkid: the competency framework (0 for plans)
+ *      - int planid: the learning plan (for a single plan)
  * }
  *
  * @package    report_evidencereporter
@@ -52,7 +54,7 @@ class summary_viewed extends \core\event\base {
      */
     public function get_description() {
         return "The user with id '{$this->userid}' viewed the competency evidence summary of the user with id " .
-            "'{$this->relateduserid}' for the competency framework with id '{$this->other['frameworkid']}'.";
+            "'{$this->relateduserid}' for " . $this->describe_scope() . ".";
     }
 
     /**
@@ -63,8 +65,27 @@ class summary_viewed extends \core\event\base {
     public function get_url() {
         return new \moodle_url(
             '/report/evidencereporter/print.php',
-            ['userid' => $this->relateduserid, 'frameworkid' => $this->other['frameworkid']]
+            ['userid' => $this->relateduserid] + array_filter([
+                'scope' => $this->other['scope'] ?? '',
+                'planid' => $this->other['planid'] ?? 0,
+                'frameworkid' => $this->other['frameworkid'],
+            ])
         );
+    }
+
+    /**
+     * What the summary covered, for the description.
+     *
+     * @return string
+     */
+    protected function describe_scope(): string {
+        if (!empty($this->other['planid'])) {
+            return "the learning plan with id '{$this->other['planid']}'";
+        }
+        if (($this->other['scope'] ?? '') === 'plans') {
+            return 'their active learning plans';
+        }
+        return "the competency framework with id '{$this->other['frameworkid']}'";
     }
 
     /**
@@ -88,6 +109,6 @@ class summary_viewed extends \core\event\base {
      * @return array
      */
     public static function get_other_mapping() {
-        return ['frameworkid' => \core\event\base::NOT_MAPPED];
+        return ['planid' => \core\event\base::NOT_MAPPED, 'frameworkid' => \core\event\base::NOT_MAPPED];
     }
 }

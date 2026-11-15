@@ -43,7 +43,7 @@ Feature: Bulk evidence downloads
     When I set the following fields to these values:
       | Learners from        | Cohort     |
       | Cohort               | WHS Jan 25 |
-      | Competency framework | WHS 101    |
+      | Covering             | WHS 101    |
     And I press "Build download"
     Then I should see "Your download is being built"
     And I should see "1 download(s) being built"

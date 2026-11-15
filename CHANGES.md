@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 (2026-11-19)
+- **Summaries and evidence packs per learning plan.** A new **Covering** choice on the summary page offers *Active learning plans* (all the learner's active plans together, e.g. core plus electives), any single plan (active or completed), or a competency framework.
+- **Learning plans are now the default.** The summary and pack cover the learner's active plans, or their most recent plan if none is active. With no plans, they fall back to the framework, as before.
+- A plan covers each of its competencies **and everything beneath them** (elements, performance criteria, evidence items), where the evidence usually sits. When several plans are covered, each gets its own heading.
+- **Completed plans** show the ratings frozen when the plan was completed, with a note saying so.
+- The summary, pack PDF and README name the plans covered, with their status, template and completion or due date. Pack file names use the plan name.
+- **Bulk downloads** can cover each learner's learning plans (now the default) instead of a framework. Learners without a plan are listed in the index as not included.
+- The report's *Print evidence summary* link opens the learner's plans, falling back to that competency's framework for learners without a plan.
+- Events record which plan, plans or framework a summary or pack covered.
+
 ## 0.9.2 (2026-11-17)
 - When Moodle logs completion evidence more than once for the same database or checklist activity (for example, Complete and then Complete (pass) once the grade arrives), only the latest row shows the entry's comments or the checklist's marks. Earlier rows say "Superseded by later evidence from this activity" instead of repeating them. Every rated database entry is still listed in the assessment attempts.
 

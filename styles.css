@@ -131,3 +131,8 @@
         break-before: page;
     }
 }
+
+.report-evidencereporter-summary .er-summary tr.er-group th {
+    background-color: #e9ecef;
+    font-size: 1.05em;
+}
