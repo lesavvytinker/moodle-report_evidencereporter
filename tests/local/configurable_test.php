@@ -23,6 +23,9 @@ namespace report_evidencereporter\local;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\sources
+ * @covers     \report_evidencereporter\local\terms
+ * @covers     \report_evidencereporter\local\branding
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(sources::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(terms::class)]

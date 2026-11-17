@@ -29,6 +29,9 @@ require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\evidence_pack
+ * @covers     \report_evidencereporter\local\summary
+ * @covers     \report_evidencereporter\event\pack_downloaded
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(evidence_pack::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
@@ -157,7 +160,10 @@ final class evidence_pack_test extends \advanced_testcase {
         );
 
         // Every file is in the manifest with the right checksum.
-        $manifest = array_map('str_getcsv', array_slice(explode("\n", trim($entries['manifest.csv'])), 1));
+        $manifest = array_map(
+            fn($line) => str_getcsv($line, ',', '"', ''),
+            array_slice(explode("\n", trim($entries['manifest.csv'])), 1)
+        );
         $this->assertCount(count($entries) - 1, $manifest);
         foreach ($manifest as [$path, $bytes, $sha]) {
             $this->assertEquals(hash('sha256', $entries[$path]), $sha, $path);

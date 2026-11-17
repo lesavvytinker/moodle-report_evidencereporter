@@ -24,6 +24,10 @@ namespace report_evidencereporter\local;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\bulk
+ * @covers     \report_evidencereporter\task\bulk_download
+ * @covers     \report_evidencereporter\task\cleanup_bulk_files
+ * @covers     \report_evidencereporter\event\bulk_created
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(bulk::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\task\bulk_download::class)]
@@ -106,7 +110,10 @@ final class bulk_test extends \advanced_testcase {
      * @return array username => status
      */
     private function index(array $entries): array {
-        $rows = array_map('str_getcsv', array_slice(preg_split('/\r\n/', trim($entries['index.csv'])), 1));
+        $rows = array_map(
+            fn($line) => str_getcsv($line, ',', '"', ''),
+            array_slice(preg_split('/\r\n/', trim($entries['index.csv'])), 1)
+        );
         return array_combine(array_column($rows, 1), array_column($rows, 4));
     }
 

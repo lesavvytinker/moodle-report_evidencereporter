@@ -22,6 +22,7 @@ namespace report_evidencereporter\local;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\identity
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(identity::class)]
 final class identity_test extends \advanced_testcase {

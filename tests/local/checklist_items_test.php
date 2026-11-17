@@ -26,6 +26,7 @@ use core_reportbuilder\tests\core_reportbuilder_testcase;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\checklist_items
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(checklist_items::class)]
 final class checklist_items_test extends core_reportbuilder_testcase {

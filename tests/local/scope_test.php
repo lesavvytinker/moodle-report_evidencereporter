@@ -25,6 +25,7 @@ use core_competency\plan;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\scope
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(scope::class)]
 final class scope_test extends \advanced_testcase {

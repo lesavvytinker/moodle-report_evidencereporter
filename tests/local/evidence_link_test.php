@@ -22,6 +22,7 @@ namespace report_evidencereporter\local;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\evidence_link
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(evidence_link::class)]
 final class evidence_link_test extends \advanced_testcase {

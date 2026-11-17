@@ -23,6 +23,7 @@ namespace report_evidencereporter\local;
  * @category   test
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\grade_adjustment
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(grade_adjustment::class)]
 final class grade_adjustment_test extends \advanced_testcase {

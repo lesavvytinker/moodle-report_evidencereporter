@@ -33,6 +33,9 @@ require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\reportbuilder\datasource\attempts
+ * @covers     \report_evidencereporter\reportbuilder\local\entities\attempt
+ * @covers     \report_evidencereporter\local\attempts
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(attempts::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\attempt::class)]

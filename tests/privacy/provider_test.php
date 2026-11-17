@@ -28,6 +28,7 @@ use report_evidencereporter\local\bulk;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\privacy\provider
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends provider_testcase {

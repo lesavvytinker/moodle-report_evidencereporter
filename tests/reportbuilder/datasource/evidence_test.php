@@ -35,6 +35,10 @@ require_once($CFG->libdir . '/gradelib.php');
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\reportbuilder\datasource\evidence
+ * @covers     \report_evidencereporter\reportbuilder\local\entities\evidence
+ * @covers     \report_evidencereporter\local\access
+ * @covers     \report_evidencereporter\local\feedback_visibility
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(evidence::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\evidence::class)]

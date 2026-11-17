@@ -26,6 +26,9 @@ use core_competency\evidence;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\summary
+ * @covers     \report_evidencereporter\output\summary_page
+ * @covers     \report_evidencereporter\event\summary_viewed
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\output\summary_page::class)]
