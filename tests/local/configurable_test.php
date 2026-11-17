@@ -16,6 +16,9 @@
 
 namespace report_evidencereporter\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(sources::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(terms::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(branding::class)]
 /**
  * Making Evidence Reporter fit different needs: evidence sources (built-in and added by other plugins), terminology
  * profiles and document branding.
@@ -27,9 +30,6 @@ namespace report_evidencereporter\local;
  * @covers     \report_evidencereporter\local\terms
  * @covers     \report_evidencereporter\local\branding
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(sources::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(terms::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(branding::class)]
 final class configurable_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {

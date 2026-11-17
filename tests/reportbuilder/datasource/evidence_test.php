@@ -29,6 +29,10 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir . '/gradelib.php');
 
+#[\PHPUnit\Framework\Attributes\CoversClass(evidence::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\evidence::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\local\access::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(feedback_visibility::class)]
 /**
  * Unit tests for the competency evidence data source.
  *
@@ -40,10 +44,6 @@ require_once($CFG->libdir . '/gradelib.php');
  * @covers     \report_evidencereporter\local\access
  * @covers     \report_evidencereporter\local\feedback_visibility
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(evidence::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\evidence::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\local\access::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(feedback_visibility::class)]
 final class evidence_test extends core_reportbuilder_testcase {
     /**
      * Static caches hold IDs, which the test database reuses between tests.

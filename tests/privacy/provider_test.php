@@ -22,6 +22,7 @@ use core_privacy\local\request\{approved_contextlist, approved_userlist, userlis
 use core_privacy\tests\provider_testcase;
 use report_evidencereporter\local\bulk;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 /**
  * Privacy provider tests.
  *
@@ -30,7 +31,6 @@ use report_evidencereporter\local\bulk;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\privacy\provider
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends provider_testcase {
     /**
      * Store a bulk download for a user.

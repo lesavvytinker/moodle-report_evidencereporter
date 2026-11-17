@@ -20,6 +20,9 @@ namespace report_evidencereporter\local;
 
 use core_competency\evidence;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\output\summary_page::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\summary_viewed::class)]
 /**
  * Tests for the printable evidence summary data.
  *
@@ -30,9 +33,6 @@ use core_competency\evidence;
  * @covers     \report_evidencereporter\output\summary_page
  * @covers     \report_evidencereporter\event\summary_viewed
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\output\summary_page::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\summary_viewed::class)]
 final class summary_test extends \advanced_testcase {
     /**
      * Static caches hold IDs, which the test database reuses between tests.

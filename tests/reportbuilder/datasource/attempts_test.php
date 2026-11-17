@@ -27,6 +27,9 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_trait.php');
 
+#[\PHPUnit\Framework\Attributes\CoversClass(attempts::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\attempt::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\local\attempts::class)]
 /**
  * Tests for the Assessment attempts data source.
  *
@@ -37,9 +40,6 @@ require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_
  * @covers     \report_evidencereporter\reportbuilder\local\entities\attempt
  * @covers     \report_evidencereporter\local\attempts
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(attempts::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\reportbuilder\local\entities\attempt::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\local\attempts::class)]
 final class attempts_test extends core_reportbuilder_testcase {
     use \report_evidencereporter_attempts_trait;
 

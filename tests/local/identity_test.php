@@ -16,6 +16,7 @@
 
 namespace report_evidencereporter\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(identity::class)]
 /**
  * Tests for the learner identity and redaction helper.
  *
@@ -24,7 +25,6 @@ namespace report_evidencereporter\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\identity
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(identity::class)]
 final class identity_test extends \advanced_testcase {
     /**
      * A learner to work with.

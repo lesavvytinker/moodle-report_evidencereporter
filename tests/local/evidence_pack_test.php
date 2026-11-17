@@ -23,6 +23,9 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_trait.php');
 
+#[\PHPUnit\Framework\Attributes\CoversClass(evidence_pack::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\pack_downloaded::class)]
 /**
  * Tests for the evidence pack.
  *
@@ -33,9 +36,6 @@ require_once($CFG->dirroot . '/report/evidencereporter/tests/generator/attempts_
  * @covers     \report_evidencereporter\local\summary
  * @covers     \report_evidencereporter\event\pack_downloaded
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(evidence_pack::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\pack_downloaded::class)]
 final class evidence_pack_test extends \advanced_testcase {
     use \report_evidencereporter_attempts_trait;
 

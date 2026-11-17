@@ -16,6 +16,7 @@
 
 namespace report_evidencereporter\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(evidence_link::class)]
 /**
  * Tests for links that open in a new tab.
  *
@@ -24,7 +25,6 @@ namespace report_evidencereporter\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\evidence_link
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(evidence_link::class)]
 final class evidence_link_test extends \advanced_testcase {
     /**
      * Our links open in a new tab and tell screen reader users so.

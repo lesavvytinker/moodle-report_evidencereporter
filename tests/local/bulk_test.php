@@ -18,6 +18,10 @@ declare(strict_types=1);
 
 namespace report_evidencereporter\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(bulk::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\task\bulk_download::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\task\cleanup_bulk_files::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\bulk_created::class)]
 /**
  * Tests for bulk downloads.
  *
@@ -29,10 +33,6 @@ namespace report_evidencereporter\local;
  * @covers     \report_evidencereporter\task\cleanup_bulk_files
  * @covers     \report_evidencereporter\event\bulk_created
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(bulk::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\task\bulk_download::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\task\cleanup_bulk_files::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\report_evidencereporter\event\bulk_created::class)]
 final class bulk_test extends \advanced_testcase {
     /**
      * Static caches hold IDs, which the test database reuses between tests.

@@ -18,6 +18,7 @@ namespace report_evidencereporter\local;
 
 use core_reportbuilder\tests\core_reportbuilder_testcase;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(checklist_items::class)]
 /**
  * Checklist activities: item marks and comments as feedback, the link to the learner's checklist, and the pack record.
  *
@@ -28,7 +29,6 @@ use core_reportbuilder\tests\core_reportbuilder_testcase;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\checklist_items
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(checklist_items::class)]
 final class checklist_items_test extends core_reportbuilder_testcase {
     #[\Override]
     protected function setUp(): void {

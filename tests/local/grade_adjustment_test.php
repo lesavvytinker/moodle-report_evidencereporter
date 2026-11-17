@@ -16,6 +16,7 @@
 
 namespace report_evidencereporter\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(grade_adjustment::class)]
 /**
  * Tests for gradebook adjustments (penalties in an assessment's own category).
  *
@@ -25,7 +26,6 @@ namespace report_evidencereporter\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\grade_adjustment
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(grade_adjustment::class)]
 final class grade_adjustment_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {

@@ -19,6 +19,7 @@ namespace report_evidencereporter\local;
 use core_competency\api;
 use core_competency\plan;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(scope::class)]
 /**
  * Summaries and packs per learning plan: core plan from a template plus an electives plan.
  *
@@ -27,7 +28,6 @@ use core_competency\plan;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\scope
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(scope::class)]
 final class scope_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {
