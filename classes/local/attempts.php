@@ -39,9 +39,6 @@ use stdClass;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class attempts {
-    /** @var array Quiz records cached by ID. */
-    private static array $quizzes = [];
-
     /** @var array Raw attempts cached by learner and activities. */
     private static array $byuser = [];
 
@@ -233,7 +230,6 @@ class attempts {
      * @return stdClass
      */
     private static function format_uncached(stdClass $row, bool $viewfullnames): stdClass {
-        global $CFG;
         $canseeunreleased = feedback_visibility::can_view_unreleased((int) $row->cmid, (string) $row->modname);
         $result = (object) [
             'attemptno' => (int) $row->attemptno,
@@ -253,82 +249,14 @@ class attempts {
             'comments' => [],
         ];
 
-        // Grade value on the grade item's scale.
-        $value = null;
-        $overallfeedback = '';
-        $showmarks = true;
-        $showfeedback = true;
-        if ($row->modname === 'assign') {
-            $value = $row->assigngrade === null ? null : (float) $row->assigngrade;
-            $result->url = new moodle_url(
-                '/mod/assign/view.php',
-                ['id' => $row->cmid, 'action' => 'grader', 'userid' => $row->userid]
-            );
-            // Earlier attempts were released when the attempt was reopened; the latest follows workflow and hiding.
-            if (!empty($row->islatest)) {
-                $released = feedback_visibility::is_released($row);
-            } else {
-                $released = feedback_visibility::is_released((object) ['gradeitemhidden' => $row->gradeitemhidden]);
-            }
-            $result->released = $released;
-            if (!$released && !$canseeunreleased) {
-                $showmarks = $showfeedback = false;
-            }
-            if (!empty($row->graderid)) {
-                $person = new stdClass();
-                foreach (\core_user\fields::get_name_fields() as $namefield) {
-                    $person->{$namefield} = $row->{'g_' . $namefield} ?? '';
-                }
-                $result->marker = fullname($person, $viewfullnames);
-            }
-            if ($row->feedbacktext !== null && trim(strip_tags($row->feedbacktext)) !== '') {
-                $context = \context_module::instance((int) $row->cmid, IGNORE_MISSING) ?: \context_system::instance();
-                $overallfeedback = format_text($row->feedbacktext, (int) $row->feedbackformat, ['context' => $context]);
-            }
-        } else if ($row->modname === 'quiz') {
-            require_once($CFG->dirroot . '/mod/quiz/locallib.php');
-            $quiz = self::get_quiz((int) $row->quizid);
-            // The attempt review with every question on one page: the learner's answers with specific, general and
-            // overall feedback and any marker comments, under the quiz's own review rules.
-            $result->url = new moodle_url('/mod/quiz/review.php', ['attempt' => $row->attemptid, 'showall' => 1]);
-            if ($quiz && $row->quizsumgrades !== null) {
-                $value = (float) quiz_rescale_grade($row->quizsumgrades, $quiz, false);
-            }
-            $released = feedback_visibility::is_released((object) ['gradeitemhidden' => $row->gradeitemhidden]);
-            if ($quiz && !$canseeunreleased) {
-                // What the quiz itself would show the learner right now.
-                $attempt = (object) ['state' => 'finished', 'timefinish' => (int) $row->timesubmitted];
-                $options = \mod_quiz\question\display_options::make_from_quiz($quiz, quiz_attempt_state($quiz, $attempt));
-                $showmarks = $released && $options->marks >= \question_display_options::MARK_AND_MAX;
-                $showfeedback = $released && ($options->feedback || $options->generalfeedback || $options->manualcomment
-                    || $options->overallfeedback);
-                $released = $showmarks;
-            }
-            $result->released = $released;
-            $result->feedbacklink = true;
-        }
-
-        if ($row->modname === 'data') {
-            // Rated database entry: its ratings make the grade, its comments are the feedback.
-            $value = $row->gradevalue === null ? null : (float) $row->gradevalue;
-            $result->url = new moodle_url(
-                '/mod/data/view.php',
-                ['id' => $row->cmid, 'rid' => $row->datarecordid, 'mode' => 'single']
-            );
-            $released = feedback_visibility::is_released((object) ['gradeitemhidden' => $row->gradeitemhidden]);
-            $result->released = $released;
-            if (!$released && !$canseeunreleased) {
-                $showmarks = false;
-            }
-            $result->ratings = data_entries::get_ratings((int) $row->datarecordid, $viewfullnames);
-            $result->marker = implode(', ', array_unique(array_column($result->ratings, 'rater')));
-            $result->comments = data_entries::get_comments((int) $row->datarecordid, (int) $row->cmid, $viewfullnames);
-            $result->isentry = true;
-            if ($result->comments) {
-                $result->feedback = data_entries::comments_html($result->comments);
-                $result->feedbackplain = data_entries::comments_plain($result->comments);
-            }
-        }
+        // The activity type's own rules: grade value, link, marker, feedback and release.
+        $source = sources::get((string) $row->modname);
+        $parts = $source ? $source->format_attempt($row, $result, $canseeunreleased, $viewfullnames)
+            : (object) ['value' => null, 'showmarks' => true, 'showfeedback' => true, 'overallfeedback' => ''];
+        $value = $parts->value;
+        $showmarks = $parts->showmarks;
+        $showfeedback = $parts->showfeedback;
+        $overallfeedback = $parts->overallfeedback;
 
         if ($value !== null) {
             if ($showmarks) {
@@ -369,24 +297,10 @@ class attempts {
     }
 
     /**
-     * Quiz record (with review options), cached.
-     *
-     * @param int $quizid
-     * @return stdClass|null
-     */
-    private static function get_quiz(int $quizid): ?stdClass {
-        global $DB;
-        if (!array_key_exists($quizid, self::$quizzes)) {
-            self::$quizzes[$quizid] = $DB->get_record('quiz', ['id' => $quizid]) ?: null;
-        }
-        return self::$quizzes[$quizid];
-    }
-
-    /**
      * Reset caches (for unit tests).
      */
     public static function reset_cache(): void {
-        self::$quizzes = [];
+        source\quiz::reset_cache();
         self::$formatted = [];
         self::$byuser = [];
     }

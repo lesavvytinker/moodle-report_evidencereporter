@@ -49,6 +49,35 @@ The download contains one file per learner, `index.csv` (every learner and wheth
 
 Needs the capability `report/evidencereporter:bulkdownload` (given to Manager by default). Moodle's background tasks (cron) must be running.
 
+## Settings
+
+*Site administration → Plugins → Reports → Evidence Reporter*
+
+| Setting | What it does |
+|---|---|
+| **Terminology profile** | The words documents use. *Australian VET* (the default), *Higher education* (Student, Learning outcome, Marker, Achieved), *UK apprenticeships* (Apprentice, KSB, Apprenticeship standard, Met), *South African occupational* (Outcome, Qualification, Portfolio of evidence) or *Generic*. To change one word, use Moodle's language customisation on the `term_` strings. |
+| **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
+| **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
+| **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
+| **Sign-off heading and statement** | Your own heading (e.g. "Assessor declaration") and a declaration printed above the signature lines. |
+
+The page also lists the evidence sources found on the site.
+
+## Evidence sources
+
+An evidence source is what Evidence Reporter knows about one activity type: where the learner's work is, what counts as feedback, and what goes in the evidence pack. Built in: **Assignment**, **Quiz**, **Database**, **Forum** (links only) and **Checklist** (when installed). Other activities still appear, linked to the activity page with their gradebook feedback.
+
+Other plugins can add a source for their own activity type, or replace a built-in one, with the `\report_evidencereporter\hook\collect_sources` hook. Extend `\report_evidencereporter\local\source\base` and override what applies: `get_url()`, `get_row_fields_sql()`, `has_own_feedback()` and `get_feedback_html()`, `shows_current_state()`, `can_view_unreleased()` and `add_records_to_pack()`. The pack's building blocks (`learner_rows()`, `table_row()`, `html_to_pdf()`, `add_content()`, `add_file()`) are public for this. In your plugin's `db/hooks.php`:
+
+```php
+$callbacks = [[
+    'hook' => \report_evidencereporter\hook\collect_sources::class,
+    'callback' => [\mod_example\local\evidence_source::class, 'register'],
+]];
+```
+
+`tests/fixtures/test_source.php` is a complete small example.
+
 ## Checklist activities
 
 If the [Checklist](https://moodle.org/plugins/mod_checklist) activity is installed and a checklist is linked to a competency:
@@ -182,7 +211,7 @@ CI runs on every push (GitHub Actions, moodle-plugin-ci): code checks, PHPUnit a
 
 ## Known limitations and next steps
 
-- **Attempt-level feedback.** The next step is an assignment adapter that reads `assign_grades` (with `attemptnumber`) and `assignfeedback_comments`, so each attempt shows its own feedback and the attempts toggle can work. Then do the same for quiz.
+- **Attempts from added sources.** Sources added by other plugins supply links, feedback and evidence pack records, but don't yet appear in the *Assessment attempts* report source, which is a single query over assignments, quizzes and database entries.
 - **Deleted users.** When a user is deleted, Moodle deletes their competency evidence, so their rows disappear from this report. Given the two-year retention requirement, suspend accounts rather than delete them.
 - **Summary view** (one row per learner × competency): this can be built now with Report Builder aggregation. A ready-made report template is planned.
 

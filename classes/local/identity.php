@@ -153,7 +153,7 @@ class identity {
      */
     public function rows(): array {
         $rows = [
-            get_string('entitylearner', 'report_evidencereporter') => $this->name(),
+            terms::get('learner') => $this->name(),
             get_string('username') => $this->username(),
         ];
         if ($this->idnumber() !== '') {

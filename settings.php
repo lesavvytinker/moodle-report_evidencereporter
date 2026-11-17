@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin menu links for Evidence Reporter.
+ * Settings and admin menu links for Evidence Reporter.
  *
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
@@ -31,4 +31,108 @@ $ADMIN->add('reports', new admin_externalpage(
     'report/evidencereporter:bulkdownload'
 ));
 
-$settings = null;
+if ($hassiteconfig && $settings) {
+    // Terminology.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/termsheading',
+        get_string('settings_terms', 'report_evidencereporter'),
+        ''
+    ));
+    $settings->add(new admin_setting_configselect(
+        'report_evidencereporter/profile',
+        get_string('settings_profile', 'report_evidencereporter'),
+        get_string('settings_profile_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\terms::AU_VET,
+        \report_evidencereporter\local\terms::get_profiles()
+    ));
+
+    // Branding.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/brandingheading',
+        get_string('settings_branding', 'report_evidencereporter'),
+        get_string('settings_branding_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/orgname',
+        get_string('settings_orgname', 'report_evidencereporter'),
+        get_string('settings_orgname_desc', 'report_evidencereporter'),
+        ''
+    ));
+    $settings->add(new admin_setting_configstoredfile(
+        'report_evidencereporter/logo',
+        get_string('settings_logo', 'report_evidencereporter'),
+        get_string('settings_logo_desc', 'report_evidencereporter'),
+        'logo',
+        0,
+        ['maxfiles' => 1, 'accepted_types' => ['.png', '.jpg', '.jpeg']]
+    ));
+    $settings->add(new admin_setting_configtextarea(
+        'report_evidencereporter/documentheader',
+        get_string('settings_documentheader', 'report_evidencereporter'),
+        get_string('settings_documentheader_desc', 'report_evidencereporter'),
+        '',
+        PARAM_TEXT,
+        60,
+        3
+    ));
+    $settings->add(new admin_setting_configtextarea(
+        'report_evidencereporter/documentfooter',
+        get_string('settings_documentfooter', 'report_evidencereporter'),
+        get_string('settings_documentfooter_desc', 'report_evidencereporter'),
+        '',
+        PARAM_TEXT,
+        60,
+        3
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/filenamepattern',
+        get_string('settings_filenamepattern', 'report_evidencereporter'),
+        get_string('settings_filenamepattern_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\branding::DEFAULT_FILENAME,
+        PARAM_TEXT,
+        60
+    ));
+
+    // Summary sections and sign-off.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/sectionsheading',
+        get_string('settings_sections', 'report_evidencereporter'),
+        ''
+    ));
+    foreach (['evidencedetail', 'attempts', 'signoff'] as $section) {
+        $settings->add(new admin_setting_configcheckbox(
+            'report_evidencereporter/show' . $section,
+            get_string('settings_show' . $section, 'report_evidencereporter'),
+            get_string('settings_show' . $section . '_desc', 'report_evidencereporter'),
+            1
+        ));
+    }
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/signoffheading',
+        get_string('settings_signoffheading', 'report_evidencereporter'),
+        get_string('settings_signoffheading_desc', 'report_evidencereporter'),
+        ''
+    ));
+    $settings->add(new admin_setting_configtextarea(
+        'report_evidencereporter/signoffstatement',
+        get_string('settings_signoffstatement', 'report_evidencereporter'),
+        get_string('settings_signoffstatement_desc', 'report_evidencereporter'),
+        '',
+        PARAM_TEXT,
+        60,
+        4
+    ));
+
+    // Evidence sources found on this site.
+    if ($ADMIN->fulltree) {
+        $items = [];
+        foreach (\report_evidencereporter\local\sources::all() as $source) {
+            $items[] = html_writer::tag('strong', s($source->get_name())) . ': ' . s($source->get_description());
+        }
+        $settings->add(new admin_setting_heading(
+            'report_evidencereporter/sourcesheading',
+            get_string('settings_sources', 'report_evidencereporter'),
+            get_string('settings_sources_desc', 'report_evidencereporter') . html_writer::alist($items)
+        ));
+    }
+}

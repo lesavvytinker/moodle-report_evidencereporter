@@ -265,7 +265,7 @@ class scope {
             $framework = \core_competency\competency_framework::get_record(['id' => $this->frameworkid]);
             $name = $framework ? format_string($framework->get('shortname'), true, ['context' => $context])
                 . ($framework->get('idnumber') ? ' (' . $framework->get('idnumber') . ')' : '') : '';
-            return [get_string('framework', 'report_evidencereporter') => $name];
+            return [terms::get('framework') => $name];
         }
         $rows = [];
         $datefmt = get_string('strftimedate', 'core_langconfig');
@@ -391,7 +391,7 @@ class scope {
         }
         foreach ($frameworks as $framework) {
             $options[] = [
-                'name' => get_string('framework', 'report_evidencereporter') . ': '
+                'name' => terms::get('framework') . ': '
                     . format_string($framework->shortname, true, ['context' => $context]),
                 'params' => ['scope' => self::FRAMEWORK, 'frameworkid' => (int) $framework->id],
             ];

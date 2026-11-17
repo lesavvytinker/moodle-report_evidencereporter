@@ -83,6 +83,42 @@ class evidence_pack {
     }
 
     /**
+     * The learner (for evidence sources adding to the pack).
+     *
+     * @return int
+     */
+    public function get_userid(): int {
+        return $this->userid;
+    }
+
+    /**
+     * Does the pack include feedback?
+     *
+     * @return bool
+     */
+    public function includes_feedback(): bool {
+        return $this->includefeedback;
+    }
+
+    /**
+     * May the current user see full names?
+     *
+     * @return bool
+     */
+    public function can_view_fullnames(): bool {
+        return $this->viewfullnames;
+    }
+
+    /**
+     * What the pack covers.
+     *
+     * @return scope
+     */
+    public function get_scope(): scope {
+        return $this->scope;
+    }
+
+    /**
      * HTML behind each generated PDF (unit tests only).
      *
      * @return string[]
@@ -106,13 +142,12 @@ class evidence_pack {
      * @return string
      */
     public function get_filename(): string {
-        $parts = [
-            get_string('evidencepack', 'report_evidencereporter'),
-            $this->identity->file_label(),
-            $this->scope->get_file_label(),
-            userdate(time(), '%Y-%m-%d'),
-        ];
-        return clean_filename(implode(' - ', $parts)) . '.zip';
+        return branding::file_name([
+            'document' => terms::get('evidencepack'),
+            'learner' => $this->identity->file_label(),
+            'covering' => $this->scope->get_file_label(),
+            'date' => userdate(time(), '%Y-%m-%d'),
+        ]) . '.zip';
     }
 
     /**
@@ -126,12 +161,16 @@ class evidence_pack {
 
         $summary = summary::build($this->userid, $this->scope, $this->identity);
         $this->add_content(
-            '01 ' . get_string('summarytitle', 'report_evidencereporter') . '.pdf',
-            $this->html_to_pdf(get_string('summarytitle', 'report_evidencereporter'), $this->summary_html($summary))
+            '01 ' . terms::get('summarytitle') . '.pdf',
+            $this->html_to_pdf(terms::get('summarytitle'), $this->summary_html($summary))
         );
 
         $this->add_assessments();
-        $this->add_checklists();
+        // Records that aren't attempts, from any source (e.g. checklists).
+        $competencyids = $this->scope->get_competency_ids();
+        foreach (sources::all() as $source) {
+            $source->add_records_to_pack($this, $competencyids);
+        }
         $this->add_prior_learning();
         $this->add_readme();
 
@@ -159,7 +198,7 @@ class evidence_pack {
     public function build_summary_pdf(): string {
         \core_php_time_limit::raise(120);
         $summary = summary::build($this->userid, $this->scope, $this->identity);
-        return $this->html_to_pdf(get_string('summarytitle', 'report_evidencereporter'), $this->summary_html($summary));
+        return $this->html_to_pdf(terms::get('summarytitle'), $this->summary_html($summary));
     }
 
     /**
@@ -200,13 +239,14 @@ class evidence_pack {
                     'report_evidencereporter',
                     $attempt->attemptno
                 );
-                if ($row->modname === 'data') {
-                    $this->add_data_entry($attemptfolder, $cm, $row, $attempt, $compnames);
-                } else if ($row->modname === 'assign') {
-                    $this->add_assign_attempt($attemptfolder, $cm, $row, $attempt, $compnames);
-                } else if ($row->modname === 'quiz') {
-                    $this->add_quiz_attempt($attemptfolder, $cm, $row, $attempt, $compnames);
-                }
+                sources::get((string) $row->modname)?->add_attempt_to_pack(
+                    $this,
+                    $attemptfolder,
+                    $cm,
+                    $row,
+                    $attempt,
+                    $compnames
+                );
             }
         }
     }
@@ -228,271 +268,6 @@ class evidence_pack {
         $copy->feedback = $attempt->isentry ? data_entries::comments_html($attempt->comments, $this->identity)
             : $this->identity->text($attempt->feedback);
         return $copy;
-    }
-
-    /**
-     * Assignment attempt: record PDF, submitted files, online text, feedback files and annotated PDF.
-     *
-     * @param string $folder
-     * @param \cm_info $cm
-     * @param stdClass $row Raw attempt row
-     * @param stdClass $attempt Formatted attempt
-     * @param string[] $compnames
-     */
-    private function add_assign_attempt(string $folder, \cm_info $cm, stdClass $row, stdClass $attempt, array $compnames): void {
-        global $DB;
-        $context = \context_module::instance($cm->id);
-        $fs = get_file_storage();
-        $showfeedback = $this->includefeedback && ($attempt->released || $attempt->canseeunreleased);
-
-        $record = $this->attempt_header_html($cm, $attempt, $compnames);
-        if ($this->includefeedback) {
-            $record .= '<h3>' . s(get_string('feedback', 'report_evidencereporter')) . '</h3>'
-                . ($attempt->feedback !== '' ? $attempt->feedback : '<p>-</p>');
-        } else {
-            $record .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
-        }
-
-        $submission = $DB->get_record('assign_submission', ['assignment' => $cm->instance, 'userid' => $this->userid,
-            'attemptnumber' => $attempt->attemptno - 1, 'groupid' => 0]);
-        if ($submission) {
-            $record .= '<h3>' . s(get_string('packsubmission', 'report_evidencereporter')) . '</h3><p>'
-                . s(get_string('submissionstatus_' . $submission->status, 'mod_assign')) . '</p>';
-            $onlinetext = $DB->get_record('assignsubmission_onlinetext', ['submission' => $submission->id]);
-            if ($onlinetext && trim(strip_tags((string) $onlinetext->onlinetext)) !== '') {
-                $text = format_text(
-                    $onlinetext->onlinetext,
-                    (int) $onlinetext->onlineformat,
-                    ['context' => $context, 'noclean' => false]
-                );
-                $text = $this->identity->text($text);
-                $this->add_content(
-                    $folder . '/' . get_string('packonlinetext', 'report_evidencereporter') . '.html',
-                    $this->html_document(get_string('packonlinetext', 'report_evidencereporter'), $text)
-                );
-            }
-            foreach (
-                $fs->get_area_files(
-                    $context->id,
-                    'assignsubmission_file',
-                    'submission_files',
-                    $submission->id,
-                    'filepath, filename',
-                    false
-                ) as $file
-            ) {
-                $this->add_file($folder . '/' . get_string('packsubmittedfiles', 'report_evidencereporter'), $file);
-            }
-        }
-
-        if ($showfeedback) {
-            foreach (
-                [['assignfeedback_file', 'feedback_files'], ['assignfeedback_editpdf', 'download']] as [$component,
-                    $area]
-            ) {
-                foreach (
-                    $fs->get_area_files(
-                        $context->id,
-                        $component,
-                        $area,
-                        (int) $row->attemptid,
-                        'filepath, filename',
-                        false
-                    ) as $file
-                ) {
-                    $this->add_file($folder . '/' . get_string('packfeedbackfiles', 'report_evidencereporter'), $file);
-                }
-            }
-        }
-
-        $this->add_content(
-            $folder . '/' . get_string('packattemptrecord', 'report_evidencereporter') . '.pdf',
-            $this->html_to_pdf($cm->get_formatted_name(), $record)
-        );
-    }
-
-    /**
-     * Quiz attempt: record PDF with every question, the learner's answer, the right answer, the mark and all feedback.
-     *
-     * @param string $folder
-     * @param \cm_info $cm
-     * @param stdClass $row Raw attempt row
-     * @param stdClass $attempt Formatted attempt
-     * @param string[] $compnames
-     */
-    private function add_quiz_attempt(string $folder, \cm_info $cm, stdClass $row, stdClass $attempt, array $compnames): void {
-        global $CFG, $PAGE;
-        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
-
-        $showmarks = $attempt->released || $attempt->canseeunreleased;
-        $showfeedback = $this->includefeedback && strpos($attempt->feedback, 'er-feedbacklink') !== false;
-        $record = $this->attempt_header_html($cm, $attempt, $compnames);
-        if (!$this->includefeedback) {
-            $record .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
-        }
-
-        $attemptobj = \mod_quiz\quiz_attempt::create((int) $row->attemptid);
-        $options = new \question_display_options();
-        $options->feedback = $options->generalfeedback = $options->rightanswer = $options->manualcomment
-            = $showfeedback ? \question_display_options::VISIBLE : \question_display_options::HIDDEN;
-        $options->marks = $showmarks ? \question_display_options::MARK_AND_MAX : \question_display_options::HIDDEN;
-        $options->context = \context_module::instance($cm->id);
-
-        foreach ($attemptobj->get_slots() as $slot) {
-            $qa = $attemptobj->get_question_attempt($slot);
-            $question = $qa->get_question();
-            $record .= '<h3>' . s(get_string('questionx', 'question', $attemptobj->get_question_number($slot))) . '</h3>';
-            $record .= '<div>' . $question->format_questiontext($qa) . '</div>';
-            $record .= '<table border="1" cellpadding="4" width="100%">';
-            $record .= $this->table_row(
-                get_string('packresponse', 'report_evidencereporter'),
-                s($this->identity->text($qa->get_response_summary() ?? '-'))
-            );
-            if ($showmarks) {
-                $record .= $this->table_row(get_string('status'), s($qa->get_state_string(true)));
-                $record .= $this->table_row(
-                    get_string('packmark', 'report_evidencereporter'),
-                    s($qa->format_mark(2) . ' / ' . $qa->format_max_mark(2))
-                );
-            }
-            if ($showfeedback) {
-                $record .= $this->table_row(get_string('rightanswer', 'question'), s($qa->get_right_answer_summary() ?? ''));
-            }
-            $record .= '</table>';
-            if ($showfeedback) {
-                $feedback = $question->get_renderer($PAGE)->feedback($qa, $options);
-                if (trim(strip_tags($feedback)) !== '') {
-                    $record .= '<p><strong>' . s(get_string('feedback', 'report_evidencereporter')) . '</strong></p>'
-                        . $this->identity->text($feedback);
-                }
-                [$comment, $commentformat] = $qa->get_manual_comment();
-                if ($comment !== null && trim(strip_tags($comment)) !== '') {
-                    $record .= '<p><strong>' . s(get_string('packcomment', 'report_evidencereporter')) . '</strong></p>'
-                        . $this->identity->text(format_text($comment, $commentformat, ['context' => $options->context]));
-                }
-            }
-        }
-        if ($showfeedback) {
-            $overall = quiz_feedback_for_grade(
-                (float) quiz_rescale_grade($row->quizsumgrades, $attemptobj->get_quiz(), false),
-                $attemptobj->get_quiz(),
-                $options->context
-            );
-            if (trim(strip_tags($overall)) !== '') {
-                $record .= '<h3>' . s(get_string('overallfeedback', 'quiz')) . '</h3>' . $overall;
-            }
-        }
-
-        $this->add_content(
-            $folder . '/' . get_string('packattemptrecord', 'report_evidencereporter') . '.pdf',
-            $this->html_to_pdf($cm->get_formatted_name(), $record)
-        );
-    }
-
-    /**
-     * Rated database entry: record PDF with the entry's content, every rating and every comment, plus attached files.
-     *
-     * @param string $folder
-     * @param \cm_info $cm
-     * @param stdClass $row Raw attempt row
-     * @param stdClass $attempt Formatted attempt
-     * @param string[] $compnames
-     */
-    private function add_data_entry(string $folder, \cm_info $cm, stdClass $row, stdClass $attempt, array $compnames): void {
-        global $DB;
-        $context = \context_module::instance($cm->id);
-        $showmarks = $attempt->released || $attempt->canseeunreleased;
-        $record = $this->attempt_header_html($cm, $attempt, $compnames);
-
-        // The entry's content, field by field.
-        $contents = $DB->get_records_sql("SELECT c.id, c.content, f.name, f.type
-                                            FROM {data_content} c
-                                            JOIN {data_fields} f ON f.id = c.fieldid
-                                           WHERE c.recordid = :recordid
-                                        ORDER BY f.id", ['recordid' => $row->datarecordid]);
-        $record .= '<h3>' . s(get_string('packentrycontent', 'report_evidencereporter')) . '</h3>'
-            . '<table border="1" cellpadding="4" width="100%">';
-        foreach ($contents as $content) {
-            $record .= $this->table_row(format_string($content->name), s($this->identity->text(trim(html_to_text(
-                (string) $content->content,
-                0,
-                false
-            )))));
-        }
-        $record .= '</table>';
-
-        if ($showmarks && $attempt->ratings) {
-            $record .= '<h3>' . s(get_string('packratings', 'report_evidencereporter')) . '</h3>'
-                . '<table border="1" cellpadding="4" width="100%">';
-            foreach ($attempt->ratings as $rating) {
-                $record .= $this->table_row($rating->rater, s(data_entries::rating_text($rating->scaleid, $rating->rating)
-                    . ' · ' . userdate($rating->time)));
-            }
-            $record .= '</table>';
-        }
-        if ($this->includefeedback) {
-            $record .= '<h3>' . s(get_string('comments')) . '</h3>'
-                . ($attempt->comments ? data_entries::comments_html($attempt->comments, $this->identity) : '<p>-</p>');
-        } else {
-            $record .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
-        }
-
-        $fs = get_file_storage();
-        foreach (array_keys($contents) as $contentid) {
-            foreach ($fs->get_area_files($context->id, 'mod_data', 'content', $contentid, 'filepath, filename', false) as $file) {
-                $this->add_file($folder . '/' . get_string('packsubmittedfiles', 'report_evidencereporter'), $file);
-            }
-        }
-        $this->add_content(
-            $folder . '/' . get_string('packattemptrecord', 'report_evidencereporter') . '.pdf',
-            $this->html_to_pdf($cm->get_formatted_name(), $record)
-        );
-    }
-
-    /**
-     * Checklist activities linked to the framework's competencies: a record of every item, its mark and comments.
-     */
-    private function add_checklists(): void {
-        $competenciesbycm = [];
-        foreach (checklist_items::get_linked($this->userid, null, $this->scope->get_competency_ids()) as $link) {
-            $competenciesbycm[$link->cmid][] = (int) $link->competencyid;
-        }
-        foreach ($competenciesbycm as $cmid => $competencyids) {
-            try {
-                [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-            } catch (\Throwable $e) {
-                continue;
-            }
-            $checklist = checklist_items::get_for_user((int) $cmid, $this->userid, $this->viewfullnames);
-            if (!$checklist) {
-                continue;
-            }
-            $folder = '02 ' . get_string('packassessments', 'report_evidencereporter') . '/'
-                . $this->safe_name(format_string($course->shortname) . ' - ' . $cm->get_formatted_name());
-            $url = checklist_items::url((int) $cmid, $this->userid);
-            $html = '<h2>' . s($cm->get_formatted_name()) . '</h2>'
-                . '<table border="1" cellpadding="4" width="100%">'
-                . $this->learner_rows()
-                . $this->table_row(
-                    get_string('competency', 'report_evidencereporter'),
-                    s(implode('; ', $this->competency_names($competencyids)))
-                )
-                . $this->table_row(
-                    get_string('activitytype', 'report_evidencereporter'),
-                    s(get_string('modulename', 'mod_checklist'))
-                )
-                . $this->table_row('URL', s($url->out(false)))
-                . '</table>'
-                . '<h3>' . s(get_string('checklistitems', 'report_evidencereporter')) . '</h3>'
-                . checklist_items::record_table($checklist, $this->identity, $this->includefeedback);
-            if (!$this->includefeedback) {
-                $html .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
-            }
-            $this->add_content(
-                $folder . '/' . get_string('packchecklistrecord', 'report_evidencereporter') . '.pdf',
-                $this->html_to_pdf($cm->get_formatted_name(), $html)
-            );
-        }
     }
 
     /**
@@ -523,7 +298,7 @@ class evidence_pack {
             $html = '<h2>' . s($uename) . '</h2><table border="1" cellpadding="4" width="100%">'
                 . $this->learner_rows()
                 . $this->table_row(
-                    get_string('competency', 'report_evidencereporter'),
+                    terms::get('competency'),
                     s(implode('; ', $this->competency_names($compids)))
                 )
                 . $this->table_row(get_string('timecreated', 'report_evidencereporter'), s(userdate($ue->timecreated)))
@@ -559,9 +334,13 @@ class evidence_pack {
     private function add_readme(): void {
         global $USER, $SITE;
         $lines = [
-            get_string('evidencepack', 'report_evidencereporter'),
+            terms::get('evidencepack') . ' · ' . branding::get_orgname(),
             str_repeat('=', 40),
         ];
+        if (branding::get_header() !== '') {
+            $lines[] = branding::get_header();
+            $lines[] = '';
+        }
         foreach ($this->identity->rows() as $label => $value) {
             $lines[] = $label . ': ' . $value;
         }
@@ -580,6 +359,10 @@ class evidence_pack {
         }
         $lines[] = '';
         $lines[] = get_string('packreadme', 'report_evidencereporter');
+        if (branding::get_footer() !== '') {
+            $lines[] = '';
+            $lines[] = branding::get_footer();
+        }
         $this->add_content('README.txt', implode("\r\n", $lines) . "\r\n");
     }
 
@@ -591,7 +374,7 @@ class evidence_pack {
      * @param string[] $compnames
      * @return string HTML
      */
-    private function attempt_header_html(\cm_info $cm, stdClass $attempt, array $compnames): string {
+    public function attempt_header_html(\cm_info $cm, stdClass $attempt, array $compnames): string {
         $date = fn(?int $time) => $time ? userdate($time) : '-';
         return '<h2>' . s($cm->get_formatted_name()) . ' - '
             . s(get_string(
@@ -601,7 +384,7 @@ class evidence_pack {
             )) . '</h2>'
             . '<table border="1" cellpadding="4" width="100%">'
             . $this->learner_rows()
-            . $this->table_row(get_string('competency', 'report_evidencereporter'), s(implode('; ', $compnames)))
+            . $this->table_row(terms::get('competency'), s(implode('; ', $compnames)))
             . $this->table_row(
                 get_string('activitytype', 'report_evidencereporter'),
                 s(get_string('modulename', 'mod_' . $cm->modname))
@@ -622,7 +405,7 @@ class evidence_pack {
      */
     private function summary_html(stdClass $summary): string {
         global $USER, $SITE;
-        $html = '<h1>' . s(get_string('summarytitle', 'report_evidencereporter')) . '</h1>'
+        $html = '<h1>' . s(terms::get('summarytitle')) . '</h1>'
             . '<table border="1" cellpadding="4" width="100%">'
             . $this->learner_rows()
             . $this->scope_rows()
@@ -643,7 +426,7 @@ class evidence_pack {
 
         $html .= '<h2>' . s(get_string('summaryheading', 'report_evidencereporter')) . '</h2>'
             . '<table border="1" cellpadding="4" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
-            . '<td width="40%">' . s(get_string('competency', 'report_evidencereporter')) . '</td>'
+            . '<td width="40%">' . s(terms::get('competency')) . '</td>'
             . '<td width="18%">' . s(get_string('currentrating', 'report_evidencereporter')) . '</td>'
             . '<td width="22%">' . s(get_string('judgement', 'report_evidencereporter')) . '</td>'
             . '<td width="10%">' . s(get_string('evidenceitems', 'report_evidencereporter')) . '</td>'
@@ -664,8 +447,10 @@ class evidence_pack {
         }
         $html .= '</table>';
 
-        foreach ($summary->competencies as $comp) {
-            if (!$comp->evidence && !$comp->attempts) {
+        // Evidence detail per competency (unless switched off in the settings).
+        $showdetail = branding::show('evidencedetail');
+        foreach ($showdetail ? $summary->competencies : [] as $comp) {
+            if (!$comp->evidence && !($comp->attempts && branding::show('attempts'))) {
                 continue;
             }
             $html .= '<h3>' . s($comp->idnumber . ' ' . $comp->name) . '</h3>';
@@ -675,7 +460,7 @@ class evidence_pack {
                     . '<td width="' . ($this->includefeedback ? 34 : 54) . '%">'
                     . s(get_string('evidencesource', 'report_evidencereporter')) . '</td>'
                     . '<td width="14%">' . s(get_string('rating', 'report_evidencereporter')) . '</td>'
-                    . '<td width="16%">' . s(get_string('assessor', 'report_evidencereporter')) . '</td>'
+                    . '<td width="16%">' . s(terms::get('assessor')) . '</td>'
                     . ($this->includefeedback ? '<td width="20%">' . s(get_string('feedback', 'report_evidencereporter'))
                         . '</td>' : '')
                     . '</tr>';
@@ -694,7 +479,7 @@ class evidence_pack {
                 }
                 $html .= '</table>';
             }
-            if ($comp->attempts) {
+            if ($comp->attempts && branding::show('attempts')) {
                 $html .= '<p><strong>' . s(get_string('attemptsheading', 'report_evidencereporter')) . '</strong></p>'
                     . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
                     . '<td width="30%">' . s(get_string('activity', 'report_evidencereporter')) . '</td>'
@@ -710,9 +495,13 @@ class evidence_pack {
                 $html .= '</table><p><small>' . s(get_string('packseeassessments', 'report_evidencereporter')) . '</small></p>';
             }
         }
-        $html .= '<p>&nbsp;</p><p>' . s(get_string('reviewedby', 'report_evidencereporter')) . ': ________________________ &nbsp; '
-            . s(get_string('signature', 'report_evidencereporter')) . ': __________________ &nbsp; '
-            . s(get_string('date')) . ': ____________</p>';
+        if (branding::show('signoff')) {
+            $html .= '<p>&nbsp;</p><p><strong>' . s(branding::get_signoff_heading()) . '</strong></p>'
+                . (branding::get_signoff_statement() !== '' ? '<p>' . nl2br(s(branding::get_signoff_statement())) . '</p>' : '')
+                . '<p>' . s(get_string('reviewedby', 'report_evidencereporter')) . ': ________________________ &nbsp; '
+                . s(get_string('signature', 'report_evidencereporter')) . ': __________________ &nbsp; '
+                . s(get_string('date')) . ': ____________</p>';
+        }
         return $html;
     }
 
@@ -722,7 +511,7 @@ class evidence_pack {
      * @param int[] $ids
      * @return string[]
      */
-    private function competency_names(array $ids): array {
+    public function competency_names(array $ids): array {
         global $DB;
         if (!$ids) {
             return [];
@@ -753,7 +542,7 @@ class evidence_pack {
      *
      * @return string HTML
      */
-    private function learner_rows(): string {
+    public function learner_rows(): string {
         $html = '';
         foreach ($this->identity->rows() as $label => $value) {
             $html .= $this->table_row($label, s($value));
@@ -768,7 +557,7 @@ class evidence_pack {
      * @param string $valuehtml Already escaped HTML
      * @return string
      */
-    private function table_row(string $label, string $valuehtml): string {
+    public function table_row(string $label, string $valuehtml): string {
         return '<tr><td width="25%" style="background-color:#f2f4f7;"><strong>' . s($label) . '</strong></td>'
             . '<td width="75%">' . $valuehtml . '</td></tr>';
     }
@@ -780,12 +569,12 @@ class evidence_pack {
      * @param string $html
      * @return string PDF bytes
      */
-    private function html_to_pdf(string $title, string $html): string {
+    public function html_to_pdf(string $title, string $html): string {
         global $CFG;
         require_once($CFG->libdir . '/pdflib.php');
         $pdf = new \pdf();
         $pdf->SetTitle($title);
-        $pdf->SetAuthor(format_string(get_site()->fullname));
+        $pdf->SetAuthor(branding::get_orgname());
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(15, 15, 15);
@@ -794,6 +583,20 @@ class evidence_pack {
         $pdf->AddPage();
         // Images and embedded media need a logged-in browser, so keep text only.
         $html = preg_replace('/<img[^>]*>/i', '', $html);
+        // The organisation's logo, name and header text at the top; footer text at the end.
+        if ($logo = branding::get_logo()) {
+            try {
+                $pdf->Image('@' . $logo->get_content(), 15, 10, 0, 14, '', '', 'N', true);
+                $pdf->Ln(2);
+            } catch (\Throwable $e) {
+                debugging('Evidence Reporter: the logo could not be added to a PDF: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+        $html = '<p style="color:#555555;font-size:8pt;">' . s(branding::get_orgname())
+            . (branding::get_header() !== '' ? '<br>' . nl2br(s(branding::get_header())) : '') . '</p>'
+            . $html
+            . (branding::get_footer() !== '' ? '<p style="color:#555555;font-size:8pt;">'
+                . nl2br(s(branding::get_footer())) . '</p>' : '');
         if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
             $this->renderedhtml[] = $html;
         }
@@ -808,7 +611,7 @@ class evidence_pack {
      * @param string $body
      * @return string
      */
-    private function html_document(string $title, string $body): string {
+    public function html_document(string $title, string $body): string {
         return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' . s($title) . '</title></head><body>'
             . $body . '</body></html>';
     }
@@ -819,7 +622,7 @@ class evidence_pack {
      * @param string $path
      * @param string $content
      */
-    private function add_content(string $path, string $content): void {
+    public function add_content(string $path, string $content): void {
         $path = $this->unique_path($path);
         $this->files[$path] = [$content];
         $this->manifest[] = ['path' => $path, 'size' => strlen($content), 'sha256' => hash('sha256', $content)];
@@ -831,7 +634,7 @@ class evidence_pack {
      * @param string $folder
      * @param stored_file $file
      */
-    private function add_file(string $folder, stored_file $file): void {
+    public function add_file(string $folder, stored_file $file): void {
         $name = $this->identity->text($file->get_filename(), true);
         $path = $this->unique_path($folder . '/' . $this->safe_name($name, 120));
         $this->files[$path] = $file;
@@ -866,7 +669,7 @@ class evidence_pack {
      * @param int $max
      * @return string
      */
-    private function safe_name(string $name, int $max = 80): string {
+    public function safe_name(string $name, int $max = 80): string {
         $name = clean_filename(html_entity_decode(strip_tags($name), ENT_QUOTES, 'UTF-8'));
         $name = trim(preg_replace('/[\\\\\/:*?"<>|]+/', '-', $name), " .-");
         return \core_text::substr($name === '' ? 'item' : $name, 0, $max);

@@ -71,40 +71,7 @@ class evidence_link {
      * @return moodle_url|null
      */
     private static function get_submission_url(stdClass $row): ?moodle_url {
-        $cmid = (int) $row->cmid;
-        $userid = (int) ($row->userid ?? 0);
-
-        switch ($row->modname) {
-            case 'assign':
-                // The grader opens on this learner: submission, mark and feedback together.
-                return new moodle_url('/mod/assign/view.php', ['id' => $cmid, 'action' => 'grader', 'userid' => $userid]);
-
-            case 'quiz':
-                if (!empty($row->quizattemptid)) {
-                    return new moodle_url('/mod/quiz/review.php', ['attempt' => (int) $row->quizattemptid, 'showall' => 1]);
-                }
-                return new moodle_url('/mod/quiz/view.php', ['id' => $cmid]);
-
-            case 'forum':
-                return new moodle_url('/mod/forum/user.php', ['id' => $userid, 'course' => (int) $row->courseid]);
-
-            case 'data':
-                if (!empty($row->datarecordid)) {
-                    // Single view of the learner's most recent entry.
-                    return new moodle_url(
-                        '/mod/data/view.php',
-                        ['id' => $cmid, 'rid' => (int) $row->datarecordid, 'mode' => 'single']
-                    );
-                }
-                return new moodle_url('/mod/data/view.php', ['id' => $cmid]);
-
-            case 'checklist':
-                // The learner's checklist report: each item's mark and the comments on it.
-                return checklist_items::url($cmid, $userid);
-
-            default:
-                return null;
-        }
+        return sources::get((string) $row->modname)?->get_url($row);
     }
 
     /**

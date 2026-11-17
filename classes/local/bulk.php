@@ -124,7 +124,7 @@ class bulk {
 
         $dir = make_request_directory();
         $files = [];
-        $index = [[get_string('entitylearner', 'report_evidencereporter'), get_string('username'),
+        $index = [[terms::get('learner'), get_string('username'),
             get_string('idnumber'), get_string('learnerreference', 'report_evidencereporter'),
             get_string('bulkstatus', 'report_evidencereporter'),
             get_string('bulkfile', 'report_evidencereporter')]];

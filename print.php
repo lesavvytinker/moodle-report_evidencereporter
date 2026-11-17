@@ -62,7 +62,7 @@ $identity = \report_evidencereporter\local\identity::from_flags($learner, $redac
 $PAGE->set_context($context);
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('report');
-$title = get_string('summarytitle', 'report_evidencereporter');
+$title = \report_evidencereporter\local\terms::get('summarytitle');
 $PAGE->set_title($title . ': ' . $identity->name());
 $PAGE->set_heading($title);
 

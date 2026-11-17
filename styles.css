@@ -136,3 +136,8 @@
     background-color: #e9ecef;
     font-size: 1.05em;
 }
+
+.report-evidencereporter-summary .er-logo {
+    max-height: 60px;
+    max-width: 220px;
+}

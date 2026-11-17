@@ -16,7 +16,9 @@
 
 namespace report_evidencereporter\output;
 
+use report_evidencereporter\local\branding;
 use report_evidencereporter\local\identity;
+use report_evidencereporter\local\terms;
 use report_evidencereporter\local\scope;
 use renderable;
 use renderer_base;
@@ -92,14 +94,15 @@ class summary_page implements renderable, templatable {
                 'noevidence' => $count === 0,
                 'attemptcount' => $attemptcount,
             ];
-            if ($count || $attemptcount) {
+            $showattempts = branding::show('attempts');
+            if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts))) {
                 $details[] = [
                     'idnumber' => $comp->idnumber,
                     'name' => $comp->name,
                     'currentrating' => $comp->currentrating,
                     'hasevidence' => $count > 0,
                     'evidence' => array_map(fn($e) => (array) $e, $comp->evidence),
-                    'hasattempts' => $attemptcount > 0,
+                    'hasattempts' => $attemptcount > 0 && $showattempts,
                     'attempts' => array_map(fn($a) => (array) $a, $comp->attempts),
                 ];
             }
@@ -148,6 +151,22 @@ class summary_page implements renderable, templatable {
             'totalcompetencies' => count($this->summary->competencies),
             'withevidence' => $withevidence,
             'proficientcount' => $proficient,
+            'overviewtext' => terms::get('overviewcounts', ['total' => count($this->summary->competencies),
+                'evidence' => $withevidence, 'proficient' => $proficient]),
+            'terms' => terms::all(),
+            'downloadpacklabel' => get_string(
+                'downloadpackterm',
+                'report_evidencereporter',
+                \core_text::strtolower(\core_text::substr(terms::get('evidencepack'), 0, 1))
+                    . \core_text::substr(terms::get('evidencepack'), 1)
+            ),
+            'orgname' => branding::get_orgname(),
+            'logourl' => branding::get_logo_url()?->out(false),
+            'documentheader' => branding::get_header(),
+            'documentfooter' => branding::get_footer(),
+            'showsignoff' => branding::show('signoff'),
+            'signoffheading' => branding::get_signoff_heading(),
+            'signoffstatement' => branding::get_signoff_statement(),
             'rows' => $rows,
             'details' => $details,
             'hasdetails' => !empty($details),

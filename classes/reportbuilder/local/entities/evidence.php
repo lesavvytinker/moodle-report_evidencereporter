@@ -25,8 +25,8 @@ use core_reportbuilder\local\helpers\{database, format};
 use core_reportbuilder\local\report\{column, filter};
 use html_writer;
 use lang_string;
-use report_evidencereporter\local\{activity_grade, assessor, attempts, checklist_items, data_entries, evidence_link,
-    feedback_visibility, rating};
+use report_evidencereporter\local\{activity_grade, assessor, attempts, evidence_link, feedback_visibility, rating,
+    sources};
 use stdClass;
 
 /**
@@ -163,6 +163,22 @@ class evidence extends base {
             evidence_persistent::ACTION_COMPLETE => get_string('actioncomplete', 'report_evidencereporter'),
             evidence_persistent::ACTION_OVERRIDE => get_string('actionoverride', 'report_evidencereporter'),
         ];
+    }
+
+    /**
+     * Add the fields the evidence sources need (e.g. the learner's latest quiz attempt) to a column.
+     *
+     * @param column $column
+     * @return column
+     */
+    private function add_source_fields(column $column): column {
+        $m = $this->get_table_alias('modules');
+        $cm = $this->get_table_alias('course_modules');
+        $uc = $this->get_table_alias('competency_usercomp');
+        foreach (sources::row_fields_sql("{$m}.name", "{$cm}.instance", "{$uc}.userid") as $name => $sql) {
+            $column->add_field($sql, $name);
+        }
+        return $column;
     }
 
     /**
@@ -322,16 +338,8 @@ class evidence extends base {
                 ->set_type(column::TYPE_TEXT)
                 ->add_field("{$ev}.url", 'url'));
 
-            // Latest finished quiz attempt / latest database entry for this learner, when relevant.
-            $qa = database::generate_alias();
-            $dr = database::generate_alias();
-            $column
-                ->add_field("CASE WHEN {$m}.name = 'quiz' THEN (SELECT MAX({$qa}.id) FROM {quiz_attempts} {$qa}
-                              WHERE {$qa}.quiz = {$cm}.instance AND {$qa}.userid = {$uc}.userid
-                                AND {$qa}.state = 'finished') ELSE NULL END", 'quizattemptid')
-                ->add_field("CASE WHEN {$m}.name = 'data' THEN " . data_entries::latest_entry_sql("{$cm}.instance", "{$uc}.userid")
-                    . " ELSE NULL END", 'datarecordid')
-                ->set_is_sortable(false);
+            // Fields the evidence sources need, e.g. the learner's latest quiz attempt or database entry.
+            $this->add_source_fields($column)->set_is_sortable(false);
 
             if ($name === 'evidencelink') {
                 $column->add_callback(static function ($value, stdClass $row): string {
@@ -472,7 +480,7 @@ class evidence extends base {
             ->set_is_sortable(false)
             ->set_disabled_aggregation(['groupconcat', 'groupconcatdistinct'])
             ->add_callback(static function ($cmid, stdClass $row) use ($viewfullnames): string {
-                if (empty($row->cmid) || !in_array($row->modname, ['assign', 'quiz', 'data'])) {
+                if (empty($row->cmid) || !sources::get($row->modname)?->has_attempts()) {
                     return '';
                 }
                 $lines = [];
@@ -506,50 +514,17 @@ class evidence extends base {
             ->add_joins($this->get_grade_joins())
             ->set_type(column::TYPE_LONGTEXT)
             ->add_field("{$gg}.feedback", 'feedback')
-            ->add_field("{$gg}.feedbackformat", 'feedbackformat')
-            ->add_field("CASE WHEN {$m}.name = 'data' THEN " . data_entries::latest_entry_sql("{$cm}.instance", "{$uc}.userid")
-                . " ELSE NULL END", 'datarecordid');
-        $columns[] = $this->add_release_fields($this->add_activity_fields($column))
+            ->add_field("{$gg}.feedbackformat", 'feedbackformat');
+        $columns[] = $this->add_source_fields($this->add_release_fields($this->add_activity_fields($column)))
             ->set_is_sortable(false)
             ->add_callback(static function (?string $feedback, stdClass $row) use ($viewfullnames): string {
-                // Database entries: every comment on the entry, with who wrote it and when.
-                // Database entries and checklists show the activity as it is now, so only the latest evidence row from
-                // the activity carries it; every rated entry is still listed in Assessment attempts.
-                if (in_array($row->modname, ['data', 'checklist']) && empty($row->islatest)) {
-                    return get_string('feedbacksupersededlater', 'report_evidencereporter');
+                // Release and superseded rules, and the sources' own feedback (database entry comments, checklist marks).
+                $result = sources::feedback($row, $viewfullnames);
+                $html = $result->html;
+                if ($result->fromsource || !in_array($result->status, ['released', 'notreleased'])) {
+                    return $html;
                 }
-                if ($row->modname === 'data' && !empty($row->datarecordid)) {
-                    return data_entries::comments_html(data_entries::get_comments(
-                        (int) $row->datarecordid,
-                        (int) $row->cmid,
-                        $viewfullnames
-                    ));
-                }
-                // Checklists: each item, its mark and the comments on it.
-                if ($row->modname === 'checklist' && !empty($row->cmid)) {
-                    if (
-                        !feedback_visibility::is_released($row)
-                            && !feedback_visibility::can_view_unreleased((int) $row->cmid, 'checklist')
-                    ) {
-                        return get_string('pendingrelease', 'report_evidencereporter');
-                    }
-                    $checklist = checklist_items::get_for_user((int) $row->cmid, (int) $row->userid, $viewfullnames);
-                    return $checklist ? checklist_items::feedback_html($checklist) : '';
-                }
-                if ($feedback === null || trim($feedback) === '') {
-                    return '';
-                }
-                if (empty($row->islatest)) {
-                    return get_string('feedbacksuperseded', 'report_evidencereporter');
-                }
-                if (
-                    !feedback_visibility::is_released($row)
-                        && !feedback_visibility::can_view_unreleased((int) $row->cmid, (string) $row->modname)
-                ) {
-                    return get_string('pendingrelease', 'report_evidencereporter');
-                }
-                $context = \context_course::instance((int) $row->courseid, IGNORE_MISSING) ?: \context_system::instance();
-                $html = format_text($feedback, (int) $row->feedbackformat, ['context' => $context]);
+                // Long gradebook feedback starts collapsed.
                 $plain = trim(html_to_text($html, 0, false));
                 if (\core_text::strlen($plain) <= self::FEEDBACK_PREVIEW_LENGTH) {
                     return $html;

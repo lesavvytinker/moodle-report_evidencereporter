@@ -42,7 +42,7 @@ function report_evidencereporter_myprofile_navigation(core_user\output\myprofile
     $node = new core_user\output\myprofile\node(
         'reports',
         'evidencesummary',
-        get_string('summarytitle', 'report_evidencereporter'),
+        \report_evidencereporter\local\terms::get('summarytitle'),
         null,
         $url
     );
@@ -63,6 +63,18 @@ function report_evidencereporter_myprofile_navigation(core_user\output\myprofile
  */
 function report_evidencereporter_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     global $USER;
+    // The organisation logo set in the plugin's settings, shown on evidence summaries.
+    if ($context->contextlevel == CONTEXT_SYSTEM && $filearea === 'logo') {
+        require_login(null, false);
+        array_shift($args);
+        $filename = array_pop($args);
+        $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+        $file = get_file_storage()->get_file($context->id, 'report_evidencereporter', 'logo', 0, $filepath, $filename);
+        if (!$file || $file->is_directory()) {
+            return false;
+        }
+        send_stored_file($file, DAYSECS, 0, false, $options);
+    }
     if ($context->contextlevel != CONTEXT_USER || $filearea !== \report_evidencereporter\local\bulk::FILEAREA) {
         return false;
     }

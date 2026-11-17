@@ -86,8 +86,9 @@ class feedback_visibility {
             $context = \context_module::instance($cmid, IGNORE_MISSING);
             $can = false;
             if ($context) {
+                $source = sources::get($modname);
                 $can = has_capability('moodle/grade:viewhidden', $context)
-                    || ($modname === 'assign' && has_capability('mod/assign:grade', $context));
+                    || ($source && $source->can_view_unreleased($context));
             }
             self::$cache[$key] = $can;
         }

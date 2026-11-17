@@ -37,6 +37,18 @@
         "frozennote": false,
         "redactoptions": [{"name": "redactname", "label": "Learner name", "checked": false}],
         "sitename": "Equip English",
+        "overviewtext": "12 competencies · 9 with evidence · 7 proficient",
+        "terms": {"learner": "Learner", "competency": "Competency", "competencies": "competencies",
+            "framework": "Competency framework", "assessor": "Assessor", "proficient": "Proficient",
+            "summarytitle": "Competency evidence summary", "evidencepack": "Evidence pack"},
+        "downloadpacklabel": "Download evidence pack (ZIP)",
+        "orgname": "Example Training",
+        "logourl": "",
+        "documentheader": "RTO 12345",
+        "documentfooter": "",
+        "showsignoff": true,
+        "signoffheading": "Review",
+        "signoffstatement": "",
         "generatedon": "Wednesday, 11 November 2026, 11:30 AM",
         "generatedby": "Daniel Maloney",
         "restricted": false,
@@ -76,7 +88,7 @@
 <div class="report-evidencereporter-summary">
     <div class="er-noprint mb-3 d-flex flex-wrap align-items-center">
         <button type="button" class="btn btn-primary me-2" data-action="report_evidencereporter-print">{{#str}} printsummary, report_evidencereporter {{/str}}</button>
-        <a class="btn btn-secondary me-4" href="{{packurl}}" data-action="report_evidencereporter-pack" title="{{#str}} packbuilding, report_evidencereporter {{/str}}">{{#str}} downloadpack, report_evidencereporter {{/str}}</a>
+        <a class="btn btn-secondary me-4" href="{{packurl}}" data-action="report_evidencereporter-pack" title="{{#str}} packbuilding, report_evidencereporter {{/str}}">{{downloadpacklabel}}</a>
         <div class="form-check">
             <input type="checkbox" class="form-check-input" id="report_evidencereporter-includefeedback" checked data-action="report_evidencereporter-togglefeedback">
             <label class="form-check-label" for="report_evidencereporter-includefeedback">{{#str}} includefeedback, report_evidencereporter {{/str}}</label>
@@ -104,16 +116,23 @@
         <button type="submit" class="btn btn-outline-secondary btn-sm">{{#str}} applyredaction, report_evidencereporter {{/str}}</button>
     </form>
 
-    <h2 class="h3">{{#str}} summarytitle, report_evidencereporter {{/str}}</h2>
+    <div class="er-brand d-flex align-items-center mb-2">
+        {{#logourl}}<img src="{{.}}" alt="{{orgname}}" class="er-logo me-3">{{/logourl}}
+        <div>
+            <div class="er-orgname fw-bold">{{orgname}}</div>
+            {{#documentheader}}<div class="er-docheader small text-muted">{{.}}</div>{{/documentheader}}
+        </div>
+    </div>
+    <h2 class="h3">{{terms.summarytitle}}</h2>
     <table class="table table-sm er-meta">
         <tbody>
-            <tr><th scope="row">{{#str}} entitylearner, report_evidencereporter {{/str}}</th><td>{{learnername}}</td></tr>
+            <tr><th scope="row">{{terms.learner}}</th><td>{{learnername}}</td></tr>
             <tr><th scope="row">{{#str}} username {{/str}}</th><td>{{learnerusername}}</td></tr>
             {{#learneridnumber}}<tr><th scope="row">{{#str}} idnumber {{/str}}</th><td>{{.}}</td></tr>{{/learneridnumber}}
             <tr><th scope="row">{{#str}} learnerreference, report_evidencereporter {{/str}}</th><td>{{learnerreference}}</td></tr>
             {{#scoperows}}<tr><th scope="row">{{label}}</th><td>{{value}}</td></tr>{{/scoperows}}
             <tr><th scope="row">{{#str}} generated, report_evidencereporter {{/str}}</th><td>{{generatedon}} &middot; {{generatedby}} &middot; {{sitename}}</td></tr>
-            <tr><th scope="row">{{#str}} overview, report_evidencereporter {{/str}}</th><td>{{#str}} overviewcounts, report_evidencereporter, { "total": {{totalcompetencies}}, "evidence": {{withevidence}}, "proficient": {{proficientcount}} } {{/str}}</td></tr>
+            <tr><th scope="row">{{#str}} overview, report_evidencereporter {{/str}}</th><td>{{overviewtext}}</td></tr>
         </tbody>
     </table>
     {{#redactionnote}}<p class="er-redactionnote fst-italic">{{.}}</p>{{/redactionnote}}
@@ -127,7 +146,7 @@
     <table class="table table-sm table-bordered er-summary">
         <thead>
             <tr>
-                <th scope="col">{{#str}} competency, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{terms.competency}}</th>
                 <th scope="col">{{#str}} currentrating, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} judgement, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} evidenceitems, report_evidencereporter {{/str}}</th>
@@ -139,7 +158,7 @@
             {{#group}}<tr class="er-group"><th colspan="5" scope="rowgroup">{{.}}</th></tr>{{/group}}
             <tr class="{{^indent}}er-parent{{/indent}}">
                 <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}</td>
-                <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{#str}} proficient, report_evidencereporter {{/str}}</span>{{/proficient}}</td>
+                <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{terms.proficient}}</span>{{/proficient}}</td>
                 <td>{{#judgementrating}}{{.}} &middot; {{/judgementrating}}{{judgementdate}}{{#judgementby}}<br><span class="small">{{.}}</span>{{/judgementby}}</td>
                 <td>{{#noevidence}}<span class="text-muted">{{#str}} noevidence, report_evidencereporter {{/str}}</span>{{/noevidence}}{{^noevidence}}{{evidencecount}}{{/noevidence}}</td>
                 <td>{{#attemptcount}}{{.}}{{/attemptcount}}</td>
@@ -164,7 +183,7 @@
                     <th scope="col">{{#str}} timecreated, report_evidencereporter {{/str}}</th>
                     <th scope="col">{{#str}} evidencesource, report_evidencereporter {{/str}}</th>
                     <th scope="col">{{#str}} rating, report_evidencereporter {{/str}}</th>
-                    <th scope="col">{{#str}} assessor, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{terms.assessor}}</th>
                     <th scope="col" class="er-feedback">{{#str}} feedback, report_evidencereporter {{/str}}</th>
                 </tr>
             </thead>
@@ -219,8 +238,10 @@
     </section>
     {{/details}}
 
+    {{#showsignoff}}
     <div class="er-signoff mt-5">
-        <p class="fw-bold">{{#str}} reviewheading, report_evidencereporter {{/str}}</p>
+        <p class="fw-bold">{{signoffheading}}</p>
+        {{#signoffstatement}}<p class="er-signoffstatement" style="white-space: pre-line;">{{.}}</p>{{/signoffstatement}}
         <table class="table table-borderless">
             <tbody>
                 <tr><td>{{#str}} reviewedby, report_evidencereporter {{/str}}: ______________________________</td><td>{{#str}} signature, report_evidencereporter {{/str}}: ______________________</td><td>{{#str}} date {{/str}}: ____________</td></tr>
@@ -229,4 +250,6 @@
         <p class="small text-muted">{{#str}} judgementnotice, report_evidencereporter {{/str}}</p>
         <p class="small text-muted">{{#str}} linknotice, report_evidencereporter {{/str}}</p>
     </div>
+    {{/showsignoff}}
+    {{#documentfooter}}<p class="er-docfooter small text-muted mt-4" style="white-space: pre-line;">{{.}}</p>{{/documentfooter}}
 </div>

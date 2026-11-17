@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 (2026-11-20)
+- **Settings page** (*Site administration → Plugins → Reports → Evidence Reporter*).
+- **Terminology profiles**: Australian VET (default), Higher education, UK apprenticeships, South African occupational and Generic. The summary, evidence pack PDFs, README, file names and bulk index use the profile's words for learner, competency, framework, assessor, "proficient" and the document titles. Any single word can be changed through language customisation.
+- **Document branding**: organisation name, logo, header and footer text on the summary, every PDF and the README; your own sign-off heading and declaration; show or hide the evidence detail, attempts and sign-off sections; a file name pattern for evidence packs.
+- **Evidence sources**: everything Evidence Reporter knows about each activity type (assignment, quiz, database, forum, checklist) now sits in one module per type. Other plugins can add sources for their own activities, or replace a built-in one, through the new `collect_sources` hook. The settings page lists the sources found. Behaviour of the built-in sources is unchanged.
+
 ## 0.10.0 (2026-11-19)
 - **Summaries and evidence packs per learning plan.** A new **Covering** choice on the summary page offers *Active learning plans* (all the learner's active plans together, e.g. core plus electives), any single plan (active or completed), or a competency framework.
 - **Learning plans are now the default.** The summary and pack cover the learner's active plans, or their most recent plan if none is active. With no plans, they fall back to the framework, as before.

@@ -163,6 +163,12 @@ class summary {
                 'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
         }
         [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'sc');
+        // Fields the evidence sources need (e.g. the learner's latest quiz attempt or database entry).
+        $sourcefields = implode(",\n", array_map(
+            fn($name, $sql) => "{$sql} AS {$name}",
+            array_keys(sources::row_fields_sql('m.name', 'cm.instance', 'uc.userid')),
+            sources::row_fields_sql('m.name', 'cm.instance', 'uc.userid')
+        )) ?: '1 AS nosourcefields';
 
         [$from, $where, $params] = self::get_base_sql($userid);
         $courselevel = CONTEXT_COURSE;
@@ -181,11 +187,7 @@ class summary {
                        CASE WHEN ev.id = (SELECT MAX(ev2.id) FROM {competency_evidence} ev2
                                            WHERE ev2.usercompetencyid = ev.usercompetencyid
                                              AND ev2.contextid = ev.contextid) THEN 1 ELSE 0 END AS islatest,
-                       CASE WHEN m.name = 'quiz' THEN (SELECT MAX(qa.id) FROM {quiz_attempts} qa
-                                                        WHERE qa.quiz = cm.instance AND qa.userid = uc.userid
-                                                          AND qa.state = 'finished') ELSE NULL END AS quizattemptid,
-                       CASE WHEN m.name = 'data' THEN " . data_entries::latest_entry_sql('cm.instance', 'uc.userid') . "
-                            ELSE NULL END AS datarecordid
+                       {$sourcefields}
                   {$from}
              LEFT JOIN {grade_items} gi ON gi.courseid = cm.course AND gi.itemtype = 'mod' AND gi.itemmodule = m.name
                                        AND gi.iteminstance = cm.instance AND gi.itemnumber = 0
@@ -341,48 +343,12 @@ class summary {
             $description = get_string($row->descidentifier, $row->desccomponent, $a);
         }
 
-        // Feedback, with the same release and superseded rules as the report. Database entries: the entry's comments.
-        $feedback = '';
-        $releasestatus = '';
-        if (in_array($row->modname, ['data', 'checklist']) && empty($row->islatest)) {
-            // Database entries and checklists show the activity as it is now, so only the latest evidence row from the
-            // activity carries it; every rated entry is still listed under the attempts.
-            $feedback = s(get_string('feedbacksupersededlater', 'report_evidencereporter'));
-        } else if ($row->modname === 'data' && !empty($row->datarecordid)) {
-            $feedback = data_entries::comments_html(data_entries::get_comments(
-                (int) $row->datarecordid,
-                (int) $row->cmid,
-                $viewfullnames
-            ), $identity);
-        } else if ($row->modname === 'checklist' && !empty($row->cmid)) {
-            $released = feedback_visibility::is_released($row);
-            if ($released || feedback_visibility::can_view_unreleased((int) $row->cmid, 'checklist')) {
-                $checklist = checklist_items::get_for_user((int) $row->cmid, (int) $row->userid, $viewfullnames);
-                $feedback = $checklist ? checklist_items::feedback_html($checklist, $identity) : '';
-                $releasestatus = $feedback === '' ? '' : get_string(
-                    $released ? 'released' : 'notreleased',
-                    'report_evidencereporter'
-                );
-            } else {
-                $feedback = s(get_string('pendingrelease', 'report_evidencereporter'));
-                $releasestatus = get_string('pendingrelease', 'report_evidencereporter');
-            }
-        } else if ($row->feedback !== null && trim($row->feedback) !== '') {
-            $released = feedback_visibility::is_released($row);
-            $canseeunreleased = !empty($row->cmid)
-                && feedback_visibility::can_view_unreleased((int) $row->cmid, (string) $row->modname);
-            if (empty($row->islatest)) {
-                $feedback = s(get_string('feedbacksuperseded', 'report_evidencereporter'));
-            } else if ($released || $canseeunreleased) {
-                $context = \context_course::instance((int) $row->courseid, IGNORE_MISSING) ?: \context_system::instance();
-                $feedback = format_text($row->feedback, (int) $row->feedbackformat, ['context' => $context]);
-                $feedback = $identity ? $identity->text($feedback) : $feedback;
-                $releasestatus = get_string($released ? 'released' : 'notreleased', 'report_evidencereporter');
-            } else {
-                $feedback = s(get_string('pendingrelease', 'report_evidencereporter'));
-                $releasestatus = get_string('pendingrelease', 'report_evidencereporter');
-            }
-        }
+        // Feedback, with the same release and superseded rules as the report (sources supply their own: database
+        // entry comments, checklist marks).
+        $fb = sources::feedback($row, $viewfullnames, $identity);
+        $feedback = $fb->html;
+        $releasestatus = in_array($fb->status, ['released', 'notreleased', 'pendingrelease'])
+            ? get_string($fb->status, 'report_evidencereporter') : '';
 
         $url = evidence_link::get_url($row);
         $action = (int) $row->action;
