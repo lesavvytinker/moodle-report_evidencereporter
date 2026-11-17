@@ -125,6 +125,32 @@ if ($hassiteconfig && $settings) {
         4
     ));
 
+    // Gradebook adjustments: penalties in an assessment's own category.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/adjustmentsheading',
+        get_string('settings_adjustments', 'report_evidencereporter'),
+        get_string('settings_adjustments_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configselect(
+        'report_evidencereporter/adjustmentdetail',
+        get_string('settings_adjustmentdetail', 'report_evidencereporter'),
+        get_string('settings_adjustmentdetail_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\grade_adjustment::DETAIL_FULL,
+        [
+            'full' => get_string('settings_adjustmentdetail_full', 'report_evidencereporter'),
+            'flag' => get_string('settings_adjustmentdetail_flag', 'report_evidencereporter'),
+            'off' => get_string('settings_adjustmentdetail_off', 'report_evidencereporter'),
+        ]
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/integritywords',
+        get_string('settings_integritywords', 'report_evidencereporter'),
+        get_string('settings_integritywords_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\grade_adjustment::DEFAULT_INTEGRITY_WORDS,
+        PARAM_TEXT,
+        60
+    ));
+
     // Organisation name and sign-off statement per terminology profile (e.g. "X TAFE" and "X University").
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/profilebrandingheading',

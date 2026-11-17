@@ -470,6 +470,7 @@ class evidence_pack {
                     $source = s($item->source) . ($item->description ? '<br><small>' . s($item->description) . '</small>' : '')
                         . ($item->grade ? '<br>' . s(get_string('activitygrade', 'report_evidencereporter') . ': '
                             . $item->grade) : '')
+                        . (!empty($item->gradeadjustment) ? '<br><small>' . $item->gradeadjustment . '</small>' : '')
                         . ($item->url ? '<br><small>' . s($item->url) . '</small>' : '');
                     $html .= '<tr><td width="16%">' . s($item->date) . '<br><small>' . s($item->type) . '</small></td>'
                         . '<td width="' . ($this->includefeedback ? 34 : 54) . '%">' . $source . '</td>'

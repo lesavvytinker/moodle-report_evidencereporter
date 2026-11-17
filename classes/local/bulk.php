@@ -165,6 +165,7 @@ class bulk {
             // learner's terminology; the index and README use the site's.
             terms::use_profile(null);
             attempts::reset_cache();
+            grade_adjustment::reset_cache();
             gc_collect_cycles();
         }
 

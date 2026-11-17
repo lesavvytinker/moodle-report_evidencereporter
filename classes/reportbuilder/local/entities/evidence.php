@@ -25,7 +25,7 @@ use core_reportbuilder\local\helpers\{database, format};
 use core_reportbuilder\local\report\{column, filter};
 use html_writer;
 use lang_string;
-use report_evidencereporter\local\{activity_grade, assessor, attempts, evidence_link, feedback_visibility, rating,
+use report_evidencereporter\local\{activity_grade, assessor, grade_adjustment, attempts, evidence_link, feedback_visibility, rating,
     sources};
 use stdClass;
 
@@ -465,6 +465,23 @@ class evidence extends base {
             ->set_is_sortable(false)
             ->add_callback(static function ($gradeitemid, stdClass $row): string {
                 return activity_grade::format($row);
+            });
+
+        // The final result when the assessment's own gradebook category adjusts it (late or misconduct penalties).
+        $column = (new column(
+            'finalresult',
+            new lang_string('finalresultcolumn', 'report_evidencereporter'),
+            $this->get_entity_name()
+        ))
+            ->add_joins($this->get_joins())
+            ->add_joins($this->get_grade_joins())
+            ->set_type(column::TYPE_LONGTEXT)
+            ->add_field("{$gi}.id", 'gradeitemid')
+            ->add_field("{$gg}.finalgrade", 'finalgrade');
+        $columns[] = $this->add_release_fields($this->add_activity_fields($column))
+            ->set_is_sortable(false)
+            ->add_callback(static function ($gradeitemid, stdClass $row): string {
+                return grade_adjustment::row_html($row);
             });
 
         // Every assessed attempt at this activity (assignments and quizzes), failed attempts included.

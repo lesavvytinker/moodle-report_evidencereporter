@@ -111,6 +111,7 @@ class evidence extends datasource {
             'evidence:activity',
             'evidence:evidencelink',
             'evidence:activitygrade',
+            'evidence:finalresult',
             'evidence:attempthistory',
             'evidence:rating',
             'evidence:currentrating',

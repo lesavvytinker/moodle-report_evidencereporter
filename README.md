@@ -56,6 +56,7 @@ Needs the capability `report/evidencereporter:bulkdownload` (given to Manager by
 | Setting | What it does |
 |---|---|
 | **Terminology profile** | The words documents use. *Australian VET* (the default), *Higher education* (Student, Learning outcome, Marker, Achieved), *UK apprenticeships* (Apprentice, KSB, Apprenticeship standard, Met), *South African occupational* (Outcome, Qualification, Portfolio of evidence) or *Generic*. To change one word, use Moodle's language customisation on the `term_` strings. |
+| **Gradebook adjustments** | When an assessment sits in its own gradebook category with penalty items (late, academic misconduct), documents show the category total as the final result, each penalty with its feedback, the calculation, and any hand override. Choose full detail, "Adjusted" only, or off. Penalties whose names contain academic integrity words (misconduct, plagiarism…) are flagged so reviewers check the evidence is still valid. |
 | **Profile per framework** | For dual-sector providers (e.g. VET and degrees): give a framework its own profile. Documents use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. |
 | **Branding per profile** | An organisation name and sign-off statement for each profile, e.g. "Example TAFE" for VET and "Example University" for higher education. |
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0 (2026-11-22)
+- **Gradebook adjustments:** when an assessment is the only activity in its own gradebook category (e.g. alongside late or academic misconduct penalty items), and the category total differs from the assessment grade or was overridden, the summary, evidence pack and report show the final result, marked "Adjusted", with each penalty, its feedback, and the calculation in plain names. Penalties named with academic integrity words are flagged for the reviewer. Hidden penalties stay hidden from learners, and feedback follows redaction.
+- New settings: **Show adjustments** (full, "Adjusted" only, or off) and **Academic integrity words**.
+- New report column: **Final result (if adjusted)**.
+
 ## 0.12.0 (2026-11-21)
 - **Dual-sector providers:** each competency framework can have its own terminology profile (e.g. VET for certificates, higher education for degrees), with the site profile as the default. The summary, evidence pack and bulk downloads use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. In bulk downloads, each learner's pack follows its own frameworks.
 - **Branding per profile:** an organisation name and sign-off statement for each profile, falling back to the site-wide ones.
