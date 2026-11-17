@@ -161,7 +161,9 @@ class bulk {
             } catch (\Throwable $e) {
                 $index[] = array_merge($row, [get_string('bulkerror', 'report_evidencereporter', $e->getMessage()), '']);
             }
-            // Evidence packs hold whole requests' worth of caches; free them between learners.
+            // Evidence packs hold whole requests' worth of caches; free them between learners. Each pack used its
+            // learner's terminology; the index and README use the site's.
+            terms::use_profile(null);
             attempts::reset_cache();
             gc_collect_cycles();
         }

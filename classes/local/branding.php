@@ -44,7 +44,7 @@ class branding {
      * @return string Plain text
      */
     public static function get_orgname(): string {
-        $name = self::config('orgname');
+        $name = self::profile_config('orgname');
         return $name !== '' ? $name : format_string(get_site()->fullname, true, ['context' => \context_system::instance()]);
     }
 
@@ -93,7 +93,18 @@ class branding {
      * @return string Plain text, may be empty
      */
     public static function get_signoff_statement(): string {
-        return self::config('signoffstatement');
+        return self::profile_config('signoffstatement');
+    }
+
+    /**
+     * A setting that can be set per terminology profile: the profile's value if set, otherwise the site-wide one.
+     *
+     * @param string $name
+     * @return string
+     */
+    private static function profile_config(string $name): string {
+        $value = self::config($name . '_' . terms::get_profile());
+        return $value !== '' ? $value : self::config($name);
     }
 
     /**

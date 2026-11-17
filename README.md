@@ -56,6 +56,8 @@ Needs the capability `report/evidencereporter:bulkdownload` (given to Manager by
 | Setting | What it does |
 |---|---|
 | **Terminology profile** | The words documents use. *Australian VET* (the default), *Higher education* (Student, Learning outcome, Marker, Achieved), *UK apprenticeships* (Apprentice, KSB, Apprenticeship standard, Met), *South African occupational* (Outcome, Qualification, Portfolio of evidence) or *Generic*. To change one word, use Moodle's language customisation on the `term_` strings. |
+| **Profile per framework** | For dual-sector providers (e.g. VET and degrees): give a framework its own profile. Documents use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. |
+| **Branding per profile** | An organisation name and sign-off statement for each profile, e.g. "Example TAFE" for VET and "Example University" for higher education. |
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |

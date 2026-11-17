@@ -99,6 +99,12 @@ $url->params($scope->get_params());
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('print');
 
+// The words to use: the profile of the frameworks covered (e.g. VET or higher education).
+\report_evidencereporter\local\terms::use_profile($scope->get_profile());
+$title = \report_evidencereporter\local\terms::get('summarytitle');
+$PAGE->set_title($title . ': ' . $identity->name());
+$PAGE->set_heading($title);
+
 \report_evidencereporter\event\summary_viewed::create([
     'context' => $context,
     'relateduserid' => $learner->id,

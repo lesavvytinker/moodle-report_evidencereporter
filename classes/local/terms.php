@@ -22,6 +22,9 @@ namespace report_evidencereporter\local;
  * Each term has a default string ("term_<key>") and optional per-profile strings ("term_<key>_<profile>"), so a
  * profile only lists the words it changes. Sites can change any of them through Moodle's language customisation.
  *
+ * The site has a profile, and each competency framework can have its own (for providers offering, say, VET and
+ * degrees). A document uses the profile of the frameworks it covers: see {@see use_profile()}.
+ *
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -41,6 +44,9 @@ class terms {
 
     /** @var string Generic wording. */
     public const GENERIC = 'generic';
+
+    /** @var string|null Profile in use for the document being built, if not the site's. */
+    private static ?string $inuse = null;
 
     /** @var string[] The terms a profile can change. */
     public const KEYS = ['learner', 'competency', 'competencies', 'framework', 'assessor', 'proficient', 'summarytitle',
@@ -64,9 +70,54 @@ class terms {
      *
      * @return string
      */
-    public static function get_profile(): string {
+    public static function get_site_profile(): string {
         $profile = (string) get_config('report_evidencereporter', 'profile');
         return array_key_exists($profile, self::get_profiles()) ? $profile : self::AU_VET;
+    }
+
+    /**
+     * The profile in use: the one set for the document being built, otherwise the site's.
+     *
+     * @return string
+     */
+    public static function get_profile(): string {
+        return self::$inuse ?? self::get_site_profile();
+    }
+
+    /**
+     * Use a profile for what follows (the document being built), or null to go back to the site's.
+     *
+     * @param string|null $profile
+     * @return string|null The profile in use before
+     */
+    public static function use_profile(?string $profile): ?string {
+        $previous = self::$inuse;
+        self::$inuse = $profile !== null && array_key_exists($profile, self::get_profiles()) ? $profile : null;
+        return $previous;
+    }
+
+    /**
+     * Profiles set for individual frameworks.
+     *
+     * @return array framework ID => profile
+     */
+    public static function get_framework_profiles(): array {
+        $map = json_decode((string) get_config('report_evidencereporter', 'frameworkprofiles'), true);
+        $profiles = self::get_profiles();
+        return array_filter(is_array($map) ? $map : [], fn($profile) => isset($profiles[$profile]));
+    }
+
+    /**
+     * The profile for a document covering these frameworks: theirs if they agree, otherwise the site's.
+     *
+     * @param int[] $frameworkids
+     * @return string
+     */
+    public static function for_frameworks(array $frameworkids): string {
+        $map = self::get_framework_profiles();
+        $site = self::get_site_profile();
+        $found = array_unique(array_map(fn($id) => $map[(int) $id] ?? $site, $frameworkids));
+        return count($found) === 1 ? reset($found) : $site;
     }
 
     /**

@@ -39,6 +39,7 @@ final class configurable_test extends \advanced_testcase {
     #[\Override]
     protected function tearDown(): void {
         sources::reset_cache();
+        terms::use_profile(null);
         parent::tearDown();
     }
 
@@ -175,7 +176,7 @@ final class configurable_test extends \advanced_testcase {
 
         // An unknown profile falls back to Australian VET.
         set_config('profile', 'nonsense', 'report_evidencereporter');
-        $this->assertEquals(terms::AU_VET, terms::get_profile());
+        $this->assertEquals(terms::AU_VET, terms::get_site_profile());
     }
 
     /**
@@ -238,5 +239,66 @@ final class configurable_test extends \advanced_testcase {
         $summary = $pack->get_rendered_html()[0];
         $this->assertStringNotContainsString('Assessor declaration', $summary);
         $this->assertStringNotContainsString('<h3>CLO1', $summary);
+    }
+
+    /**
+     * Dual-sector providers: a profile per framework, with branding per profile; documents follow what they cover.
+     */
+    public function test_profile_per_framework(): void {
+        $this->resetAfterTest();
+        [$heframework, $student, $assigncmid] = $this->setup_data();
+        $gen = $this->getDataGenerator();
+        /** @var \core_competency_generator $cgen */
+        $cgen = $gen->get_plugin_generator('core_competency');
+        $vetframework = $cgen->create_framework(['shortname' => 'Certificate IV', 'idnumber' => 'CERT4']);
+        $unit = $cgen->create_competency(['competencyframeworkid' => $vetframework->get('id'), 'shortname' => 'Unit',
+            'idnumber' => 'UNIT1']);
+        $gen->get_plugin_generator('report_evidencereporter')->create_evidence(['userid' => $student->id,
+            'competencyid' => $unit->get('id'), 'cmid' => $assigncmid, 'action' => \core_competency\evidence::ACTION_LOG]);
+        $this->setAdminUser();
+
+        // Site profile VET; the outcomes framework is higher education, with its own name and declaration.
+        $setting = new \report_evidencereporter\admin\setting_frameworkprofiles();
+        $this->assertSame('', $setting->write_setting([0 => '', $heframework->get('id') => terms::HIGHER_ED,
+            $vetframework->get('id') => '', 999 => 'nonsense']));
+        $this->assertEquals([$heframework->get('id') => terms::HIGHER_ED], terms::get_framework_profiles());
+        $this->assertStringContainsString('Site profile (Australian vocational', $setting->output_html($setting->get_setting()));
+        set_config('orgname', 'Example Institute', 'report_evidencereporter');
+        set_config('orgname_highered', 'Example University', 'report_evidencereporter');
+        set_config('signoffstatement', 'Valid, sufficient, authentic and current.', 'report_evidencereporter');
+        set_config('signoffstatement_highered', 'Assessed under the academic integrity policy.', 'report_evidencereporter');
+
+        $he = scope::for_framework((int) $student->id, $heframework->get('id'));
+        $vet = scope::for_framework((int) $student->id, $vetframework->get('id'));
+        $this->assertEquals(terms::HIGHER_ED, $he->get_profile());
+        $this->assertEquals(terms::AU_VET, $vet->get_profile());
+
+        $pack = new evidence_pack((int) $student->id, $he);
+        $pack->build_summary_pdf();
+        $html = $pack->get_rendered_html()[0];
+        $this->assertStringContainsString('Example University', $html);
+        $this->assertStringContainsString('Learning outcome evidence summary', $html);
+        $this->assertStringContainsString('Student', $html);
+        $this->assertStringContainsString('Assessed under the academic integrity policy.', $html);
+
+        $pack = new evidence_pack((int) $student->id, $vet);
+        $pack->build_summary_pdf();
+        $html = $pack->get_rendered_html()[0];
+        $this->assertStringContainsString('Example Institute', $html);
+        $this->assertStringContainsString('Competency evidence summary', $html);
+        $this->assertStringContainsString('Valid, sufficient, authentic and current.', $html);
+
+        // A degree plan uses the degree's words; a plan mixing both sectors uses the site profile.
+        $plan = $cgen->create_plan(['userid' => $student->id, 'name' => 'Degree',
+            'status' => \core_competency\plan::STATUS_ACTIVE]);
+        $outcome = \core_competency\competency::get_record(['idnumber' => 'CLO1']);
+        $cgen->create_plan_competency(['planid' => $plan->get('id'), 'competencyid' => $outcome->get('id')]);
+        $this->assertEquals(terms::HIGHER_ED, scope::for_plan($plan)->get_profile());
+        $cgen->create_plan_competency(['planid' => $plan->get('id'), 'competencyid' => $unit->get('id')]);
+        $this->assertEquals(terms::AU_VET, scope::for_plan($plan)->get_profile());
+
+        // Back to the site's words once the document is done.
+        terms::use_profile(null);
+        $this->assertEquals('Competency', terms::get('competency'));
     }
 }

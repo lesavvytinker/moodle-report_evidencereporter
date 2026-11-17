@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0 (2026-11-21)
+- **Dual-sector providers:** each competency framework can have its own terminology profile (e.g. VET for certificates, higher education for degrees), with the site profile as the default. The summary, evidence pack and bulk downloads use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. In bulk downloads, each learner's pack follows its own frameworks.
+- **Branding per profile:** an organisation name and sign-off statement for each profile, falling back to the site-wide ones.
+
 ## 0.11.0 (2026-11-20)
 - **Settings page** (*Site administration → Plugins → Reports → Evidence Reporter*).
 - **Terminology profiles**: Australian VET (default), Higher education, UK apprenticeships, South African occupational and Generic. The summary, evidence pack PDFs, README, file names and bulk index use the profile's words for learner, competency, framework, assessor, "proficient" and the document titles. Any single word can be changed through language customisation.

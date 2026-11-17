@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'report_evidencereporter';
-$plugin->version   = 2026112000;
+$plugin->version   = 2026112100;
 $plugin->requires  = 2024100700; // Moodle 4.5.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.11.0';
+$plugin->release   = '0.12.0';

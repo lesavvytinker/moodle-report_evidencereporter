@@ -80,6 +80,8 @@ class evidence_pack {
         $this->scope = is_int($scope) ? scope::for_framework($userid, $scope) : $scope;
         $this->viewfullnames = has_capability('moodle/site:viewfullnames', \context_system::instance());
         $this->identity = identity::from_flags($this->learner, $redact);
+        // The words to use: the profile of the frameworks covered (e.g. VET or higher education).
+        terms::use_profile($this->scope->get_profile());
     }
 
     /**

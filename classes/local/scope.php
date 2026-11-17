@@ -335,6 +335,34 @@ class scope {
     }
 
     /**
+     * Frameworks the scope covers: the framework, or those of the competencies in the plans.
+     *
+     * @return int[]
+     */
+    public function get_frameworkids(): array {
+        if ($this->type === self::FRAMEWORK) {
+            return [$this->frameworkid];
+        }
+        $ids = [];
+        foreach ($this->plans as $plan) {
+            foreach ($plan->get_competencies() as $competency) {
+                $ids[(int) $competency->get('competencyframeworkid')] = true;
+            }
+        }
+        return array_keys($ids);
+    }
+
+    /**
+     * The terminology profile for documents covering this scope (see {@see terms::for_frameworks()}).
+     *
+     * @return string
+     */
+    public function get_profile(): string {
+        $ids = $this->get_frameworkids();
+        return $ids ? terms::for_frameworks($ids) : terms::get_site_profile();
+    }
+
+    /**
      * IDs of the competencies covered.
      *
      * @return int[]

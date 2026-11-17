@@ -46,6 +46,8 @@ if ($hassiteconfig && $settings) {
         \report_evidencereporter\local\terms::get_profiles()
     ));
 
+    $settings->add(new \report_evidencereporter\admin\setting_frameworkprofiles());
+
     // Branding.
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/brandingheading',
@@ -122,6 +124,30 @@ if ($hassiteconfig && $settings) {
         60,
         4
     ));
+
+    // Organisation name and sign-off statement per terminology profile (e.g. "X TAFE" and "X University").
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/profilebrandingheading',
+        get_string('settings_profilebranding', 'report_evidencereporter'),
+        get_string('settings_profilebranding_desc', 'report_evidencereporter')
+    ));
+    foreach (\report_evidencereporter\local\terms::get_profiles() as $profile => $profilename) {
+        $settings->add(new admin_setting_configtext(
+            'report_evidencereporter/orgname_' . $profile,
+            get_string('settings_orgname_profile', 'report_evidencereporter', $profilename),
+            '',
+            ''
+        ));
+        $settings->add(new admin_setting_configtextarea(
+            'report_evidencereporter/signoffstatement_' . $profile,
+            get_string('settings_signoffstatement_profile', 'report_evidencereporter', $profilename),
+            '',
+            '',
+            PARAM_TEXT,
+            60,
+            2
+        ));
+    }
 
     // Evidence sources found on this site.
     if ($ADMIN->fulltree) {
