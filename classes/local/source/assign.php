@@ -53,6 +53,46 @@ class assign extends base {
     }
 
     #[\Override]
+    public function get_similarity_html(stdClass $row): string {
+        global $DB;
+        $cm = get_coursemodule_from_id('assign', (int) $row->cmid);
+        if (!$cm) {
+            return '';
+        }
+        $submission = $DB->get_record('assign_submission', ['assignment' => $cm->instance, 'userid' => (int) $row->userid,
+            'groupid' => 0, 'latest' => 1]);
+        if (!$submission) {
+            return '';
+        }
+        $context = \context_module::instance($cm->id);
+        $base = ['userid' => (int) $row->userid, 'cmid' => (int) $cm->id, 'course' => (int) $cm->course];
+        $parts = [];
+        $files = get_file_storage()->get_area_files(
+            $context->id,
+            'assignsubmission_file',
+            'submission_files',
+            $submission->id,
+            'filename',
+            false
+        );
+        foreach ($files as $file) {
+            $links = \report_evidencereporter\local\similarity::get_links($base + ['file' => $file]);
+            if ($links !== '') {
+                $parts[] = s($file->get_filename()) . ': ' . $links;
+            }
+        }
+        $onlinetext = $DB->get_field('assignsubmission_onlinetext', 'onlinetext', ['submission' => $submission->id]);
+        if ($onlinetext !== false && trim(strip_tags((string) $onlinetext)) !== '') {
+            $links = \report_evidencereporter\local\similarity::get_links($base + ['content' => trim($onlinetext),
+                'assignment' => (int) $cm->instance]);
+            if ($links !== '') {
+                $parts[] = s(get_string('packonlinetext', 'report_evidencereporter')) . ': ' . $links;
+            }
+        }
+        return implode('<br>', $parts);
+    }
+
+    #[\Override]
     public function has_attempts(): bool {
         return true;
     }

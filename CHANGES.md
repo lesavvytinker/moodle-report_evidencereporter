@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0 (2026-11-23)
+- **Similarity checks:** assignment evidence shows the result from the site's similarity plugin (Turnitin, Ouriginal, Copyleaks or any plugin using Moodle's plagiarism API), for each submitted file and the online text. It uses the plugin's own badge and link, so no vendor-specific code. Staff only.
+- New setting: **Show similarity results**: summary and report only (default), also in evidence packs as text, or off.
+- New report column: **Similarity check**.
+- Evidence sources can supply similarity results for other activity types (`get_similarity_html()`).
+
 ## 0.13.0 (2026-11-22)
 - **Gradebook adjustments:** when an assessment is the only activity in its own gradebook category (e.g. alongside late or academic misconduct penalty items), and the category total differs from the assessment grade or was overridden, the summary, evidence pack and report show the final result, marked "Adjusted", with each penalty, its feedback, and the calculation in plain names. Penalties named with academic integrity words are flagged for the reviewer. Hidden penalties stay hidden from learners, and feedback follows redaction.
 - New settings: **Show adjustments** (full, "Adjusted" only, or off) and **Academic integrity words**.

@@ -196,6 +196,7 @@
                         {{#description}}<br><span class="small text-muted">{{.}}</span>{{/description}}
                         {{#grade}}<br><span class="small">{{#str}} activitygrade, report_evidencereporter {{/str}}: <strong>{{.}}</strong></span>{{/grade}}
                         {{#gradeadjustment}}<div class="small">{{{.}}}</div>{{/gradeadjustment}}
+                        {{#similarity}}<div class="small er-similarity">{{#str}} similaritycheck, report_evidencereporter {{/str}}: {{{.}}}</div>{{/similarity}}
                         {{#url}}<br><a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} viewevidence, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a><span class="er-printurl">{{.}}</span>{{/url}}
                     </td>
                     <td>{{ratinggiven}}</td>

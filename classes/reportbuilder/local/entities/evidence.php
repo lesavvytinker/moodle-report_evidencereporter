@@ -25,7 +25,8 @@ use core_reportbuilder\local\helpers\{database, format};
 use core_reportbuilder\local\report\{column, filter};
 use html_writer;
 use lang_string;
-use report_evidencereporter\local\{activity_grade, assessor, grade_adjustment, attempts, evidence_link, feedback_visibility, rating,
+use report_evidencereporter\local\{activity_grade, assessor, grade_adjustment, similarity, attempts, evidence_link,
+    feedback_visibility, rating,
     sources};
 use stdClass;
 
@@ -465,6 +466,21 @@ class evidence extends base {
             ->set_is_sortable(false)
             ->add_callback(static function ($gradeitemid, stdClass $row): string {
                 return activity_grade::format($row);
+            });
+
+        // Similarity check results from Moodle's similarity plugins, for staff.
+        $column = (new column(
+            'similarity',
+            new lang_string('similaritycheck', 'report_evidencereporter'),
+            $this->get_entity_name()
+        ))
+            ->add_joins($this->get_joins())
+            ->add_joins($this->get_grade_joins())
+            ->set_type(column::TYPE_LONGTEXT);
+        $columns[] = $this->add_release_fields($this->add_activity_fields($column))
+            ->set_is_sortable(false)
+            ->add_callback(static function ($cmid, stdClass $row): string {
+                return similarity::row_html($row);
             });
 
         // The final result when the assessment's own gradebook category adjusts it (late or misconduct penalties).

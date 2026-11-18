@@ -366,6 +366,8 @@ class summary {
             'url' => $url ? $url->out(false) : '',
             'grade' => activity_grade::format($row),
             'gradeadjustment' => grade_adjustment::row_html($row, $identity),
+            'similarity' => similarity::row_html($row),
+            'similaritytext' => similarity::pack_text($row),
             'ratinggiven' => rating::name((int) $row->competencyid, $row->grade === null ? null : (int) $row->grade),
             'assessor' => $identity ? $identity->staff($assessor) : $assessor,
             'note' => $row->note === null ? '' : s($identity ? $identity->text($row->note) : $row->note),

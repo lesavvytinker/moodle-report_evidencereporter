@@ -471,6 +471,10 @@ class evidence_pack {
                         . ($item->grade ? '<br>' . s(get_string('activitygrade', 'report_evidencereporter') . ': '
                             . $item->grade) : '')
                         . (!empty($item->gradeadjustment) ? '<br><small>' . $item->gradeadjustment . '</small>' : '')
+                        . (!empty($item->similaritytext) ? '<br><small>' . s(get_string(
+                            'similaritycheck',
+                            'report_evidencereporter'
+                        )) . ': ' . s($item->similaritytext) . '</small>' : '')
                         . ($item->url ? '<br><small>' . s($item->url) . '</small>' : '');
                     $html .= '<tr><td width="16%">' . s($item->date) . '<br><small>' . s($item->type) . '</small></td>'
                         . '<td width="' . ($this->includefeedback ? 34 : 54) . '%">' . $source . '</td>'

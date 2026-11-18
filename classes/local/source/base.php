@@ -125,6 +125,18 @@ abstract class base {
     }
 
     /**
+     * Similarity check results for the learner's current submission, from Moodle's similarity (plagiarism) plugins.
+     *
+     * Use similarity::get_links() so any installed plugin (Turnitin, Ouriginal, Copyleaks...) supplies its own badge.
+     *
+     * @param stdClass $row Evidence row with cmid and userid
+     * @return string HTML, or empty when there's nothing to show
+     */
+    public function get_similarity_html(stdClass $row): string {
+        return '';
+    }
+
+    /**
      * Does this source supply its own feedback for this evidence row (instead of the gradebook feedback)?
      *
      * @param stdClass $row

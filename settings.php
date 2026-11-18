@@ -151,6 +151,24 @@ if ($hassiteconfig && $settings) {
         60
     ));
 
+    // Similarity checks (Turnitin, Ouriginal, Copyleaks...) through Moodle's plagiarism API.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/similarityheading',
+        get_string('settings_similarity', 'report_evidencereporter'),
+        get_string('settings_similarity_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configselect(
+        'report_evidencereporter/similarity',
+        get_string('settings_similarityshow', 'report_evidencereporter'),
+        get_string('settings_similarityshow_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\similarity::SHOW_SUMMARY,
+        [
+            'off' => get_string('settings_similarityshow_off', 'report_evidencereporter'),
+            'summary' => get_string('settings_similarityshow_summary', 'report_evidencereporter'),
+            'packs' => get_string('settings_similarityshow_packs', 'report_evidencereporter'),
+        ]
+    ));
+
     // Organisation name and sign-off statement per terminology profile (e.g. "X TAFE" and "X University").
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/profilebrandingheading',

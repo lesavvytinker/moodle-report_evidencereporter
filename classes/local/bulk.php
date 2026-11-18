@@ -166,6 +166,7 @@ class bulk {
             terms::use_profile(null);
             attempts::reset_cache();
             grade_adjustment::reset_cache();
+            similarity::reset_cache();
             gc_collect_cycles();
         }
 
