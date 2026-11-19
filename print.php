@@ -34,9 +34,9 @@ $frameworkid = optional_param('frameworkid', 0, PARAM_INT);
 $planid = optional_param('planid', 0, PARAM_INT);
 $competencyid = optional_param('competencyid', 0, PARAM_INT);
 $scopetype = optional_param('scope', '', PARAM_ALPHA);
-// The "Covering" menu sends one value: plans, plan:<id>, unit:<id> or framework:<id>.
+// The "Covering" menu sends one value: plans, evidence, plan:<id>, unit:<id> or framework:<id>.
 $choice = optional_param('scopechoice', '', PARAM_RAW_TRIMMED);
-if (preg_match('/^(plans|plan|unit|framework)(?::(\d+))?$/', $choice)) {
+if (preg_match('/^(plans|evidence|plan|unit|framework)(?::(\d+))?$/', $choice)) {
     [$scopetype, $choiceid] = array_pad(explode(':', $choice, 2), 2, 0);
     $planid = $scopetype === 'plan' ? (int) $choiceid : 0;
     $frameworkid = $scopetype === 'framework' ? (int) $choiceid : 0;

@@ -60,6 +60,21 @@ class summary {
     }
 
     /**
+     * Competencies the learner has evidence in, or assessed attempts on activities linked to them, that the current
+     * user may see.
+     *
+     * @param int $userid
+     * @return int[]
+     */
+    public static function get_assessed_competencyids(int $userid): array {
+        global $DB;
+        [$from, $where, $params] = self::get_base_sql($userid);
+        $ids = $DB->get_fieldset_sql("SELECT DISTINCT c.id {$from} WHERE {$where}", $params);
+        $ids = array_merge($ids, array_column(self::get_linked_activities($userid), 'competencyid'));
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
      * Assignments and quizzes linked to competencies where the learner has assessed attempts, in courses the current
      * user may see.
      *

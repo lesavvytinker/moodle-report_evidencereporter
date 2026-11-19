@@ -226,7 +226,7 @@ final class scope_test extends \advanced_testcase {
         $index = $zip->getFromName('index.csv');
         $readme = $zip->getFromName('README.txt');
         $zip->close();
-        $this->assertStringContainsString('"Not included: no learning plan"', $index);
+        $this->assertStringContainsString('"Not included: no learning plan or evidence"', $index);
         $this->assertStringContainsString('"Included"', $index);
         $this->assertStringContainsString('Covering: Learning plans', $readme);
         $this->assertStringContainsString('Learning plans', $file->get_filename());
@@ -324,5 +324,91 @@ final class scope_test extends \advanced_testcase {
         $zip->close();
         $this->assertStringContainsString('Covering: Unit: CORE1 Core unit', $readme);
         $this->assertStringContainsString('"Included"', $index);
+    }
+
+    /**
+     * Without a learning plan, the default is the units the learner has evidence in, not every unit in the framework.
+     */
+    public function test_units_with_evidence_without_plan(): void {
+        $this->resetAfterTest();
+        [$framework, , $comps, , , $cmid] = $this->setup_data();
+        $gen = $this->getDataGenerator();
+        // A second framework, so the learner has evidence in two.
+        $cgen = $gen->get_plugin_generator('core_competency');
+        $other = $cgen->create_framework(['shortname' => 'Short course', 'idnumber' => 'SC']);
+        $sc1 = $cgen->create_competency(['competencyframeworkid' => $other->get('id'), 'idnumber' => 'SC1',
+            'shortname' => 'Short unit']);
+        $cgen->create_competency(['competencyframeworkid' => $other->get('id'), 'idnumber' => 'SC2',
+            'shortname' => 'Short unit not taken']);
+
+        $learner = $gen->create_user();
+        $egen = $gen->get_plugin_generator('report_evidencereporter');
+        $egen->create_evidence(['userid' => $learner->id, 'competencyid' => $comps['CORE1.E1.PC1.1']->get('id'),
+            'cmid' => $cmid, 'action' => \core_competency\evidence::ACTION_LOG]);
+        $egen->create_evidence(['userid' => $learner->id, 'competencyid' => $sc1->get('id'), 'cmid' => $cmid,
+            'action' => \core_competency\evidence::ACTION_LOG]);
+        $this->setAdminUser();
+
+        $frameworks = summary::get_frameworks((int) $learner->id);
+        $scope = scope::get_default((int) $learner->id, $frameworks);
+        $this->assertEquals(scope::WITH_EVIDENCE, $scope->type);
+        $this->assertEquals('Units with evidence', $scope->get_name());
+        $this->assertEquals(['CORE1', 'SC1'], array_values(array_column($scope->units, 'idnumber')));
+        $this->assertEqualsCanonicalizing([(int) $framework->get('id'), (int) $other->get('id')], $scope->get_frameworkids());
+        $this->assertEquals(['Covering' => 'Units with evidence', 'Units' => 'CORE1, SC1'], $scope->describe());
+
+        // The unit and everything below it; untaken units are left out. A heading per framework.
+        $list = $scope->get_competencies();
+        $this->assertEquals(['CORE1', 'CORE1.E1', 'CORE1.E1.PC1.1', 'CORE1.E1.PC1.2', 'SC1'], array_column($list, 'idnumber'));
+        $this->assertEquals([0, 1, 2, 2, 0], array_column($list, 'depth'));
+        $this->assertEquals('Diploma', $list[0]->group);
+        $this->assertEquals('Short course', $list[4]->group);
+
+        $this->assertEquals(['scope' => 'evidence'], $scope->get_params());
+        $this->assertEquals(
+            scope::WITH_EVIDENCE,
+            scope::from_params((int) $learner->id, scope::WITH_EVIDENCE, 0, 0, $frameworks)->type
+        );
+        $names = array_column($scope->get_options((int) $learner->id, $frameworks), 'selected', 'name');
+        $this->assertTrue($names['Units with evidence']);
+
+        $summary = summary::build((int) $learner->id, $scope);
+        $this->assertCount(5, $summary->competencies);
+
+        // Profile wording.
+        set_config('profile', terms::HIGHER_ED, 'report_evidencereporter');
+        $this->assertEquals('Learning outcomes with evidence', $scope->get_name());
+    }
+
+    /**
+     * Bulk downloads fall back to units with evidence for learners without a plan, so nobody is left out.
+     */
+    public function test_bulk_without_plans(): void {
+        $this->resetAfterTest();
+        [, $student, $comps, , , $cmid] = $this->setup_data();
+        $gen = $this->getDataGenerator();
+        $noplan = $gen->create_user(['firstname' => 'No', 'lastname' => 'Plan']);
+        $gen->get_plugin_generator('report_evidencereporter')->create_evidence(['userid' => $noplan->id,
+            'competencyid' => $comps['ELEC1']->get('id'), 'cmid' => $cmid, 'action' => \core_competency\evidence::ACTION_LOG]);
+        $nothing = $gen->create_user(['firstname' => 'No', 'lastname' => 'Evidence']);
+        $cohort = $gen->create_cohort();
+        foreach ([$student, $noplan, $nothing] as $user) {
+            cohort_add_member($cohort->id, $user->id);
+        }
+        $this->setAdminUser();
+
+        $file = bulk::build(['sourcetype' => 'cohort', 'sourceid' => $cohort->id, 'frameworkid' => 0,
+            'mode' => bulk::MODE_SUMMARIES, 'includefeedback' => 1]);
+        $path = make_request_directory() . '/bulk.zip';
+        $file->copy_content_to($path);
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($path));
+        $csv = preg_split('/\r?\n/', trim($zip->getFromName('index.csv')));
+        $rows = array_map(fn($line) => str_getcsv($line, ',', '"', ''), $csv);
+        $zip->close();
+        $status = array_column($rows, 4, 0);
+        $this->assertEquals('Included', $status[fullname($student)]);
+        $this->assertEquals('Included', $status['No Plan']);
+        $this->assertEquals('Not included: no learning plan or evidence', $status['No Evidence']);
     }
 }

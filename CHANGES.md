@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.0 (2026-11-25)
+- **Learning plans are optional.** For a learner without a plan, the summary and evidence pack now default to **Units with evidence**: every unit the learner has evidence in (or an assessed attempt linked to), with everything below it, grouped by framework. Units they haven't started, such as electives they didn't take, are left out. It's also in the Covering menu for learners who do have plans.
+- **Bulk downloads** default to learning plans, or units with evidence for learners without one, so learners without plans are no longer skipped. Only learners with neither are listed as not included.
+- New terminology key `units` (plural).
+
 ## 0.15.0 (2026-11-24)
 - **One unit:** "Covering" on the summary, the evidence pack and bulk downloads can now be a single unit: that competency and everything below it. Useful when an auditor samples one unit from a clustered course, where shared tasks also cover other units. Units are each competency in the learner's plans, then the top level of each framework (or, when a framework's only top-level competency is the qualification, its children).
 - New terminology key `unit` (Unit / Learning outcome / KSB / Module / Competency by profile).

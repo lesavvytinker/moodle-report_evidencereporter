@@ -71,9 +71,14 @@ Feature: Competency evidence report source
     And I should see "Sam Student"
     And I should see "Identify hazards"
     And I should see "This summary only includes evidence you have access to"
-    And I should see "No evidence recorded" in the "Control risks" "table_row"
     And I should see "student1" in the "Username" "table_row"
     And I should see "Learner reference"
+    # Without a learning plan, the summary covers the units with evidence; untouched units are left out.
+    And I should see "Units with evidence" in the "Covering" "table_row"
+    And I should not see "Control risks" in the ".er-summary" "css_element"
+    And I set the field "Covering" to "Competency framework: Framework"
+    And I press "Show"
+    And I should see "No evidence recorded" in the "Control risks" "table_row"
 
   Scenario: Teacher redacts the learner's name and username on the summary
     Given I am on the "Evidence report" "reportbuilder > View" page logged in as "teacher1"

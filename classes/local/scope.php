@@ -44,6 +44,9 @@ class scope {
     /** @var string One unit: a competency and everything below it. */
     public const UNIT = 'unit';
 
+    /** @var string The units the learner has evidence in: the default for learners without a learning plan. */
+    public const WITH_EVIDENCE = 'evidence';
+
     /** @var stdClass[]|null Ordered competencies, cached. */
     private ?array $competencies = null;
 
@@ -55,6 +58,7 @@ class scope {
      * @param int $frameworkid For a framework scope
      * @param plan[] $plans For plan scopes
      * @param int $competencyid For a unit scope
+     * @param stdClass[] $units For a units-with-evidence scope, from {@see get_units_with_evidence()}
      */
     private function __construct(
         /** @var string Scope type. */
@@ -66,7 +70,9 @@ class scope {
         /** @var plan[] Plans, for plan scopes. */
         public readonly array $plans = [],
         /** @var int The unit's competency ID, for a unit scope. */
-        public readonly int $competencyid = 0
+        public readonly int $competencyid = 0,
+        /** @var stdClass[] Units, for a units-with-evidence scope. */
+        public readonly array $units = []
     ) {
     }
 
@@ -92,6 +98,49 @@ class scope {
         $frameworkid = (int) \core_competency\competency::get_record(['id' => $competencyid], MUST_EXIST)
             ->get('competencyframeworkid');
         return new self(self::UNIT, $userid, $frameworkid, [], $competencyid);
+    }
+
+    /**
+     * The units the learner has evidence in (or assessed attempts linked to), in framework order. Works without
+     * learning plans: it's what a plan would hold, taken from what the learner actually did.
+     *
+     * @param int $userid
+     * @param array $frameworks From {@see summary::get_frameworks()}
+     * @return stdClass[] competencyid => (id, shortname, idnumber, frameworkid)
+     */
+    public static function get_units_with_evidence(int $userid, array $frameworks): array {
+        global $DB;
+        $assessed = summary::get_assessed_competencyids($userid);
+        if (!$assessed) {
+            return [];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($assessed);
+        $paths = $DB->get_records_select_menu('competency', "id {$insql}", $params, '', 'id, path');
+        $units = [];
+        foreach ($frameworks as $framework) {
+            foreach (self::framework_units((int) $framework->id) as $unit) {
+                foreach ($paths as $id => $path) {
+                    if ((int) $id === (int) $unit->id || str_contains($path, '/' . $unit->id . '/')) {
+                        $units[(int) $unit->id] = (object) ['id' => (int) $unit->id, 'shortname' => $unit->shortname,
+                            'idnumber' => $unit->idnumber, 'frameworkid' => (int) $unit->competencyframeworkid];
+                        break;
+                    }
+                }
+            }
+        }
+        return $units;
+    }
+
+    /**
+     * The units the learner has evidence in.
+     *
+     * @param int $userid
+     * @param array $frameworks From {@see summary::get_frameworks()}
+     * @return self|null Null when there are none
+     */
+    public static function for_units_with_evidence(int $userid, array $frameworks): ?self {
+        $units = self::get_units_with_evidence($userid, $frameworks);
+        return $units ? new self(self::WITH_EVIDENCE, $userid, 0, [], 0, $units) : null;
     }
 
     /**
@@ -153,6 +202,17 @@ class scope {
         $name = format_string($unit->shortname, true, ['context' => \context_system::instance()]);
         $idnumber = (string) $unit->idnumber;
         return $idnumber !== '' && !str_starts_with($name, $idnumber) ? $idnumber . ' ' . $name : $name;
+    }
+
+    /**
+     * A framework's name, for group headings.
+     *
+     * @param int $frameworkid
+     * @return string
+     */
+    private static function framework_name(int $frameworkid): string {
+        $framework = \core_competency\competency_framework::get_record(['id' => $frameworkid]);
+        return $framework ? format_string($framework->get('shortname'), true, ['context' => \context_system::instance()]) : '';
     }
 
     /**
@@ -223,6 +283,9 @@ class scope {
         if ($plans = self::get_plans($userid)) {
             return self::for_plan(reset($plans));
         }
+        if ($withevidence = self::for_units_with_evidence($userid, $frameworks)) {
+            return $withevidence;
+        }
         if (count($frameworks) === 1) {
             return self::for_framework($userid, (int) reset($frameworks)->id);
         }
@@ -277,6 +340,11 @@ class scope {
                     return self::for_unit($userid, $competencyid);
                 }
                 break;
+            case self::WITH_EVIDENCE:
+                if ($scope = self::for_units_with_evidence($userid, $frameworks)) {
+                    return $scope;
+                }
+                break;
             default:
                 return null;
         }
@@ -293,6 +361,7 @@ class scope {
             self::FRAMEWORK => ['scope' => self::FRAMEWORK, 'frameworkid' => $this->frameworkid],
             self::PLAN => ['scope' => self::PLAN, 'planid' => (int) $this->plans[0]->get('id')],
             self::UNIT => ['scope' => self::UNIT, 'competencyid' => $this->competencyid],
+            self::WITH_EVIDENCE => ['scope' => self::WITH_EVIDENCE],
             default => ['scope' => self::ACTIVE_PLANS],
         };
     }
@@ -348,6 +417,9 @@ class scope {
         if ($unit = $this->get_unit()) {
             return self::unit_label($unit);
         }
+        if ($this->type === self::WITH_EVIDENCE) {
+            return get_string('scopewithevidence', 'report_evidencereporter', terms::get('units'));
+        }
         return get_string('scopeactiveplans', 'report_evidencereporter');
     }
 
@@ -363,6 +435,9 @@ class scope {
         }
         if ($unit = $this->get_unit()) {
             return $unit->idnumber ?: $unit->shortname;
+        }
+        if ($this->type === self::WITH_EVIDENCE) {
+            return $this->get_name();
         }
         return $this->type === self::PLAN ? $this->plans[0]->get('name')
             : get_string('scopeactiveplans', 'report_evidencereporter');
@@ -380,6 +455,12 @@ class scope {
             $name = $framework ? format_string($framework->get('shortname'), true, ['context' => $context])
                 . ($framework->get('idnumber') ? ' (' . $framework->get('idnumber') . ')' : '') : '';
             return [terms::get('framework') => $name];
+        }
+        if ($this->type === self::WITH_EVIDENCE) {
+            return [
+                get_string('scopecovering', 'report_evidencereporter') => $this->get_name(),
+                terms::get('units') => implode(', ', array_map(fn($u) => $u->idnumber ?: $u->shortname, $this->units)),
+            ];
         }
         if ($unit = $this->get_unit()) {
             $framework = \core_competency\competency_framework::get_record(['id' => $this->frameworkid]);
@@ -438,6 +519,39 @@ class scope {
             return $this->competencies = $result;
         }
 
+        if ($this->type === self::WITH_EVIDENCE) {
+            $result = [];
+            $frameworkids = array_unique(array_column($this->units, 'frameworkid'));
+            foreach ($frameworkids as $frameworkid) {
+                $first = true;
+                $prefixes = [];
+                foreach ($this->units as $unit) {
+                    if ($unit->frameworkid === $frameworkid) {
+                        $prefixes[$unit->id] = true;
+                    }
+                }
+                $depth = null;
+                foreach (self::framework_order($frameworkid) as $comp) {
+                    $under = isset($prefixes[(int) $comp->id]);
+                    foreach (array_keys($prefixes) as $unitid) {
+                        $under = $under || str_contains($comp->path, '/' . $unitid . '/');
+                    }
+                    if (!$under) {
+                        continue;
+                    }
+                    if (isset($prefixes[(int) $comp->id])) {
+                        $depth = $comp->depth;
+                    }
+                    $copy = clone $comp;
+                    $copy->depth = $comp->depth - (int) $depth;
+                    $copy->group = $first && count($frameworkids) > 1 ? self::framework_name($frameworkid) : '';
+                    $first = false;
+                    $result[] = $copy;
+                }
+            }
+            return $this->competencies = $result;
+        }
+
         $frameworkorders = [];
         $seen = [];
         $result = [];
@@ -476,6 +590,9 @@ class scope {
      * @return int[]
      */
     public function get_frameworkids(): array {
+        if ($this->type === self::WITH_EVIDENCE) {
+            return array_values(array_unique(array_column($this->units, 'frameworkid')));
+        }
         if ($this->type === self::FRAMEWORK || $this->type === self::UNIT) {
             return [$this->frameworkid];
         }
@@ -552,6 +669,10 @@ class scope {
                     . format_string($plan->get('name'), true, ['context' => $context]) . ' (' . $plan->get_statusname() . ')',
                 'params' => ['scope' => self::PLAN, 'planid' => (int) $plan->get('id')],
             ];
+        }
+        if (self::get_units_with_evidence($userid, $frameworks)) {
+            $options[] = ['name' => get_string('scopewithevidence', 'report_evidencereporter', terms::get('units')),
+                'params' => ['scope' => self::WITH_EVIDENCE]];
         }
         foreach (self::get_units($userid, $frameworks) as $unit) {
             $options[] = [

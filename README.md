@@ -42,7 +42,7 @@ The pack follows the **Include feedback** checkbox and the same access and relea
 *Site administration → Reports → Bulk evidence downloads* builds evidence for a whole group at once:
 
 1. Choose **Learners from**: a learning plan template (everyone with a plan from it) or a cohort.
-2. Choose what to cover: **Learning plans** (the default: each learner's active plans, or their latest plan; learners without one are listed but not included) a competency framework, or one unit (listed under its framework). Then choose **Evidence summaries** (one PDF per learner) or **Evidence packs** (one ZIP per learner, as above). Tick or untick **Include feedback**, and any **Redact** options.
+2. Choose what to cover: **Learning plans** (the default: each learner's active plans, or their latest plan; for learners without one, the units they have evidence in) a competency framework, or one unit (listed under its framework). Then choose **Evidence summaries** (one PDF per learner) or **Evidence packs** (one ZIP per learner, as above). Tick or untick **Include feedback**, and any **Redact** options.
 3. Press **Build download**. It's built in the background, and you get a notification with the link when it's ready.
 
 The download contains one file per learner, `index.csv` (every learner and whether they were included) and `README.txt`. It's built **as you**, so only learners whose evidence you can see are included; the rest are listed as skipped. Up to 200 learners per download. Finished downloads stay on the page (and in your own file area, which no one else can open) for 7 days, then a scheduled task deletes them.
@@ -135,6 +135,7 @@ Use **Covering** at the top of the page to choose:
 |---|---|
 | **Active learning plans** (the default) | All the learner's active plans together, e.g. a core plan from a template plus an electives plan. Each plan gets its own heading. |
 | **Learning plan: …** | One plan, active or completed |
+| **Units with evidence** | Every unit the learner has evidence in, and everything beneath it, grouped by framework. The default for learners without a learning plan, so plans are optional: link competencies to activities in courses and the evidence shows up. Units not started (e.g. electives not taken) are left out. |
 | **Unit: …** | One unit and everything beneath it. Handy for clustered delivery: when an auditor samples one unit, shared tasks show only against that unit. Units are those in the learner's plans, then the top level of each framework (or the children of a framework's only top-level competency, e.g. the qualification). |
 | **Competency framework: …** | Every competency in the framework, including ones the learner isn't enrolled in |
 

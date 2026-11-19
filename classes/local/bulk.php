@@ -143,8 +143,13 @@ class bulk {
             } else if ($framework) {
                 $scope = isset($frameworks[$frameworkid]) ? scope::for_framework((int) $learner->id, $frameworkid) : null;
             } else {
-                // The same default as the summary page: their active plans, otherwise their latest plan.
-                $scope = scope::get_default((int) $learner->id, []);
+                // The same default as the summary page: their active plans, otherwise their latest plan, otherwise the
+                // units they have evidence in.
+                $scope = scope::get_default((int) $learner->id, $frameworks);
+                if ($scope && $scope->type === scope::FRAMEWORK) {
+                    // A whole framework is a choice, not a default: without a plan or evidence there's nothing to cover.
+                    $scope = null;
+                }
             }
             if (!$scope) {
                 $status = get_string($framework || $unit ? 'bulkskipped' : 'bulknoplan', 'report_evidencereporter');
