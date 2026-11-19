@@ -111,3 +111,8 @@ Feature: Competency evidence report source
     And I press "Show"
     And I should see "Control risks" in the ".er-summary" "css_element"
     And I should see "Framework (FW1)" in the "Competency framework" "table_row"
+    And I set the field "Covering" to "Unit: C-2 Control risks"
+    And I press "Show"
+    And I should see "C-2 Control risks" in the "Unit" "table_row"
+    And I should see "Control risks" in the ".er-summary" "css_element"
+    And I should not see "Identify hazards" in the ".er-summary" "css_element"

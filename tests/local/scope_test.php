@@ -232,4 +232,97 @@ final class scope_test extends \advanced_testcase {
         $this->assertStringContainsString('Learning plans', $file->get_filename());
         $this->assertNotEmpty($DB->get_records('competency_plan', ['userid' => $student->id]));
     }
+
+    /**
+     * One unit from a clustered course: just that unit and everything below it, even though the task covers both.
+     */
+    public function test_unit_scope(): void {
+        $this->resetAfterTest();
+        [$framework, $student, $comps, , , $cmid] = $this->setup_data();
+        /** @var \core_competency_generator $cgen */
+        $cgen = $this->getDataGenerator()->get_plugin_generator('core_competency');
+        // The same task also assesses the elective: a cluster.
+        $cgen->create_course_module_competency(['competencyid' => $comps['ELEC1']->get('id'), 'cmid' => $cmid]);
+        $this->getDataGenerator()->get_plugin_generator('report_evidencereporter')->create_evidence([
+            'userid' => $student->id, 'competencyid' => $comps['ELEC1']->get('id'), 'cmid' => $cmid,
+            'action' => \core_competency\evidence::ACTION_LOG]);
+        $this->setAdminUser();
+
+        $frameworks = summary::get_frameworks((int) $student->id);
+        $units = scope::get_units((int) $student->id, $frameworks);
+        // Plan units first, then the rest of the framework's top level.
+        $this->assertEquals(['CORE1', 'ELEC1', 'ELEC2'], array_values(array_map(fn($u) => $u->idnumber, $units)));
+
+        $core = (int) $comps['CORE1']->get('id');
+        $scope = scope::from_params((int) $student->id, scope::UNIT, 0, 0, $frameworks, $core);
+        $this->assertEquals(scope::UNIT, $scope->type);
+        $this->assertFalse($scope->is_plan());
+        $this->assertEquals(['scope' => 'unit', 'competencyid' => $core], $scope->get_params());
+        $this->assertEquals([(int) $framework->get('id')], $scope->get_frameworkids());
+        $this->assertEquals('CORE1 Core unit', $scope->get_name());
+        $this->assertEquals('CORE1', $scope->get_file_label());
+        $this->assertEquals(['Unit' => 'CORE1 Core unit', 'Competency framework' => 'Diploma'], $scope->describe());
+        $comps = $scope->get_competencies();
+        $this->assertEquals(['CORE1', 'CORE1.E1', 'CORE1.E1.PC1.1', 'CORE1.E1.PC1.2'], array_column($comps, 'idnumber'));
+        $this->assertEquals([0, 1, 2, 2], array_column($comps, 'depth'));
+
+        $names = array_column($scope->get_options((int) $student->id, $frameworks), 'selected', 'name');
+        $this->assertTrue($names['Unit: CORE1 Core unit']);
+        $this->assertArrayHasKey('Unit: ELEC2 Elective not taken', $names);
+
+        // The pack covers the shared task for this unit only.
+        $pack = new evidence_pack((int) $student->id, $scope);
+        $pack->build();
+        $html = $pack->get_rendered_html()[0];
+        $this->assertStringContainsString('Core unit', $html);
+        $this->assertStringContainsString('Project', $html);
+        $this->assertStringNotContainsString('Elective one', $html);
+        $this->assertStringContainsString('CORE1', $pack->get_filename());
+
+        // A unit from a framework the learner has nothing in isn't available.
+        $other = $cgen->create_framework();
+        $stranger = $cgen->create_competency(['competencyframeworkid' => $other->get('id')]);
+        $this->expectException(\moodle_exception::class);
+        scope::from_params((int) $student->id, scope::UNIT, 0, 0, $frameworks, (int) $stranger->get('id'));
+    }
+
+    /**
+     * When the qualification is the framework's only top-level competency, its children are the units.
+     */
+    public function test_units_below_single_root(): void {
+        $this->resetAfterTest();
+        /** @var \core_competency_generator $cgen */
+        $cgen = $this->getDataGenerator()->get_plugin_generator('core_competency');
+        $framework = $cgen->create_framework();
+        $qual = $cgen->create_competency(['competencyframeworkid' => $framework->get('id'), 'idnumber' => 'CUA30120']);
+        foreach (['U1', 'U2'] as $idnumber) {
+            $cgen->create_competency(['competencyframeworkid' => $framework->get('id'), 'idnumber' => $idnumber,
+                'parentid' => $qual->get('id')]);
+        }
+        $units = scope::framework_units((int) $framework->get('id'));
+        $this->assertEquals(['U1', 'U2'], array_values(array_map(fn($u) => $u->idnumber, $units)));
+    }
+
+    /**
+     * Bulk downloads can cover one unit across a cohort.
+     */
+    public function test_bulk_unit(): void {
+        $this->resetAfterTest();
+        [, $student, $comps] = $this->setup_data();
+        $cohort = $this->getDataGenerator()->create_cohort();
+        cohort_add_member($cohort->id, $student->id);
+        $this->setAdminUser();
+
+        $file = bulk::build(['sourcetype' => 'cohort', 'sourceid' => $cohort->id, 'frameworkid' => 0,
+            'competencyid' => $comps['CORE1']->get('id'), 'mode' => bulk::MODE_SUMMARIES, 'includefeedback' => 1]);
+        $path = make_request_directory() . '/bulk.zip';
+        $file->copy_content_to($path);
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($path));
+        $readme = $zip->getFromName('README.txt');
+        $index = $zip->getFromName('index.csv');
+        $zip->close();
+        $this->assertStringContainsString('Covering: Unit: CORE1 Core unit', $readme);
+        $this->assertStringContainsString('"Included"', $index);
+    }
 }

@@ -95,7 +95,8 @@ class bulk {
     /**
      * Build the bulk download as the current user and store it in their file area.
      *
-     * @param array $options sourcetype, sourceid, frameworkid (0: each learner's learning plans), mode, includefeedback,
+     * @param array $options sourcetype, sourceid, frameworkid (0: each learner's learning plans), competencyid (one unit,
+     *     instead of a framework), mode, includefeedback,
      *     redactname, redactusername, redactstaff
      * @return \stored_file
      */
@@ -107,6 +108,7 @@ class bulk {
         $sourcetype = $options['sourcetype'] === 'cohort' ? 'cohort' : 'template';
         $sourceid = (int) $options['sourceid'];
         $frameworkid = (int) $options['frameworkid'];
+        $competencyid = (int) ($options['competencyid'] ?? 0);
         $mode = $options['mode'] === self::MODE_PACKS ? self::MODE_PACKS : self::MODE_SUMMARIES;
         $includefeedback = !empty($options['includefeedback']);
         $redact = [
@@ -118,8 +120,10 @@ class bulk {
         $learners = array_slice(self::get_learners($sourcetype, $sourceid), 0, self::MAX_LEARNERS, true);
         $framework = $frameworkid ? \core_competency\competency_framework::get_record(['id' => $frameworkid], MUST_EXIST)
             : null;
-        $coveringname = $framework ? format_string($framework->get('shortname'))
-            : get_string('bulkplans', 'report_evidencereporter');
+        $unit = $competencyid ? \core_competency\competency::get_record(['id' => $competencyid], MUST_EXIST)->to_record()
+            : null;
+        $coveringname = $unit ? terms::get('unit') . ': ' . scope::unit_label($unit)
+            : ($framework ? format_string($framework->get('shortname')) : get_string('bulkplans', 'report_evidencereporter'));
         $sourcename = self::get_source_name($sourcetype, $sourceid);
 
         $dir = make_request_directory();
@@ -133,15 +137,18 @@ class bulk {
             $identity = identity::from_flags($learner, $redact);
             $row = [$identity->name(), $identity->username(), $identity->idnumber(), $identity->reference()];
             $frameworks = summary::get_frameworks((int) $learner->id);
-            if ($framework) {
+            if ($unit) {
+                $scope = isset(scope::get_units((int) $learner->id, $frameworks)[$competencyid])
+                    ? scope::for_unit((int) $learner->id, $competencyid) : null;
+            } else if ($framework) {
                 $scope = isset($frameworks[$frameworkid]) ? scope::for_framework((int) $learner->id, $frameworkid) : null;
             } else {
                 // The same default as the summary page: their active plans, otherwise their latest plan.
                 $scope = scope::get_default((int) $learner->id, []);
             }
             if (!$scope) {
-                $index[] = array_merge($row, [get_string($framework ? 'bulkskipped' : 'bulknoplan', 'report_evidencereporter'),
-                    '']);
+                $status = get_string($framework || $unit ? 'bulkskipped' : 'bulknoplan', 'report_evidencereporter');
+                $index[] = array_merge($row, [$status, '']);
                 continue;
             }
             $base = clean_filename($identity->file_label());
@@ -225,7 +232,7 @@ class bulk {
         \report_evidencereporter\event\bulk_created::create([
             'context' => \context_system::instance(),
             'other' => ['sourcetype' => $sourcetype, 'sourceid' => $sourceid, 'frameworkid' => $frameworkid,
-                'mode' => $mode, 'learners' => $included] + array_map('intval', $redact),
+                'competencyid' => $competencyid, 'mode' => $mode, 'learners' => $included] + array_map('intval', $redact),
         ])->trigger();
         return $file;
     }

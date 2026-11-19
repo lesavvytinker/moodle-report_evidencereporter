@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0 (2026-11-24)
+- **One unit:** "Covering" on the summary, the evidence pack and bulk downloads can now be a single unit: that competency and everything below it. Useful when an auditor samples one unit from a clustered course, where shared tasks also cover other units. Units are each competency in the learner's plans, then the top level of each framework (or, when a framework's only top-level competency is the qualification, its children).
+- New terminology key `unit` (Unit / Learning outcome / KSB / Module / Competency by profile).
+
 ## 0.14.0 (2026-11-23)
 - **Similarity checks:** assignment evidence shows the result from the site's similarity plugin (Turnitin, Ouriginal, Copyleaks or any plugin using Moodle's plagiarism API), for each submitted file and the online text. It uses the plugin's own badge and link, so no vendor-specific code. Staff only.
 - New setting: **Show similarity results**: summary and report only (default), also in evidence packs as text, or off.

@@ -20,9 +20,10 @@ namespace report_evidencereporter\event;
  * Event: a learner's printable evidence summary was viewed.
  *
  * @property-read array $other {
- *      - string scope: framework, plan or plans (active plans)
+ *      - string scope: framework, plan, plans (active plans) or unit
  *      - int frameworkid: the competency framework (0 for plans)
  *      - int planid: the learning plan (for a single plan)
+ *      - int competencyid: the unit (for a unit)
  * }
  *
  * @package    report_evidencereporter
@@ -69,6 +70,7 @@ class summary_viewed extends \core\event\base {
                 'scope' => $this->other['scope'] ?? '',
                 'planid' => $this->other['planid'] ?? 0,
                 'frameworkid' => $this->other['frameworkid'],
+                'competencyid' => $this->other['competencyid'] ?? 0,
             ])
         );
     }
@@ -81,6 +83,9 @@ class summary_viewed extends \core\event\base {
     protected function describe_scope(): string {
         if (!empty($this->other['planid'])) {
             return "the learning plan with id '{$this->other['planid']}'";
+        }
+        if (!empty($this->other['competencyid'])) {
+            return "the unit (competency) with id '{$this->other['competencyid']}'";
         }
         if (($this->other['scope'] ?? '') === 'plans') {
             return 'their active learning plans';

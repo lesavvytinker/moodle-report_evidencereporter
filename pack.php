@@ -29,6 +29,7 @@ use report_evidencereporter\local\{evidence_pack, scope, summary};
 $userid = required_param('userid', PARAM_INT);
 $frameworkid = optional_param('frameworkid', 0, PARAM_INT);
 $planid = optional_param('planid', 0, PARAM_INT);
+$competencyid = optional_param('competencyid', 0, PARAM_INT);
 $scopetype = optional_param('scope', '', PARAM_ALPHA);
 $includefeedback = optional_param('includefeedback', 1, PARAM_BOOL);
 $redact = [
@@ -50,7 +51,7 @@ $PAGE->set_url(new moodle_url('/report/evidencereporter/pack.php', ['userid' => 
 
 // The same access as the summary: the plan or framework must be visible to the current user.
 $frameworks = summary::get_frameworks($learner->id);
-$scope = scope::from_params($learner->id, $scopetype, $planid, $frameworkid, $frameworks)
+$scope = scope::from_params($learner->id, $scopetype, $planid, $frameworkid, $frameworks, $competencyid)
     ?? scope::get_default($learner->id, $frameworks);
 if (!$scope || (!$scope->is_plan() && !summary::has_visible_evidence($learner->id))) {
     throw new moodle_exception('nopermissiontoviewevidence', 'report_evidencereporter');

@@ -22,6 +22,7 @@ namespace report_evidencereporter\event;
  * @property-read array $other {
  *      - string sourcetype: 'template' or 'cohort'
  *      - int sourceid
+ *      - int competencyid: one unit, if chosen
  *      - int frameworkid
  *      - string mode: 'summaries' or 'packs'
  *      - int learners: learners included
@@ -57,7 +58,9 @@ class bulk_created extends \core\event\base {
     public function get_description() {
         return "The user with id '{$this->userid}' created a bulk evidence download ({$this->other['mode']}) of " .
             "{$this->other['learners']} learners from the {$this->other['sourcetype']} with id '{$this->other['sourceid']}' " .
-            "for the competency framework with id '{$this->other['frameworkid']}'.";
+            (!empty($this->other['competencyid'])
+                ? "for the unit (competency) with id '{$this->other['competencyid']}'."
+                : "for the competency framework with id '{$this->other['frameworkid']}'.");
     }
 
     /**
@@ -93,6 +96,7 @@ class bulk_created extends \core\event\base {
             'sourcetype' => \core\event\base::NOT_MAPPED,
             'sourceid' => \core\event\base::NOT_MAPPED,
             'frameworkid' => \core\event\base::NOT_MAPPED,
+            'competencyid' => \core\event\base::NOT_MAPPED,
             'mode' => \core\event\base::NOT_MAPPED,
             'learners' => \core\event\base::NOT_MAPPED,
         ];

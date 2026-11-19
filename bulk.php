@@ -58,7 +58,8 @@ if ($data = $form->get_data()) {
     $task->set_custom_data([
         'sourcetype' => $data->sourcetype,
         'sourceid' => (int) ($data->sourcetype === 'cohort' ? $data->cohortid : $data->templateid),
-        'frameworkid' => (int) $data->frameworkid,
+        'frameworkid' => str_starts_with($data->covering, 'framework-') ? (int) substr($data->covering, 10) : 0,
+        'competencyid' => str_starts_with($data->covering, 'unit-') ? (int) substr($data->covering, 5) : 0,
         'mode' => $data->mode,
         'includefeedback' => (int) $data->includefeedback,
         'redactname' => (int) $data->redactname,

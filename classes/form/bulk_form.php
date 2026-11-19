@@ -62,15 +62,19 @@ class bulk_form extends \moodleform {
         );
         $mform->hideIf('cohortid', 'sourcetype', 'neq', 'cohort');
 
-        $frameworks = array_map($format, $DB->get_records_menu('competency_framework', null, 'shortname', 'id, shortname'));
-        $mform->addElement(
-            'select',
-            'frameworkid',
-            get_string('bulkcovering', 'report_evidencereporter'),
-            [0 => get_string('bulkplans', 'report_evidencereporter')] + $frameworks
-        );
-        $mform->setDefault('frameworkid', 0);
-        $mform->addHelpButton('frameworkid', 'bulkcovering', 'report_evidencereporter');
+        // Covering: each learner's plans, a whole framework, or one unit (listed under its framework).
+        $covering = ['plans' => get_string('bulkplans', 'report_evidencereporter')];
+        foreach ($DB->get_records_menu('competency_framework', null, 'shortname', 'id, shortname') as $id => $name) {
+            $covering['framework-' . $id] = $format($name);
+            foreach (\report_evidencereporter\local\scope::framework_units((int) $id) as $unit) {
+                $covering['unit-' . $unit->id] = '— ' . \report_evidencereporter\local\terms::get('unit') . ': '
+                    . \report_evidencereporter\local\scope::unit_label($unit);
+            }
+        }
+        $mform->addElement('select', 'covering', get_string('bulkcovering', 'report_evidencereporter'), $covering);
+        $mform->setType('covering', PARAM_ALPHANUMEXT);
+        $mform->setDefault('covering', 'plans');
+        $mform->addHelpButton('covering', 'bulkcovering', 'report_evidencereporter');
 
         $mform->addElement(
             'radio',

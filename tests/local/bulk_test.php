@@ -135,7 +135,7 @@ final class bulk_test extends \advanced_testcase {
         $this->assertStringStartsWith('%PDF', $entries['Ben Learner (ben).pdf']);
         $this->assertArrayNotHasKey('Dee Learner (dee).pdf', $entries);
         $this->assertEquals(['ava' => 'Included', 'ben' => 'Included', 'cal' => 'Included',
-            'dee' => 'Skipped: no evidence you can access in this framework'], $this->index($entries));
+            'dee' => 'Skipped: no evidence you can access in this framework or unit'], $this->index($entries));
         $this->assertStringContainsString('3 of 4 learners included', $entries['README.txt']);
         $this->assertStringStartsWith('Evidence summaries - WHS Jan 25 - WHS101', $file->get_filename());
     }
