@@ -110,10 +110,20 @@ class bulk {
         if ($sourcetype === 'course') {
             return $sourceid && $sourceid !== SITEID ? [$sourceid] : [];
         }
-        $category = \core_course_category::get($sourceid, IGNORE_MISSING, true);
-        return $category
-            ? array_map('intval', array_values($category->get_courses(['recursive' => $subcategories, 'idonly' => true])))
-            : [];
+        // Straight from the database: the bulk tool is for managers, and core_course_category::get_courses() filters by
+        // what the current user can see (more strictly in Moodle 5.2), which would silently drop learners.
+        global $DB;
+        $path = $DB->get_field('course_categories', 'path', ['id' => $sourceid]);
+        if ($path === false) {
+            return [];
+        }
+        $where = 'category = :categoryid';
+        $params = ['categoryid' => $sourceid];
+        if ($subcategories) {
+            $where .= ' OR category IN (SELECT id FROM {course_categories} WHERE ' . $DB->sql_like('path', ':path') . ')';
+            $params['path'] = $path . '/%';
+        }
+        return array_map('intval', $DB->get_fieldset_select('course', 'id', $where, $params));
     }
 
     /**
