@@ -48,19 +48,40 @@ class bulk {
     /** @var string Full evidence packs: one ZIP per learner. */
     public const MODE_PACKS = 'packs';
 
+    /** @var string[] Where learners come from, and the form field holding the choice. */
+    public const SOURCE_FIELDS = ['template' => 'templateid', 'cohort' => 'cohortid', 'course' => 'courseid',
+        'category' => 'categoryid'];
+
     /**
-     * Learners for a learning plan template (anyone with a plan from it) or a cohort, sorted by name.
+     * Learners for a learning plan template (anyone with a plan from it), a cohort, a course or a course category,
+     * sorted by name. For courses, learners are users with an active enrolment who can be rated on competencies.
      *
-     * @param string $sourcetype 'template' or 'cohort'
+     * @param string $sourcetype 'template', 'cohort', 'course' or 'category'
      * @param int $sourceid
+     * @param bool $subcategories For a category, include courses in its subcategories
      * @return stdClass[] user records, keyed by id
      */
-    public static function get_learners(string $sourcetype, int $sourceid): array {
+    public static function get_learners(string $sourcetype, int $sourceid, bool $subcategories = true): array {
         global $DB;
         $fields = 'u.id, u.username, u.idnumber, u.email, ' . implode(', ', array_map(
             fn($f) => "u.{$f}",
             \core_user\fields::get_name_fields()
         ));
+        if ($sourcetype === 'course' || $sourcetype === 'category') {
+            $users = [];
+            foreach (self::get_source_courseids($sourcetype, $sourceid, $subcategories) as $courseid) {
+                [$enrolsql, $params] = get_enrolled_sql(
+                    \context_course::instance($courseid),
+                    'moodle/competency:coursecompetencygradable',
+                    0,
+                    true
+                );
+                $users += $DB->get_records_sql("SELECT {$fields} FROM {user} u
+                    JOIN ({$enrolsql}) je ON je.id = u.id WHERE u.deleted = 0", $params);
+            }
+            uasort($users, fn($a, $b) => strcmp(fullname($a), fullname($b)));
+            return $users;
+        }
         if ($sourcetype === 'template') {
             $sql = "SELECT DISTINCT {$fields}
                       FROM {competency_plan} p
@@ -78,18 +99,52 @@ class bulk {
     }
 
     /**
-     * Name of the template or cohort.
+     * Courses for a course or category source.
+     *
+     * @param string $sourcetype 'course' or 'category'
+     * @param int $sourceid
+     * @param bool $subcategories
+     * @return int[]
+     */
+    private static function get_source_courseids(string $sourcetype, int $sourceid, bool $subcategories): array {
+        if ($sourcetype === 'course') {
+            return $sourceid && $sourceid !== SITEID ? [$sourceid] : [];
+        }
+        $category = \core_course_category::get($sourceid, IGNORE_MISSING, true);
+        return $category
+            ? array_map('intval', array_values($category->get_courses(['recursive' => $subcategories, 'idonly' => true])))
+            : [];
+    }
+
+    /**
+     * Name of the template, cohort, course or category.
      *
      * @param string $sourcetype
      * @param int $sourceid
+     * @param bool $subcategories
      * @return string
      */
-    public static function get_source_name(string $sourcetype, int $sourceid): string {
+    public static function get_source_name(string $sourcetype, int $sourceid, bool $subcategories = true): string {
         global $DB;
-        $name = $sourcetype === 'template'
-            ? $DB->get_field('competency_template', 'shortname', ['id' => $sourceid])
-            : $DB->get_field('cohort', 'name', ['id' => $sourceid]);
-        return format_string((string) $name, true, ['context' => \context_system::instance()]);
+        $context = \context_system::instance();
+        switch ($sourcetype) {
+            case 'template':
+                $name = $DB->get_field('competency_template', 'shortname', ['id' => $sourceid]);
+                break;
+            case 'course':
+                $name = $DB->get_field('course', 'fullname', ['id' => $sourceid]);
+                break;
+            case 'category':
+                $name = $DB->get_field('course_categories', 'name', ['id' => $sourceid]);
+                return get_string(
+                    $subcategories ? 'bulkcategorywithsubs' : 'bulkcategoryonly',
+                    'report_evidencereporter',
+                    format_string((string) $name, true, ['context' => $context])
+                );
+            default:
+                $name = $DB->get_field('cohort', 'name', ['id' => $sourceid]);
+        }
+        return format_string((string) $name, true, ['context' => $context]);
     }
 
     /**
@@ -105,8 +160,9 @@ class bulk {
         \core_php_time_limit::raise(0);
         raise_memory_limit(MEMORY_HUGE);
 
-        $sourcetype = $options['sourcetype'] === 'cohort' ? 'cohort' : 'template';
+        $sourcetype = isset(self::SOURCE_FIELDS[$options['sourcetype']]) ? $options['sourcetype'] : 'template';
         $sourceid = (int) $options['sourceid'];
+        $subcategories = (bool) ($options['subcategories'] ?? true);
         $frameworkid = (int) $options['frameworkid'];
         $competencyid = (int) ($options['competencyid'] ?? 0);
         $mode = $options['mode'] === self::MODE_PACKS ? self::MODE_PACKS : self::MODE_SUMMARIES;
@@ -117,14 +173,14 @@ class bulk {
             'redactstaff' => !empty($options['redactstaff']),
         ];
 
-        $learners = array_slice(self::get_learners($sourcetype, $sourceid), 0, self::MAX_LEARNERS, true);
+        $learners = array_slice(self::get_learners($sourcetype, $sourceid, $subcategories), 0, self::MAX_LEARNERS, true);
         $framework = $frameworkid ? \core_competency\competency_framework::get_record(['id' => $frameworkid], MUST_EXIST)
             : null;
         $unit = $competencyid ? \core_competency\competency::get_record(['id' => $competencyid], MUST_EXIST)->to_record()
             : null;
         $coveringname = $unit ? terms::get('unit') . ': ' . scope::unit_label($unit)
             : ($framework ? format_string($framework->get('shortname')) : get_string('bulkplans', 'report_evidencereporter'));
-        $sourcename = self::get_source_name($sourcetype, $sourceid);
+        $sourcename = self::get_source_name($sourcetype, $sourceid, $subcategories);
 
         $dir = make_request_directory();
         $files = [];

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.17.0 (2026-11-26)
+- **Bulk downloads by course or category:** "Learners from" can now be a course (everyone with an active enrolment who can be rated on competencies) or a course category, with its subcategories by default, e.g. every learner across a qualification's unit courses.
+
 ## 0.16.0 (2026-11-25)
 - **Learning plans are optional.** For a learner without a plan, the summary and evidence pack now default to **Units with evidence**: every unit the learner has evidence in (or an assessed attempt linked to), with everything below it, grouped by framework. Units they haven't started, such as electives they didn't take, are left out. It's also in the Covering menu for learners who do have plans.
 - **Bulk downloads** default to learning plans, or units with evidence for learners without one, so learners without plans are no longer skipped. Only learners with neither are listed as not included.

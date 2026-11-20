@@ -41,7 +41,7 @@ The pack follows the **Include feedback** checkbox and the same access and relea
 
 *Site administration → Reports → Bulk evidence downloads* builds evidence for a whole group at once:
 
-1. Choose **Learners from**: a learning plan template (everyone with a plan from it) or a cohort.
+1. Choose **Learners from**: a learning plan template (everyone with a plan from it), a cohort, a course (everyone actively enrolled who can be rated on competencies), or a course category (every course in it, with its subcategories unless you untick that), e.g. a whole qualification.
 2. Choose what to cover: **Learning plans** (the default: each learner's active plans, or their latest plan; for learners without one, the units they have evidence in) a competency framework, or one unit (listed under its framework). Then choose **Evidence summaries** (one PDF per learner) or **Evidence packs** (one ZIP per learner, as above). Tick or untick **Include feedback**, and any **Redact** options.
 3. Press **Build download**. It's built in the background, and you get a notification with the link when it's ready.
 

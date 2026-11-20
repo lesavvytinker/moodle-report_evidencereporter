@@ -52,3 +52,16 @@ Feature: Bulk evidence downloads
     And I should see "Evidence summaries - WHS Jan 25 - WHS101"
     And I should see "2 of 2 learners included"
     And I should not see "being built"
+
+  Scenario: Queue a bulk download for everyone enrolled in a course category
+    Given I log in as "admin"
+    And I navigate to "Reports > Bulk evidence downloads" in site administration
+    When I set the following fields to these values:
+      | Learners from        | Course category |
+      | Course category      | Category 1      |
+      | Covering             | WHS 101         |
+    And I press "Build download"
+    And I run all adhoc tasks
+    And I reload the page
+    Then I should see "Category 1 (category and subcategories)"
+    And I should see "2 of 2 learners included"

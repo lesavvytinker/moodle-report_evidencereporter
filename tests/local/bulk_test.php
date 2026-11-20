@@ -269,4 +269,39 @@ final class bulk_test extends \advanced_testcase {
         $this->assertEquals(1, bulk::cleanup());
         $this->assertCount(1, bulk::get_files((int) get_admin()->id));
     }
+
+    /**
+     * Learners from a course, or every course in a category (optionally with its subcategories).
+     */
+    public function test_course_and_category_sources(): void {
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $qual = $gen->create_category(['name' => 'Cert III']);
+        $sub = $gen->create_category(['name' => 'Electives', 'parent' => $qual->id]);
+        $core = $gen->create_course(['category' => $qual->id, 'fullname' => 'Core unit']);
+        $elective = $gen->create_course(['category' => $sub->id, 'fullname' => 'Elective unit']);
+        $ava = $gen->create_and_enrol($core, 'student', ['firstname' => 'Ava', 'lastname' => 'Core']);
+        $ben = $gen->create_and_enrol($elective, 'student', ['firstname' => 'Ben', 'lastname' => 'Elective']);
+        $gen->enrol_user($ava->id, $elective->id, 'student');
+        $gen->create_and_enrol($core, 'editingteacher');
+        $gen->create_and_enrol(
+            $core,
+            'student',
+            ['firstname' => 'Sue', 'lastname' => 'Suspended'],
+            'manual',
+            0,
+            0,
+            ENROL_USER_SUSPENDED
+        );
+
+        $names = fn(array $users) => array_values(array_map('fullname', $users));
+        $this->assertEquals(['Ava Core'], $names(bulk::get_learners('course', (int) $core->id)));
+        $this->assertEquals(['Ava Core', 'Ben Elective'], $names(bulk::get_learners('category', (int) $qual->id)));
+        $this->assertEquals(['Ava Core'], $names(bulk::get_learners('category', (int) $qual->id, false)));
+        $this->assertEquals([], bulk::get_learners('course', (int) SITEID));
+
+        $this->assertEquals('Core unit', bulk::get_source_name('course', (int) $core->id));
+        $this->assertEquals('Cert III (category and subcategories)', bulk::get_source_name('category', (int) $qual->id));
+        $this->assertEquals('Cert III (category)', bulk::get_source_name('category', (int) $qual->id, false));
+    }
 }

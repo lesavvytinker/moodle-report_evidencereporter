@@ -57,7 +57,8 @@ if ($data = $form->get_data()) {
     $task->set_userid($USER->id);
     $task->set_custom_data([
         'sourcetype' => $data->sourcetype,
-        'sourceid' => (int) ($data->sourcetype === 'cohort' ? $data->cohortid : $data->templateid),
+        'sourceid' => (int) $data->{bulk::SOURCE_FIELDS[$data->sourcetype] ?? 'templateid'},
+        'subcategories' => (int) !empty($data->subcategories),
         'frameworkid' => str_starts_with($data->covering, 'framework-') ? (int) substr($data->covering, 10) : 0,
         'competencyid' => str_starts_with($data->covering, 'unit-') ? (int) substr($data->covering, 5) : 0,
         'mode' => $data->mode,

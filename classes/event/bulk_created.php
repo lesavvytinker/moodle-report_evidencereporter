@@ -20,7 +20,7 @@ namespace report_evidencereporter\event;
  * Event: a bulk evidence download was created.
  *
  * @property-read array $other {
- *      - string sourcetype: 'template' or 'cohort'
+ *      - string sourcetype: 'template', 'cohort', 'course' or 'category'
  *      - int sourceid
  *      - int competencyid: one unit, if chosen
  *      - int frameworkid

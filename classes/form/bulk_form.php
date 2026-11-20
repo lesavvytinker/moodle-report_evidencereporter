@@ -42,6 +42,8 @@ class bulk_form extends \moodleform {
         $mform->addElement('select', 'sourcetype', get_string('bulksource', 'report_evidencereporter'), [
             'template' => get_string('bulktemplate', 'report_evidencereporter'),
             'cohort' => get_string('bulkcohort', 'report_evidencereporter'),
+            'course' => get_string('bulkcourse', 'report_evidencereporter'),
+            'category' => get_string('bulkcategory', 'report_evidencereporter'),
         ]);
 
         $templates = array_map($format, $DB->get_records_menu('competency_template', null, 'shortname', 'id, shortname'));
@@ -61,6 +63,25 @@ class bulk_form extends \moodleform {
             ['' => get_string('choosedots')] + $cohorts
         );
         $mform->hideIf('cohortid', 'sourcetype', 'neq', 'cohort');
+
+        $mform->addElement(
+            'course',
+            'courseid',
+            get_string('bulkcourse', 'report_evidencereporter'),
+            ['multiple' => false, 'includefrontpage' => false]
+        );
+        $mform->hideIf('courseid', 'sourcetype', 'neq', 'course');
+
+        $mform->addElement(
+            'select',
+            'categoryid',
+            get_string('bulkcategory', 'report_evidencereporter'),
+            ['' => get_string('choosedots')] + \core_course_category::make_categories_list()
+        );
+        $mform->hideIf('categoryid', 'sourcetype', 'neq', 'category');
+        $mform->addElement('advcheckbox', 'subcategories', '', get_string('bulksubcategories', 'report_evidencereporter'));
+        $mform->setDefault('subcategories', 1);
+        $mform->hideIf('subcategories', 'sourcetype', 'neq', 'category');
 
         // Covering: each learner's plans, a whole framework, or one unit (listed under its framework).
         $covering = ['plans' => get_string('bulkplans', 'report_evidencereporter')];
@@ -109,12 +130,12 @@ class bulk_form extends \moodleform {
      */
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
-        $field = $data['sourcetype'] === 'cohort' ? 'cohortid' : 'templateid';
+        $field = bulk::SOURCE_FIELDS[$data['sourcetype']] ?? 'templateid';
         if (empty($data[$field])) {
             $errors[$field] = get_string('required');
             return $errors;
         }
-        $count = count(bulk::get_learners($data['sourcetype'], (int) $data[$field]));
+        $count = count(bulk::get_learners($data['sourcetype'], (int) $data[$field], !empty($data['subcategories'])));
         if ($count === 0) {
             $errors[$field] = get_string('bulknolearners', 'report_evidencereporter');
         } else if ($count > bulk::MAX_LEARNERS) {
