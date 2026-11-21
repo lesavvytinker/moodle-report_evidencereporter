@@ -145,6 +145,7 @@ class assign extends base {
         global $DB;
         $context = \context_module::instance($cm->id);
         $fs = get_file_storage();
+        $assign = null;
         $showfeedback = $pack->includes_feedback() && ($attempt->released || $attempt->canseeunreleased);
 
         $record = $pack->attempt_header_html($cm, $attempt, $compnames);
@@ -173,36 +174,37 @@ class assign extends base {
                     $pack->html_document(get_string('packonlinetext', 'report_evidencereporter'), $text)
                 );
             }
-            foreach (
-                $fs->get_area_files(
-                    $context->id,
-                    'assignsubmission_file',
-                    'submission_files',
-                    $submission->id,
-                    'filepath, filename',
-                    false
-                ) as $file
-            ) {
-                $pack->add_file($folder . '/' . get_string('packsubmittedfiles', 'report_evidencereporter'), $file);
+            // Files from every submission plugin (file uploads, Poodll recordings and other add-ons), and what plugins
+            // that keep their content elsewhere show for it (e.g. a cloud recording's link or transcript).
+            $assign = self::get_assign($context, $cm);
+            $areas = self::plugin_file_areas(
+                $assign ? $assign->get_submission_plugins() : [],
+                'assignsubmission',
+                [['assignsubmission_file', 'submission_files']]
+            );
+            $subfolder = $folder . '/' . get_string('packsubmittedfiles', 'report_evidencereporter');
+            foreach ($areas as [$component, $area]) {
+                $files = $fs->get_area_files($context->id, $component, $area, $submission->id, 'filepath, filename', false);
+                foreach ($files as $file) {
+                    $pack->add_file($subfolder, $file);
+                }
             }
+            $record .= self::other_submission_content($assign, $submission, $pack);
         }
 
         if ($showfeedback) {
-            foreach (
-                [['assignfeedback_file', 'feedback_files'], ['assignfeedback_editpdf', 'download']] as [$component,
-                    $area]
-            ) {
-                foreach (
-                    $fs->get_area_files(
-                        $context->id,
-                        $component,
-                        $area,
-                        (int) $row->attemptid,
-                        'filepath, filename',
-                        false
-                    ) as $file
-                ) {
-                    $pack->add_file($folder . '/' . get_string('packfeedbackfiles', 'report_evidencereporter'), $file);
+            // Files from every feedback plugin (annotated PDFs, feedback files, Poodll audio or video feedback...).
+            $assign ??= self::get_assign($context, $cm);
+            $areas = self::plugin_file_areas(
+                $assign ? $assign->get_feedback_plugins() : [],
+                'assignfeedback',
+                [['assignfeedback_file', 'feedback_files'], ['assignfeedback_editpdf', 'download']]
+            );
+            $fbfolder = $folder . '/' . get_string('packfeedbackfiles', 'report_evidencereporter');
+            foreach ($areas as [$component, $area]) {
+                $files = $fs->get_area_files($context->id, $component, $area, (int) $row->attemptid, 'filepath, filename', false);
+                foreach ($files as $file) {
+                    $pack->add_file($fbfolder, $file);
                 }
             }
         }
@@ -211,5 +213,94 @@ class assign extends base {
             $folder . '/' . get_string('packattemptrecord', 'report_evidencereporter') . '.pdf',
             $pack->html_to_pdf($cm->get_formatted_name(), $record)
         );
+    }
+
+    /**
+     * The assignment, for asking its submission and feedback plugins about their content.
+     *
+     * @param \context_module $context
+     * @param \cm_info $cm
+     * @return \assign|null
+     */
+    private static function get_assign(\context_module $context, \cm_info $cm): ?\assign {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/assign/locallib.php');
+        try {
+            return new \assign($context, $cm, $cm->get_course());
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * File areas of the enabled plugins, plus the core ones, without repeats.
+     *
+     * @param \assign_plugin[] $plugins
+     * @param string $prefix assignsubmission or assignfeedback
+     * @param array $core [component, area] pairs always included
+     * @return array [component, area] pairs
+     */
+    private static function plugin_file_areas(array $plugins, string $prefix, array $core): array {
+        $areas = [];
+        foreach ($core as [$component, $area]) {
+            $areas[$component . '/' . $area] = [$component, $area];
+        }
+        foreach ($plugins as $plugin) {
+            try {
+                if (!$plugin->is_enabled()) {
+                    continue;
+                }
+                foreach (array_keys($plugin->get_file_areas() ?: []) as $area) {
+                    $component = $prefix . '_' . $plugin->get_type();
+                    $areas[$component . '/' . $area] = [$component, $area];
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+        return array_values($areas);
+    }
+
+    /**
+     * What submission plugins other than files, online text and comments show for this submission, as text with its
+     * links (e.g. Cloud Poodll, whose recordings live in the cloud rather than in Moodle).
+     *
+     * @param \assign|null $assign
+     * @param stdClass $submission
+     * @param evidence_pack $pack
+     * @return string HTML for the attempt record
+     */
+    private static function other_submission_content(?\assign $assign, stdClass $submission, evidence_pack $pack): string {
+        if (!$assign) {
+            return '';
+        }
+        $html = '';
+        foreach ($assign->get_submission_plugins() as $plugin) {
+            try {
+                if (
+                    in_array($plugin->get_type(), ['file', 'onlinetext', 'comments'], true) || !$plugin->is_enabled()
+                        || !$plugin->is_visible() || $plugin->is_empty($submission)
+                ) {
+                    continue;
+                }
+                $view = (string) $plugin->view($submission);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            $links = [];
+            if (preg_match_all('/href="(https?:[^"]+)"|src="(https?:[^"]+)"/i', $view, $m)) {
+                $links = array_unique(array_filter(array_merge($m[1], $m[2])));
+            }
+            $text = trim(preg_replace('/\s+/', ' ', html_to_text($view, 0, false)));
+            if ($text === '' && !$links) {
+                continue;
+            }
+            $html .= '<p><strong>' . s($plugin->get_name()) . '</strong></p>'
+                . ($text !== '' ? '<p>' . s($pack->get_identity()->text($text)) . '</p>' : '');
+            foreach ($links as $link) {
+                $html .= '<p>' . s(html_entity_decode($link)) . '</p>';
+            }
+        }
+        return $html !== '' ? '<h3>' . s(get_string('packothersubmission', 'report_evidencereporter')) . '</h3>' . $html : '';
     }
 }

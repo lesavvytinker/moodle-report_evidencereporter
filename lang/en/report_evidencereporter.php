@@ -180,6 +180,7 @@ $string['packfeedbackfiles'] = 'Feedback files';
 $string['packforumposts'] = 'Forum posts';
 $string['packmark'] = 'Mark';
 $string['packonlinetext'] = 'Online text';
+$string['packothersubmission'] = 'Other submission content';
 $string['packpriorlearning'] = 'Prior learning';
 $string['packratings'] = 'Ratings';
 $string['packreadme'] = 'This pack holds a copy of the competency evidence and assessment records for one learner and one competency framework, taken from the learning management system on the date above. "01 Competency evidence summary.pdf" summarises every competency. The Assessments folder holds every assessed attempt (failed attempts included) with its record, submitted files and feedback. The Prior learning folder holds evidence of prior learning. manifest.csv lists every file with its size and SHA-256 checksum, so the pack can be shown to be unchanged. Only items the person who generated the pack was allowed to see are included.';

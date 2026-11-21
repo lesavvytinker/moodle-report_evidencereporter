@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0 (2026-11-28)
+- **Assignment add-ons in evidence packs:** packs now include files from every enabled assignment submission and feedback plugin, not just file uploads, annotated PDFs and feedback files. Poodll audio and video recordings (and Poodll audio or video feedback) are included, as is any other add-on that stores its files in Moodle. Tested with Poodll Assignment Submission 3.1.14 and Poodll Assignment Feedback.
+- For submission plugins that keep their content outside Moodle (e.g. Cloud Poodll), the attempt record includes what the plugin shows for the submission, such as a link or transcript, under "Other submission content".
+
 ## 0.18.0 (2026-11-27)
 - **Forums:** for any forum linked to competencies, the summary shows the learner's contributions under each competency: the whole-forum grade first (with its rubric or marking guide), then the ratings result, then every post they wrote. Each post shows whether it started a discussion or replied, the date, its rating, attachments, similarity results (staff only) and a link to the post. Replies show the post they answered for context: staff are named, but another learner's post shows only "another learner", the subject and a short excerpt. The evidence pack gets a Forum posts PDF and the attachments in the forum's folder.
 - Forums graded as a whole now show that grade, rather than the ratings grade, wherever an activity grade appears.
