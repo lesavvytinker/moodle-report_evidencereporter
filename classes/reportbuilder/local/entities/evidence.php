@@ -127,7 +127,8 @@ class evidence extends base {
         $auf = $this->get_table_alias('assign_user_flags');
         return array_merge([$this->get_usercomp_join()], $this->get_activity_joins(), [
             "LEFT JOIN {grade_items} {$gi} ON {$gi}.courseid = {$cm}.course AND {$gi}.itemtype = 'mod'
-                   AND {$gi}.itemmodule = {$m}.name AND {$gi}.iteminstance = {$cm}.instance AND {$gi}.itemnumber = 0",
+                   AND {$gi}.itemmodule = {$m}.name AND {$gi}.iteminstance = {$cm}.instance
+                   AND {$gi}.itemnumber = " . activity_grade::itemnumber_sql("{$m}.name", "{$cm}.instance", "{$gi}w"),
             "LEFT JOIN {grade_grades} {$gg} ON {$gg}.itemid = {$gi}.id AND {$gg}.userid = {$uc}.userid",
             "LEFT JOIN {assign} {$as} ON {$m}.name = 'assign' AND {$as}.id = {$cm}.instance",
             "LEFT JOIN {assign_user_flags} {$auf} ON {$auf}.assignment = {$as}.id AND {$auf}.userid = {$uc}.userid",

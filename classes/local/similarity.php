@@ -113,6 +113,24 @@ class similarity {
     }
 
     /**
+     * May the viewer see similarity results for this activity: shown at all, a plugin is available, and they're staff?
+     *
+     * @param int $cmid
+     * @param string $modname
+     * @param bool $forpack For an evidence pack: only when the site includes them in packs
+     * @return bool
+     */
+    public static function allowed(int $cmid, string $modname, bool $forpack = false): bool {
+        $mode = self::get_mode();
+        if ($mode === self::SHOW_OFF || ($forpack && $mode !== self::SHOW_PACKS) || !self::is_available()) {
+            return false;
+        }
+        $source = sources::get($modname);
+        $context = \context_module::instance($cmid, IGNORE_MISSING);
+        return $source && $context && $source->can_view_unreleased($context);
+    }
+
+    /**
      * Similarity results for the evidence pack, as plain text, or empty when packs leave them out.
      *
      * @param stdClass $row

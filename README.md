@@ -69,7 +69,7 @@ The page also lists the evidence sources found on the site.
 
 ## Evidence sources
 
-An evidence source is what Evidence Reporter knows about one activity type: where the learner's work is, what counts as feedback, and what goes in the evidence pack. Built in: **Assignment**, **Quiz**, **Database**, **Forum** (links only) and **Checklist** (when installed). Other activities still appear, linked to the activity page with their gradebook feedback.
+An evidence source is what Evidence Reporter knows about one activity type: where the learner's work is, what counts as feedback, and what goes in the evidence pack. Built in: **Assignment**, **Quiz**, **Database**, **Forum** (grades, posts and replies) and **Checklist** (when installed). Other activities still appear, linked to the activity page with their gradebook feedback.
 
 Other plugins can add a source for their own activity type, or replace a built-in one, with the `\report_evidencereporter\hook\collect_sources` hook. Extend `\report_evidencereporter\local\source\base` and override what applies: `get_url()`, `get_row_fields_sql()`, `has_own_feedback()` and `get_feedback_html()`, `shows_current_state()`, `can_view_unreleased()` and `add_records_to_pack()`. The pack's building blocks (`learner_rows()`, `table_row()`, `html_to_pdf()`, `add_content()`, `add_file()`) are public for this. In your plugin's `db/hooks.php`:
 
@@ -116,7 +116,7 @@ Moodle only logs competency evidence when an activity's completion first changes
 - **Attempt history** column on the evidence report: the full attempt history of the row's activity in one cell.
 - **Assessment attempts** table on the printable summary, under each competency.
 
-Release rules carry over: assignment attempts follow marking workflow and gradebook hiding, and quiz marks and feedback follow the quiz's review options, so learners never see more than the activity itself would show them. Supported: assignments (each graded attempt), quizzes (each finished attempt) and databases (each **rated** entry, whatever the rating, with all the entry's comments, dated and named, as the feedback). Forums don't have attempts. Ungraded submissions and unrated entries don't appear until they are graded or rated.
+Release rules carry over: assignment attempts follow marking workflow and gradebook hiding, and quiz marks and feedback follow the quiz's review options, so learners never see more than the activity itself would show them. Supported: assignments (each graded attempt), quizzes (each finished attempt) and databases (each **rated** entry, whatever the rating, with all the entry's comments, dated and named, as the feedback). Forums don't have attempts; instead, under each competency a forum is linked to, the summary lists the learner's **forum contributions**: the whole-forum grade first (with its rubric or marking guide), then the ratings result, then each post with what it replied to, its rating, attachments and similarity results (staff only). A reply to another learner shows only "another learner", the subject and a 30-word excerpt, so other learners' names and work stay out of the evidence; staff are named unless redacted. Ungraded submissions and unrated entries don't appear until they are graded or rated.
 
 **Databases as assessments:** turn on *Ratings* in the database settings (for example, a *Not satisfactory, Satisfactory* scale with *Maximum rating*), set a *Grade to pass*, and use the completion condition *Receive a grade → Passing grade*. Assessors rate each entry and write their feedback as comments on it.
 
@@ -163,7 +163,7 @@ The summary follows the same access and release rules as the report. Viewing it 
 2. Otherwise a link for that activity type:
    - Assignment: the grader, opened on this learner
    - Quiz: the learner's latest finished attempt (or the quiz page)
-   - Forum: the learner's posts in that course
+   - Forum: the learner's posts in that course (the summary also lists each post, see below)
    - Database: the learner's latest entry (or the database page)
    - Anything else: the activity page
 

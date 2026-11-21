@@ -57,6 +57,23 @@ class activity_grade {
     }
 
     /**
+     * SQL for which grade item stands for an activity: item 0, except forums with whole-forum grading (item 1), which
+     * take priority over ratings.
+     *
+     * @param string $modname SQL for the module name
+     * @param string $instance SQL for the activity instance ID
+     * @param string $alias Unique alias for the subquery
+     * @return string
+     */
+    public static function itemnumber_sql(string $modname, string $instance, string $alias): string {
+        return "CASE WHEN {$modname} = 'forum' AND EXISTS (SELECT 1 FROM {grade_items} {$alias}
+                                                            WHERE {$alias}.itemtype = 'mod' AND {$alias}.itemmodule = 'forum'
+                                                              AND {$alias}.iteminstance = {$instance}
+                                                              AND {$alias}.itemnumber = 1)
+                     THEN 1 ELSE 0 END";
+    }
+
+    /**
      * Format a grade value for a grade item: display format, maximum, and Pass/Fail when there's a grade to pass.
      *
      * @param int $gradeitemid

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.0 (2026-11-27)
+- **Forums:** for any forum linked to competencies, the summary shows the learner's contributions under each competency: the whole-forum grade first (with its rubric or marking guide), then the ratings result, then every post they wrote. Each post shows whether it started a discussion or replied, the date, its rating, attachments, similarity results (staff only) and a link to the post. Replies show the post they answered for context: staff are named, but another learner's post shows only "another learner", the subject and a short excerpt. The evidence pack gets a Forum posts PDF and the attachments in the forum's folder.
+- Forums graded as a whole now show that grade, rather than the ratings grade, wherever an activity grade appears.
+- Forum posts count towards "Units with evidence".
+
 ## 0.17.0 (2026-11-26)
 - **Bulk downloads by course or category:** "Learners from" can now be a course (everyone with an active enrolment who can be rated on competencies) or a course category, with its subcategories by default, e.g. every learner across a qualification's unit courses.
 

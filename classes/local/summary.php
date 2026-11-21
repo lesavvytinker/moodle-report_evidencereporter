@@ -85,7 +85,7 @@ class summary {
      */
     public static function get_linked_activities(int $userid, ?int $frameworkid = null, ?array $competencyids = null): array {
         global $DB;
-        $sql = "SELECT mc.id, mc.competencyid, mc.cmid, cm.course, c.competencyframeworkid AS frameworkid
+        $sql = "SELECT mc.id, mc.competencyid, mc.cmid, cm.course, c.competencyframeworkid AS frameworkid, m.name AS modname
                   FROM {competency_modulecomp} mc
                   JOIN {competency} c ON c.id = mc.competencyid
                   JOIN {course_modules} cm ON cm.id = mc.cmid
@@ -98,8 +98,15 @@ class summary {
                                                         AND lqa.state = 'finished' AND lqa.preview = 0))
                      OR (m.name = 'data' AND EXISTS (SELECT 1 FROM {data_records} ldr
                                                       WHERE ldr.dataid = cm.instance AND ldr.userid = :u3
-                                                        AND " . data_entries::rated_sql('ldr.id', 'ldrt') . ")))";
-        $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid];
+                                                        AND " . data_entries::rated_sql('ldr.id', 'ldrt') . "))
+                     OR (m.name = 'forum' AND (EXISTS (SELECT 1 FROM {forum_posts} lfp
+                                                         JOIN {forum_discussions} lfd ON lfd.id = lfp.discussion
+                                                        WHERE lfd.forum = cm.instance AND lfp.userid = :u4
+                                                          AND lfp.deleted = 0)
+                                            OR EXISTS (SELECT 1 FROM {forum_grades} lfg
+                                                        WHERE lfg.forum = cm.instance AND lfg.userid = :u5
+                                                          AND lfg.grade IS NOT NULL))))";
+        $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid, 'u4' => $userid, 'u5' => $userid];
         if ($frameworkid) {
             $sql .= ' AND c.competencyframeworkid = :frameworkid';
             $params['frameworkid'] = $frameworkid;
@@ -205,7 +212,8 @@ class summary {
                        {$sourcefields}
                   {$from}
              LEFT JOIN {grade_items} gi ON gi.courseid = cm.course AND gi.itemtype = 'mod' AND gi.itemmodule = m.name
-                                       AND gi.iteminstance = cm.instance AND gi.itemnumber = 0
+                                       AND gi.iteminstance = cm.instance
+                                       AND gi.itemnumber = " . activity_grade::itemnumber_sql('m.name', 'cm.instance', 'sgi') . "
              LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = uc.userid
              LEFT JOIN {assign} asg ON m.name = 'assign' AND asg.id = cm.instance
              LEFT JOIN {assign_user_flags} auf ON auf.assignment = asg.id AND auf.userid = uc.userid
@@ -226,6 +234,9 @@ class summary {
 
         // Assessed attempts (failed ones included) at activities linked to each competency, in courses the viewer may see.
         $attemptsbycomp = self::get_attempts($userid, $competencyids, $viewfullnames, $identity);
+
+        // Forums linked to each competency where the learner has posts or a grade.
+        $forumsbycomp = self::get_forums($userid, $competencyids, $viewfullnames, $identity);
 
         // Ratings frozen when a plan was completed take the place of current ones.
         $frozen = $scope->get_frozen_ratings();
@@ -263,6 +274,7 @@ class summary {
                 'judgementrating' => $judgement ? $judgement->ratinggiven : '',
                 'evidence' => $evidence,
                 'attempts' => $attemptsbycomp[$comp->id] ?? [],
+                'forums' => $forumsbycomp[$comp->id] ?? [],
             ];
         }
 
@@ -272,6 +284,38 @@ class summary {
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
         ];
+    }
+
+    /**
+     * Forum contributions at forums linked to the competencies, grouped by competency ID.
+     *
+     * @param int $userid
+     * @param int[] $competencyids
+     * @param bool $viewfullnames
+     * @param identity|null $identity
+     * @return array competencyid => stdClass[] (activity, cmid, postcount, html, similarityallowed)
+     */
+    private static function get_forums(int $userid, array $competencyids, bool $viewfullnames, ?identity $identity): array {
+        $result = [];
+        foreach (forum_posts::get_linked($userid, $competencyids) as $link) {
+            $data = forum_posts::for_user((int) $link->cmid, $userid);
+            if (!$data) {
+                continue;
+            }
+            $result[$link->competencyid][] = (object) [
+                'activity' => $data->cm->get_formatted_name(),
+                'cmid' => (int) $link->cmid,
+                'postcount' => count($data->posts),
+                'html' => forum_posts::html(
+                    $data,
+                    $identity,
+                    $viewfullnames,
+                    false,
+                    similarity::allowed((int) $link->cmid, 'forum')
+                ),
+            ];
+        }
+        return $result;
     }
 
     /**

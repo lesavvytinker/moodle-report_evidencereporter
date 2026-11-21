@@ -237,6 +237,15 @@
             </tbody>
         </table>
         {{/hasattempts}}
+        {{#hasforums}}
+        <p class="fw-bold mb-1">{{#str}} forumcontributions, report_evidencereporter {{/str}}</p>
+        {{#forums}}
+        <div class="er-forum border rounded p-2 mb-2">
+            <p class="fw-bold mb-1">{{activity}}</p>
+            {{{html}}}
+        </div>
+        {{/forums}}
+        {{/hasforums}}
     </section>
     {{/details}}
 
