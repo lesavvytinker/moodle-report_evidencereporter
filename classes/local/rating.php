@@ -49,4 +49,11 @@ class rating {
         $items = self::$cache[$competencyid];
         return $items[$grade - 1] ?? (string) $grade;
     }
+
+    /**
+     * Clear the cache (for tests, where IDs are reused).
+     */
+    public static function reset_cache(): void {
+        self::$cache = [];
+    }
 }

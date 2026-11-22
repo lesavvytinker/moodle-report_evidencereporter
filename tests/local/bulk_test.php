@@ -41,6 +41,7 @@ final class bulk_test extends \advanced_testcase {
         parent::setUp();
         feedback_visibility::reset_cache();
         attempts::reset_cache();
+        rating::reset_cache();
         activity_grade::reset_cache();
     }
 

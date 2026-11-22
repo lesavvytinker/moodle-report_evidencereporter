@@ -32,6 +32,7 @@ final class workshop_attendance_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {
         parent::setUp();
+        rating::reset_cache();
         $this->resetAfterTest();
         sources::reset_cache();
         source\workshop::reset_cache();

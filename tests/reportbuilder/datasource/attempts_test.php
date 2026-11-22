@@ -50,6 +50,7 @@ final class attempts_test extends core_reportbuilder_testcase {
         parent::setUp();
         \report_evidencereporter\local\feedback_visibility::reset_cache();
         \report_evidencereporter\local\attempts::reset_cache();
+        \report_evidencereporter\local\rating::reset_cache();
         \report_evidencereporter\local\activity_grade::reset_cache();
     }
 

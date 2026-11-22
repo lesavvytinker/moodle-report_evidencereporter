@@ -33,6 +33,7 @@ final class checklist_items_test extends core_reportbuilder_testcase {
     #[\Override]
     protected function setUp(): void {
         parent::setUp();
+        rating::reset_cache();
         checklist_items::reset_cache();
         feedback_visibility::reset_cache();
         if (!checklist_items::is_installed()) {

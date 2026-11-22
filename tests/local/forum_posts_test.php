@@ -36,6 +36,7 @@ final class forum_posts_test extends \advanced_testcase {
         global $CFG;
         parent::setUp();
         require_once($CFG->libdir . '/gradelib.php');
+        rating::reset_cache();
         $this->resetAfterTest();
         forum_posts::reset_cache();
         similarity::set_link_source(null);

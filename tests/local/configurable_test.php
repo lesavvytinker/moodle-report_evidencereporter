@@ -36,6 +36,7 @@ final class configurable_test extends \advanced_testcase {
         parent::setUp();
         sources::reset_cache();
         attempts::reset_cache();
+        rating::reset_cache();
         feedback_visibility::reset_cache();
     }
 

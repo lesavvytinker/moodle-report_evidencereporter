@@ -33,6 +33,7 @@ final class scope_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         attempts::reset_cache();
+        rating::reset_cache();
         feedback_visibility::reset_cache();
     }
 

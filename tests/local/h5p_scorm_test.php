@@ -36,6 +36,7 @@ final class h5p_scorm_test extends \advanced_testcase {
         parent::setUp();
         $this->resetAfterTest();
         attempts::reset_cache();
+        rating::reset_cache();
         sources::reset_cache();
         activity_grade::reset_cache();
         feedback_visibility::reset_cache();

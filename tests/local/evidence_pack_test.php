@@ -46,6 +46,7 @@ final class evidence_pack_test extends \advanced_testcase {
         parent::setUp();
         \report_evidencereporter\local\feedback_visibility::reset_cache();
         \report_evidencereporter\local\attempts::reset_cache();
+        rating::reset_cache();
         \report_evidencereporter\local\activity_grade::reset_cache();
     }
 
