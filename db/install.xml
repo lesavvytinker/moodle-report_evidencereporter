@@ -11,7 +11,7 @@
         <FIELD NAME="filters" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON: courses, units, dates, result, marks, spread, size"/>
         <FIELD NAME="seed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Draw code: the same filters and population give the same sample"/>
         <FIELD NAME="population" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Eligible judgements when drawn"/>
-        <FIELD NAME="populationhash" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="SHA-1 of the eligible judgements, to tell whether a reproduction drew from the same population"/>
+        <FIELD NAME="populationhash" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="SHA-1 of the eligible judgements, to tell whether a reproduction drew from the same population"/>
         <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -29,11 +29,11 @@
         <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The unit"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="assessorid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="result" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="The rating when drawn, e.g. Competent"/>
+        <FIELD NAME="result" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The rating when drawn, e.g. Competent"/>
         <FIELD NAME="proficiency" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="1 proficient, 0 not, null not rated"/>
         <FIELD NAME="mark" TYPE="number" LENGTH="10" NOTNULL="false" SEQUENCE="false" DECIMALS="5" COMMENT="Average percentage across linked activities when drawn"/>
         <FIELD NAME="judged" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="groupkey" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="The group it was drawn from when spread"/>
+        <FIELD NAME="groupkey" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The group it was drawn from when spread"/>
         <FIELD NAME="reason" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="drawn" SEQUENCE="false" COMMENT="drawn or replacement"/>
         <FIELD NAME="replacesid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="removed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

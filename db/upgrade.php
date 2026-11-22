@@ -40,7 +40,7 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         $table->add_field('filters', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
         $table->add_field('seed', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('population', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('populationhash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '');
+        $table->add_field('populationhash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL);
         $table->add_field('createdby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
@@ -57,11 +57,11 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         $table->add_field('competencyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
         $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
         $table->add_field('assessorid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('result', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, '');
+        $table->add_field('result', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
         $table->add_field('proficiency', XMLDB_TYPE_INTEGER, '1');
         $table->add_field('mark', XMLDB_TYPE_NUMBER, '10, 5');
         $table->add_field('judged', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('groupkey', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, '');
+        $table->add_field('groupkey', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
         $table->add_field('reason', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'drawn');
         $table->add_field('replacesid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('removed', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
