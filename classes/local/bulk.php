@@ -106,7 +106,7 @@ class bulk {
      * @param bool $subcategories
      * @return int[]
      */
-    private static function get_source_courseids(string $sourcetype, int $sourceid, bool $subcategories): array {
+    public static function get_source_courseids(string $sourcetype, int $sourceid, bool $subcategories): array {
         if ($sourcetype === 'course') {
             return $sourceid && $sourceid !== SITEID ? [$sourceid] : [];
         }
@@ -166,7 +166,7 @@ class bulk {
      * @return \stored_file
      */
     public static function build(array $options): \stored_file {
-        global $USER;
+        global $DB, $USER;
         \core_php_time_limit::raise(0);
         raise_memory_limit(MEMORY_HUGE);
 
@@ -183,14 +183,37 @@ class bulk {
             'redactstaff' => !empty($options['redactstaff']),
         ];
 
-        $learners = array_slice(self::get_learners($sourcetype, $sourceid, $subcategories), 0, self::MAX_LEARNERS, true);
+        $sample = !empty($options['sampleid'])
+            ? $DB->get_record(sampling::TABLE, ['id' => (int) $options['sampleid']], '*', MUST_EXIST) : null;
+        $learners = $sample ? [] : array_slice(
+            self::get_learners($sourcetype, $sourceid, $subcategories),
+            0,
+            self::MAX_LEARNERS,
+            true
+        );
         $framework = $frameworkid ? \core_competency\competency_framework::get_record(['id' => $frameworkid], MUST_EXIST)
             : null;
         $unit = $competencyid ? \core_competency\competency::get_record(['id' => $competencyid], MUST_EXIST)->to_record()
             : null;
-        $coveringname = $unit ? terms::get('unit') . ': ' . scope::unit_label($unit)
-            : ($framework ? format_string($framework->get('shortname')) : get_string('bulkplans', 'report_evidencereporter'));
-        $sourcename = self::get_source_name($sourcetype, $sourceid, $subcategories);
+        $coveringname = $sample ? get_string('samplecoveringunit', 'report_evidencereporter', terms::get('unit'))
+            : ($unit ? terms::get('unit') . ': ' . scope::unit_label($unit)
+            : ($framework ? format_string($framework->get('shortname')) : get_string('bulkplans', 'report_evidencereporter')));
+        $sourcename = $sample ? format_string($sample->name) : self::get_source_name($sourcetype, $sourceid, $subcategories);
+
+        // What to build: one learner each, or one sampled judgement (a learner and a unit) each.
+        $jobs = [];
+        if ($sample) {
+            foreach (sampling::get_items((int) $sample->id, false) as $item) {
+                $learner = \core_user::get_user($item->userid);
+                if ($learner && !$learner->deleted) {
+                    $jobs[] = ['learner' => $learner, 'item' => $item];
+                }
+            }
+        } else {
+            foreach ($learners as $learner) {
+                $jobs[] = ['learner' => $learner, 'item' => null];
+            }
+        }
 
         $dir = make_request_directory();
         $files = [];
@@ -199,11 +222,14 @@ class bulk {
             get_string('bulkstatus', 'report_evidencereporter'),
             get_string('bulkfile', 'report_evidencereporter')]];
         $included = 0;
-        foreach ($learners as $learner) {
+        $fileforitem = [];
+        foreach ($jobs as ['learner' => $learner, 'item' => $item]) {
             $identity = identity::from_flags($learner, $redact);
             $row = [$identity->name(), $identity->username(), $identity->idnumber(), $identity->reference()];
             $frameworks = summary::get_frameworks((int) $learner->id);
-            if ($unit) {
+            if ($item) {
+                $scope = scope::for_unit((int) $learner->id, (int) $item->competencyid);
+            } else if ($unit) {
                 $scope = isset(scope::get_units((int) $learner->id, $frameworks)[$competencyid])
                     ? scope::for_unit((int) $learner->id, $competencyid) : null;
             } else if ($framework) {
@@ -222,7 +248,7 @@ class bulk {
                 $index[] = array_merge($row, [$status, '']);
                 continue;
             }
-            $base = clean_filename($identity->file_label());
+            $base = clean_filename($identity->file_label() . ($item ? ' - ' . $scope->get_file_label() : ''));
             $pack = new evidence_pack((int) $learner->id, $scope, $includefeedback, $redact);
             try {
                 if ($mode === self::MODE_PACKS) {
@@ -236,6 +262,9 @@ class bulk {
                 }
                 $index[] = array_merge($row, [get_string('bulkincluded', 'report_evidencereporter'), $filename]);
                 $included++;
+                if ($item) {
+                    $fileforitem[(int) $item->id] = $filename;
+                }
             } catch (\Throwable $e) {
                 $index[] = array_merge($row, [get_string('bulkerror', 'report_evidencereporter', $e->getMessage()), '']);
             }
@@ -256,6 +285,17 @@ class bulk {
             $csv .= implode(',', array_map(fn($v) => '"' . str_replace('"', '""', (string) $v) . '"', $line)) . "\r\n";
         }
         $files['index.csv'] = [$csv];
+        if ($sample) {
+            $files[get_string('sampleregister', 'report_evidencereporter') . '.csv'] = [sampling::register_csv(
+                (int) $sample->id,
+                $redact,
+                $fileforitem
+            )];
+            $files[get_string('samplerecord', 'report_evidencereporter') . '.txt'] = [sampling::record_text(
+                (int) $sample->id,
+                $redact
+            )];
+        }
         $redactidentity = identity::from_flags((object) ['id' => 0], $redact);
         $files['README.txt'] = [implode("\r\n", array_filter([
             get_string($mode === self::MODE_PACKS ? 'bulkpacks' : 'bulksummaries', 'report_evidencereporter'),
@@ -265,7 +305,8 @@ class bulk {
             get_string('generated', 'report_evidencereporter') . ': ' . userdate(time()) . ' · '
                 . $redactidentity->staff(fullname($USER)),
             get_string('includefeedback', 'report_evidencereporter') . ': ' . get_string($includefeedback ? 'yes' : 'no'),
-            get_string('bulkcounts', 'report_evidencereporter', ['included' => $included, 'total' => count($learners)]),
+            get_string('bulkcounts', 'report_evidencereporter', ['included' => $included, 'total' => count($jobs)]),
+            $sample ? get_string('samplereadme', 'report_evidencereporter') : null,
             $redactidentity->redaction_note() ?: null,
             $redactidentity->is_redacted() ? get_string('redactionfilesnote', 'report_evidencereporter') : null,
             '',
@@ -280,8 +321,9 @@ class bulk {
         $filename = clean_filename(implode(' - ', [
             get_string($mode === self::MODE_PACKS ? 'bulkpacks' : 'bulksummaries', 'report_evidencereporter'),
             $sourcename,
-            $framework ? ($framework->get('idnumber') ?: $framework->get('shortname'))
-                : get_string('bulkplans', 'report_evidencereporter'),
+            $sample ? get_string('sample', 'report_evidencereporter')
+                : ($framework ? ($framework->get('idnumber') ?: $framework->get('shortname'))
+                : get_string('bulkplans', 'report_evidencereporter')),
             userdate(time(), '%Y-%m-%d %H%M'),
         ])) . '.zip';
         // Each download gets its own item ID, so two downloads with the same name never clash.
@@ -300,12 +342,13 @@ class bulk {
             'filename' => $filename,
             'userid' => $USER->id,
             'source' => get_string('bulkcounts', 'report_evidencereporter', ['included' => $included,
-                'total' => count($learners)]),
+                'total' => count($jobs)]),
         ], $zippath);
 
         \report_evidencereporter\event\bulk_created::create([
             'context' => \context_system::instance(),
-            'other' => ['sourcetype' => $sourcetype, 'sourceid' => $sourceid, 'frameworkid' => $frameworkid,
+            'other' => ['sourcetype' => $sample ? 'sample' : $sourcetype, 'sourceid' => $sample ? (int) $sample->id : $sourceid,
+                'frameworkid' => $frameworkid,
                 'competencyid' => $competencyid, 'mode' => $mode, 'learners' => $included] + array_map('intval', $redact),
         ])->trigger();
         return $file;

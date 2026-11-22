@@ -37,6 +37,13 @@ class behat_report_evidencereporter_generator extends behat_generator_base {
                 'switchids' => ['user' => 'userid', 'competency' => 'competencyid', 'activity' => 'cmid',
                     'assessor' => 'actionuserid'],
             ],
+            'course ratings' => [
+                'singular' => 'course rating',
+                'datagenerator' => 'course_rating',
+                'required' => ['user', 'competency', 'course', 'grade'],
+                'switchids' => ['user' => 'userid', 'competency' => 'competencyid', 'course' => 'courseid',
+                    'assessor' => 'actionuserid'],
+            ],
         ];
     }
 

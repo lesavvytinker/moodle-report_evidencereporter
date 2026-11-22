@@ -49,6 +49,25 @@ The download contains one file per learner, `index.csv` (every learner and wheth
 
 Needs the capability `report/evidencereporter:bulkdownload` (given to Manager by default). Moodle's background tasks (cron) must be running.
 
+## Validation sampling
+
+*Site administration → Reports → Validation sampling* draws a random sample of **judgements** (one learner's result in one unit, in one course) for validation, moderation or an auditor, and records how it was drawn.
+
+1. **Where from:** a course, or a course category (with subcategories). **Units:** all units of the frameworks used there, one framework, or one unit. A unit's judgement includes ratings of anything below it.
+2. **Which judgements:** judged between two dates, by result (any, proficient, not yet proficient) and by marks. A learner's mark is their average percentage across the unit's linked activities with a grade: choose high (80%+), middle (65–79%), borderline (50–64%), low (below 50%) or a custom range.
+3. **How many:** a sample size (up to 200), spread evenly across assessors, results, mark bands or courses (or purely random). Tick **That many from each group** for, say, 3 per assessor. A group with too few judgements gives what it has; the rest goes to the others.
+
+Each sample is saved with its filters, the size of the eligible population, a **draw code** and a population check. The same filters and draw code against the same judgements always draw the same sample, so you can show an auditor the sample was random and repeat it. Enter an earlier draw code under *Show more…* to repeat a draw.
+
+**Swaps:** if a sampled judgement can't be used (the learner withdrew, the assessor is on the validation panel), press **Swap** and give a reason. It stays on the sample, marked as swapped out with your reason, and a replacement is drawn from the same group (or any group, if that one has run out). Replacements are drawn from the draw code too.
+
+**Build the evidence:** summaries or packs, with feedback and redaction options as for bulk downloads, but one file per sampled judgement covering that unit. The download also has:
+
+- **Sample register.csv:** every judgement, swaps included, with learner, unit, course, assessor, result, mark, date judged, group, how it was selected, status, its file, and blank **Validator findings** and **Judgement confirmed?** columns.
+- **Sampling record.txt:** who drew the sample and when, the filters, the population, the draw code and every swap with its reason.
+
+Uses the same capability as bulk downloads.
+
 ## Settings
 
 *Site administration → Plugins → Reports → Evidence Reporter*

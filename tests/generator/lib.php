@@ -61,4 +61,42 @@ class report_evidencereporter_generator extends component_generator_base {
             $record->note ?? null
         );
     }
+
+    /**
+     * A learner's rating in a competency in a course, as an assessor would give it on the course competencies page:
+     * the course rating, plus the evidence recording who rated it.
+     *
+     * @param array|stdClass $record userid, competencyid, courseid, grade (1-based scale item), proficient (optional),
+     *     actionuserid (optional)
+     * @return \core_competency\user_competency_course
+     */
+    public function create_course_rating($record): \core_competency\user_competency_course {
+        $record = (object) $record;
+        $competency = new \core_competency\competency($record->competencyid);
+        $grade = (int) $record->grade;
+        $proficient = isset($record->proficient) ? (int) !empty($record->proficient)
+            : (int) $competency->get_proficiency_of_grade($grade);
+        $ucc = \core_competency\user_competency_course::create_relation(
+            $record->userid,
+            $record->competencyid,
+            $record->courseid
+        );
+        $ucc->set('grade', $grade);
+        $ucc->set('proficiency', $proficient);
+        $ucc->create();
+        \core_competency\api::add_evidence(
+            $record->userid,
+            $record->competencyid,
+            \context_course::instance($record->courseid),
+            \core_competency\evidence::ACTION_OVERRIDE,
+            'evidence_manualoverrideincourse',
+            'core_competency',
+            get_course($record->courseid)->shortname,
+            false,
+            null,
+            $grade,
+            $record->actionuserid ?? null
+        );
+        return $ucc;
+    }
 }

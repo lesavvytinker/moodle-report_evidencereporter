@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0 (2026-12-01)
+- **Validation sampling** (*Reports → Validation sampling*): draw a random sample of judgements (a learner's result in a unit) from a course or category, for a unit, a framework or all, filtered by date judged, result and marks (high, middle, borderline, low or a custom range), and spread evenly across assessors, results, mark bands or courses, in total or per group.
+- Each sample is recorded with its filters, the eligible population, a draw code and a population check, so it's provably random and reproducible.
+- **Swaps:** swap a judgement out with a reason; it stays on the record and a replacement is drawn from the same group.
+- **Evidence for a sample:** summaries or packs, one per sampled judgement covering its unit, plus a Sample register spreadsheet with columns for the validator's findings and a Sampling record. Redaction applies throughout.
+- New events: validation sample drawn, judgement swapped out. The privacy provider covers samples (learners are removed; staff are anonymised).
+
 ## 0.21.0 (2026-11-30)
 - **Workshop:** under each linked competency, the learner's submission (with attachments and similarity results), the grade for the submission (and any override, with feedback), each assessment received with the reviewer's grade and feedback, and the grade for the assessments they gave. Peer reviewers are shown as "Peer reviewer"; staff are named unless redacted. Learners see grades once the workshop is closed. The pack gets a Workshop record PDF and the attachments.
 - **Attendance** (when the Attendance plugin is installed): every session recorded for the learner, with date, length, status, points, remarks and who took it, and a summary such as "6 sessions recorded, 83% of points (Present 5, Absent 1)". The pack gets an Attendance record PDF.

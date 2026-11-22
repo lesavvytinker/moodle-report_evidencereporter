@@ -75,6 +75,10 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('bulkdownloads', 'report_evidencereporter'));
 echo html_writer::tag('p', get_string('bulkintro', 'report_evidencereporter', ['max' => bulk::MAX_LEARNERS,
     'days' => bulk::KEEP_DAYS]));
+echo html_writer::tag('p', html_writer::link(
+    new moodle_url('/report/evidencereporter/sampling.php'),
+    get_string('samplinglink', 'report_evidencereporter')
+));
 $form->display();
 
 $pending = bulk::get_pending((int) $USER->id);

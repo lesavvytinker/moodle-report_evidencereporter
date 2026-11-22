@@ -30,6 +30,12 @@ $ADMIN->add('reports', new admin_externalpage(
     new moodle_url('/report/evidencereporter/bulk.php'),
     'report/evidencereporter:bulkdownload'
 ));
+$ADMIN->add('reports', new admin_externalpage(
+    'report_evidencereporter_sampling',
+    get_string('sampling', 'report_evidencereporter'),
+    new moodle_url('/report/evidencereporter/sampling.php'),
+    'report/evidencereporter:bulkdownload'
+));
 
 if ($hassiteconfig && $settings) {
     // Terminology.
