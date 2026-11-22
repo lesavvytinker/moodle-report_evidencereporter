@@ -62,6 +62,10 @@ class attempt extends base {
             'user',
             'data',
             'data_records',
+            'h5pactivity',
+            'h5pactivity_attempts',
+            'scorm',
+            'scorm_attempt',
         ];
     }
 
@@ -93,6 +97,10 @@ class attempt extends base {
             'gu' => $this->get_table_alias('user'),
             'd' => $this->get_table_alias('data'),
             'dr' => $this->get_table_alias('data_records'),
+            'h' => $this->get_table_alias('h5pactivity'),
+            'ha' => $this->get_table_alias('h5pactivity_attempts'),
+            's' => $this->get_table_alias('scorm'),
+            'sa' => $this->get_table_alias('scorm_attempt'),
         ];
     }
 
@@ -133,7 +141,8 @@ class attempt extends base {
      */
     public function get_has_attempt_sql(): string {
         $aliases = $this->get_attempt_aliases();
-        return "({$aliases['ag']}.id IS NOT NULL OR {$aliases['qa']}.id IS NOT NULL OR {$aliases['dr']}.id IS NOT NULL)";
+        return "({$aliases['ag']}.id IS NOT NULL OR {$aliases['qa']}.id IS NOT NULL OR {$aliases['dr']}.id IS NOT NULL
+                 OR {$aliases['ha']}.id IS NOT NULL OR {$aliases['sa']}.id IS NOT NULL)";
     }
 
     /**

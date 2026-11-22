@@ -39,7 +39,7 @@ class sources {
             $sources = [];
             foreach (
                 [source\assign::class, source\quiz::class, source\data::class, source\forum::class,
-                    source\checklist::class] as $class
+                    source\checklist::class, source\h5pactivity::class, source\scorm::class] as $class
             ) {
                 $source = new $class();
                 $sources[$source->get_modname()] = $source;

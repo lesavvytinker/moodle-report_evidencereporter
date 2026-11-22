@@ -99,6 +99,11 @@ class summary {
                      OR (m.name = 'data' AND EXISTS (SELECT 1 FROM {data_records} ldr
                                                       WHERE ldr.dataid = cm.instance AND ldr.userid = :u3
                                                         AND " . data_entries::rated_sql('ldr.id', 'ldrt') . "))
+                     OR (m.name = 'h5pactivity' AND EXISTS (SELECT 1 FROM {h5pactivity_attempts} lha
+                                                             WHERE lha.h5pactivityid = cm.instance AND lha.userid = :u6))
+                     OR (m.name = 'scorm' AND EXISTS (SELECT 1 FROM {scorm_attempt} lsa
+                                                        JOIN {scorm_scoes_value} lsv ON lsv.attemptid = lsa.id
+                                                       WHERE lsa.scormid = cm.instance AND lsa.userid = :u7))
                      OR (m.name = 'forum' AND (EXISTS (SELECT 1 FROM {forum_posts} lfp
                                                          JOIN {forum_discussions} lfd ON lfd.id = lfp.discussion
                                                         WHERE lfd.forum = cm.instance AND lfp.userid = :u4
@@ -106,7 +111,8 @@ class summary {
                                             OR EXISTS (SELECT 1 FROM {forum_grades} lfg
                                                         WHERE lfg.forum = cm.instance AND lfg.userid = :u5
                                                           AND lfg.grade IS NOT NULL))))";
-        $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid, 'u4' => $userid, 'u5' => $userid];
+        $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid, 'u4' => $userid, 'u5' => $userid, 'u6' => $userid,
+            'u7' => $userid];
         if ($frameworkid) {
             $sql .= ' AND c.competencyframeworkid = :frameworkid';
             $params['frameworkid'] = $frameworkid;

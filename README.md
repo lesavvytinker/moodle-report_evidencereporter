@@ -69,7 +69,7 @@ The page also lists the evidence sources found on the site.
 
 ## Evidence sources
 
-An evidence source is what Evidence Reporter knows about one activity type: where the learner's work is, what counts as feedback, and what goes in the evidence pack. Built in: **Assignment**, **Quiz**, **Database**, **Forum** (grades, posts and replies) and **Checklist** (when installed). Other activities still appear, linked to the activity page with their gradebook feedback.
+An evidence source is what Evidence Reporter knows about one activity type: where the learner's work is, what counts as feedback, and what goes in the evidence pack. Built in: **Assignment**, **Quiz**, **Database**, **Forum** (grades, posts and replies), **H5P** (attempts, scores, results by question), **SCORM** (attempts, status and score per SCO) and **Checklist** (when installed). Other activities still appear, linked to the activity page with their gradebook feedback.
 
 Other plugins can add a source for their own activity type, or replace a built-in one, with the `\report_evidencereporter\hook\collect_sources` hook. Extend `\report_evidencereporter\local\source\base` and override what applies: `get_url()`, `get_row_fields_sql()`, `has_own_feedback()` and `get_feedback_html()`, `shows_current_state()`, `can_view_unreleased()` and `add_records_to_pack()`. The pack's building blocks (`learner_rows()`, `table_row()`, `html_to_pdf()`, `add_content()`, `add_file()`) are public for this. In your plugin's `db/hooks.php`:
 

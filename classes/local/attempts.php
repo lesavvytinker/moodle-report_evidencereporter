@@ -57,8 +57,8 @@ class attempts {
      */
     public static function get_sql_parts(string $cm, string $m, array $aliases): array {
         ['a' => $a, 'ag' => $ag, 'asub' => $asub, 'afc' => $afc, 'q' => $q, 'qa' => $qa, 'gi' => $gi, 'gg' => $gg,
-            'auf' => $auf, 'gu' => $gu, 'd' => $d, 'dr' => $dr] = $aliases;
-        $learner = "COALESCE({$ag}.userid, {$qa}.userid, {$dr}.userid)";
+            'auf' => $auf, 'gu' => $gu, 'd' => $d, 'dr' => $dr, 'h' => $h, 'ha' => $ha, 's' => $s, 'sa' => $sa] = $aliases;
+        $learner = "COALESCE({$ag}.userid, {$qa}.userid, {$dr}.userid, {$ha}.userid, {$sa}.userid)";
         $joins = [
             "LEFT JOIN {assign} {$a} ON {$m}.name = 'assign' AND {$a}.id = {$cm}.instance",
             "LEFT JOIN {assign_grades} {$ag} ON {$ag}.assignment = {$a}.id AND {$ag}.grade >= 0",
@@ -70,6 +70,12 @@ class attempts {
             "LEFT JOIN {data} {$d} ON {$m}.name = 'data' AND {$d}.id = {$cm}.instance",
             // Every rated database entry counts as an assessment, whatever its rating.
             "LEFT JOIN {data_records} {$dr} ON {$dr}.dataid = {$d}.id AND " . data_entries::rated_sql("{$dr}.id", 'errj'),
+            "LEFT JOIN {h5pactivity} {$h} ON {$m}.name = 'h5pactivity' AND {$h}.id = {$cm}.instance",
+            "LEFT JOIN {h5pactivity_attempts} {$ha} ON {$ha}.h5pactivityid = {$h}.id",
+            "LEFT JOIN {scorm} {$s} ON {$m}.name = 'scorm' AND {$s}.id = {$cm}.instance",
+            // A SCORM attempt counts once the package has recorded something for it.
+            "LEFT JOIN {scorm_attempt} {$sa} ON {$sa}.scormid = {$s}.id
+                                         AND EXISTS (SELECT 1 FROM {scorm_scoes_value} ersv WHERE ersv.attemptid = {$sa}.id)",
             "LEFT JOIN {grade_items} {$gi} ON {$gi}.courseid = {$cm}.course AND {$gi}.itemtype = 'mod'
                                      AND {$gi}.itemmodule = {$m}.name AND {$gi}.iteminstance = {$cm}.instance
                                      AND {$gi}.itemnumber = 0",
@@ -85,6 +91,12 @@ class attempts {
         $latestdr = "(SELECT MAX(erld.id) FROM {data_records} erld
                        WHERE erld.dataid = {$dr}.dataid AND erld.userid = {$dr}.userid
                          AND " . data_entries::rated_sql('erld.id', 'erldr') . ")";
+        $latestha = "(SELECT MAX(erlha.attempt) FROM {h5pactivity_attempts} erlha
+                       WHERE erlha.h5pactivityid = {$ha}.h5pactivityid AND erlha.userid = {$ha}.userid)";
+        $latestsa = "(SELECT MAX(erlsa.attempt) FROM {scorm_attempt} erlsa
+                       WHERE erlsa.scormid = {$sa}.scormid AND erlsa.userid = {$sa}.userid
+                         AND EXISTS (SELECT 1 FROM {scorm_scoes_value} erlsv WHERE erlsv.attemptid = erlsa.id))";
+        $scormtime = "(SELECT MAX(ersvt.timemodified) FROM {scorm_scoes_value} ersvt WHERE ersvt.attemptid = {$sa}.id)";
         $ratingsof = fn(string $agg) => "(SELECT {$agg} FROM {rating} erra
                                            WHERE erra.component = 'mod_data' AND erra.ratingarea = 'entry'
                                              AND erra.itemid = {$dr}.id)";
@@ -93,8 +105,8 @@ class attempts {
             'cmid' => "{$cm}.id",
             'courseid' => "{$cm}.course",
             'userid' => $learner,
-            'attemptid' => "COALESCE({$ag}.id, {$qa}.id, {$dr}.id)",
-            'attemptno' => "COALESCE({$ag}.attemptnumber + 1, {$qa}.attempt,
+            'attemptid' => "COALESCE({$ag}.id, {$qa}.id, {$dr}.id, {$ha}.id, {$sa}.id)",
+            'attemptno' => "COALESCE({$ag}.attemptnumber + 1, {$qa}.attempt, {$ha}.attempt, {$sa}.attempt,
                 (SELECT COUNT(1) FROM {data_records} erdc
                   WHERE erdc.dataid = {$dr}.dataid AND erdc.userid = {$dr}.userid AND erdc.id <= {$dr}.id))",
             'islatest' => "CASE WHEN {$ag}.id IS NOT NULL THEN
@@ -103,15 +115,30 @@ class attempts {
                                CASE WHEN {$qa}.attempt = {$latestqa} THEN 1 ELSE 0 END
                            WHEN {$dr}.id IS NOT NULL THEN
                                CASE WHEN {$dr}.id = {$latestdr} THEN 1 ELSE 0 END
+                           WHEN {$ha}.id IS NOT NULL THEN
+                               CASE WHEN {$ha}.attempt = {$latestha} THEN 1 ELSE 0 END
+                           WHEN {$sa}.id IS NOT NULL THEN
+                               CASE WHEN {$sa}.attempt = {$latestsa} THEN 1 ELSE 0 END
                            ELSE 0 END",
             'datarecordid' => "{$dr}.id",
             'assigngrade' => "{$ag}.grade",
             'quizsumgrades' => "{$qa}.sumgrades",
             'quizid' => "{$q}.id",
+            'h5pactivityid' => "{$h}.id",
+            'h5pscaled' => "{$ha}.scaled",
+            'h5prawscore' => "{$ha}.rawscore",
+            'h5pmaxscore' => "{$ha}.maxscore",
+            'h5pduration' => "{$ha}.duration",
+            'h5pcompletion' => "{$ha}.completion",
+            'h5psuccess' => "{$ha}.success",
+            'scormid' => "{$s}.id",
             'timesubmitted' => "CASE WHEN {$asub}.status = 'submitted' THEN {$asub}.timemodified
                                      WHEN {$qa}.id IS NOT NULL THEN {$qa}.timefinish
-                                     WHEN {$dr}.id IS NOT NULL THEN {$dr}.timecreated ELSE NULL END",
-            'timegraded' => "COALESCE({$ag}.timemodified, {$qa}.timefinish, " . $ratingsof('MAX(erra.timemodified)') . ")",
+                                     WHEN {$dr}.id IS NOT NULL THEN {$dr}.timecreated
+                                     WHEN {$ha}.id IS NOT NULL THEN {$ha}.timemodified
+                                     WHEN {$sa}.id IS NOT NULL THEN {$scormtime} ELSE NULL END",
+            'timegraded' => "COALESCE({$ag}.timemodified, {$qa}.timefinish, " . $ratingsof('MAX(erra.timemodified)') . ",
+                {$ha}.timemodified, {$scormtime})",
             'feedbacktext' => "{$afc}.commenttext",
             'feedbackformat' => "{$afc}.commentformat",
             'gradeitemid' => "{$gi}.id",
@@ -128,6 +155,7 @@ class attempts {
         // Database entries: the entry's ratings combined the way the activity combines them (its aggregate type).
         $fields['gradevalue'] = "COALESCE({$ag}.grade,
             CASE WHEN {$q}.sumgrades > 0 THEN {$qa}.sumgrades * {$q}.grade / {$q}.sumgrades ELSE NULL END,
+            CASE WHEN {$h}.grade > 0 AND {$ha}.id IS NOT NULL THEN {$ha}.scaled * {$h}.grade ELSE NULL END,
             CASE {$d}.assessed WHEN 2 THEN " . $ratingsof('COUNT(1)') . "
                                WHEN 3 THEN " . $ratingsof('MAX(erra.rating)') . "
                                WHEN 4 THEN " . $ratingsof('MIN(erra.rating)') . "
@@ -143,7 +171,7 @@ class attempts {
      */
     public static function default_aliases(): array {
         $aliases = [];
-        foreach (['a', 'ag', 'asub', 'afc', 'q', 'qa', 'gi', 'gg', 'auf', 'gu', 'd', 'dr'] as $name) {
+        foreach (['a', 'ag', 'asub', 'afc', 'q', 'qa', 'gi', 'gg', 'auf', 'gu', 'd', 'dr', 'h', 'ha', 's', 'sa'] as $name) {
             $aliases[$name] = 'era' . $name;
         }
         return $aliases;
@@ -172,13 +200,16 @@ class attempts {
         $params['learnerid'] = $userid;
         $params['learnerid2'] = $userid;
         $params['learnerid3'] = $userid;
+        $params['learnerid4'] = $userid;
+        $params['learnerid5'] = $userid;
         $select = implode(', ', array_map(fn($alias, $sql) => "{$sql} AS {$alias}", array_keys($fields), $fields));
         $sql = "SELECT {$select}
                   FROM {course_modules} eracm
                   JOIN {modules} eram ON eram.id = eracm.module
                   " . implode("\n", $joins) . "
                  WHERE eracm.id {$insql}
-                   AND (eraag.userid = :learnerid OR eraqa.userid = :learnerid2 OR eradr.userid = :learnerid3)
+                   AND (eraag.userid = :learnerid OR eraqa.userid = :learnerid2 OR eradr.userid = :learnerid3
+                        OR eraha.userid = :learnerid4 OR erasa.userid = :learnerid5)
               ORDER BY eracm.id, attemptno";
         $result = [];
         $rs = $DB->get_recordset_sql($sql, $params);
@@ -272,7 +303,7 @@ class attempts {
             if ($showfeedback) {
                 $result->feedback = evidence_link::new_tab(
                     $result->url,
-                    get_string('viewattemptfeedback', 'report_evidencereporter'),
+                    $result->feedbacklabel ?? get_string('viewattemptfeedback', 'report_evidencereporter'),
                     ['class' => 'er-feedbacklink']
                 );
                 $result->feedbackplain = get_string('feedbackinattempt', 'report_evidencereporter');
@@ -301,6 +332,8 @@ class attempts {
      */
     public static function reset_cache(): void {
         source\quiz::reset_cache();
+        source\h5pactivity::reset_cache();
+        source\scorm::reset_cache();
         self::$formatted = [];
         self::$byuser = [];
     }

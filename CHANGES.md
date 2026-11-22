@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0 (2026-11-29)
+- **H5P activities:** each tracked attempt appears in the attempt history with its grade (or raw score, e.g. "4 / 5", when the activity isn't graded) and a link to the attempt report. The evidence pack has the score, completion, success, time spent and the result for each question.
+- **SCORM packages:** each attempt the package wrote to appears with its grade, worked out the way the activity grades attempts. Staff link to the attempt report; learners, who can't open SCORM reports, link to the activity. The evidence pack has the status, score, time spent and last access for each section (SCO).
+- Both count towards "Units with evidence" and are available in the Attempts custom report source.
+
 ## 0.19.0 (2026-11-28)
 - **Assignment add-ons in evidence packs:** packs now include files from every enabled assignment submission and feedback plugin, not just file uploads, annotated PDFs and feedback files. Poodll audio and video recordings (and Poodll audio or video feedback) are included, as is any other add-on that stores its files in Moodle. Tested with Poodll Assignment Submission 3.1.14 and Poodll Assignment Feedback.
 - For submission plugins that keep their content outside Moodle (e.g. Cloud Poodll), the attempt record includes what the plugin shows for the submission, such as a link or transcript, under "Other submission content".
