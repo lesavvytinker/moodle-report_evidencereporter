@@ -452,7 +452,7 @@ class evidence_pack {
         // Evidence detail per competency (unless switched off in the settings).
         $showdetail = branding::show('evidencedetail');
         foreach ($showdetail ? $summary->competencies : [] as $comp) {
-            if (!$comp->evidence && !($comp->attempts && branding::show('attempts')) && empty($comp->forums)) {
+            if (!$comp->evidence && !($comp->attempts && branding::show('attempts')) && empty($comp->records)) {
                 continue;
             }
             $html .= '<h3>' . s($comp->idnumber . ' ' . $comp->name) . '</h3>';
@@ -501,13 +501,12 @@ class evidence_pack {
                 }
                 $html .= '</table><p><small>' . s(get_string('packseeassessments', 'report_evidencereporter')) . '</small></p>';
             }
-            if (!empty($comp->forums)) {
-                $html .= '<p><strong>' . s(get_string('forumcontributions', 'report_evidencereporter')) . '</strong></p><ul>';
-                foreach ($comp->forums as $forum) {
-                    $html .= '<li>' . s($forum->activity) . ': '
-                        . s(get_string('forumpostcount', 'report_evidencereporter', $forum->postcount)) . '</li>';
+            if (!empty($comp->records)) {
+                $html .= '<p><strong>' . s(get_string('packrecords', 'report_evidencereporter')) . '</strong></p><ul>';
+                foreach ($comp->records as $record) {
+                    $html .= '<li>' . s($record->heading . ': ' . $record->activity) . ' (' . s($record->count) . ')</li>';
                 }
-                $html .= '</ul><p><small>' . s(get_string('packseeforumposts', 'report_evidencereporter')) . '</small></p>';
+                $html .= '</ul><p><small>' . s(get_string('packseerecords', 'report_evidencereporter')) . '</small></p>';
             }
         }
         if (branding::show('signoff')) {

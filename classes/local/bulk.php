@@ -246,6 +246,8 @@ class bulk {
             grade_adjustment::reset_cache();
             similarity::reset_cache();
             forum_posts::reset_cache();
+            source\attendance::reset_cache();
+            source\workshop::reset_cache();
             gc_collect_cycles();
         }
 

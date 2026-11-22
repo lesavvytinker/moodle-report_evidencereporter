@@ -19,6 +19,7 @@ namespace report_evidencereporter\local\source;
 use moodle_url;
 use report_evidencereporter\local\evidence_pack;
 use report_evidencereporter\local\forum_posts;
+use report_evidencereporter\local\identity;
 use report_evidencereporter\local\similarity;
 use report_evidencereporter\local\terms;
 use stdClass;
@@ -50,6 +51,36 @@ class forum extends base {
     #[\Override]
     public function can_view_unreleased(\context_module $context): bool {
         return has_any_capability(['mod/forum:grade', 'mod/forum:rate', 'moodle/grade:viewall'], $context);
+    }
+
+    #[\Override]
+    public function get_records_heading(): string {
+        return get_string('forumcontributions', 'report_evidencereporter');
+    }
+
+    #[\Override]
+    public function get_records(int $userid, array $links, bool $viewfullnames, ?identity $identity): array {
+        $result = [];
+        foreach ($links as $link) {
+            $data = forum_posts::for_user((int) $link->cmid, $userid);
+            if (!$data) {
+                continue;
+            }
+            $result[] = (object) [
+                'competencyid' => (int) $link->competencyid,
+                'activity' => $data->cm->get_formatted_name(),
+                'cmid' => (int) $link->cmid,
+                'count' => get_string('forumpostcount', 'report_evidencereporter', count($data->posts)),
+                'html' => forum_posts::html(
+                    $data,
+                    $identity,
+                    $viewfullnames,
+                    false,
+                    similarity::allowed((int) $link->cmid, 'forum')
+                ),
+            ];
+        }
+        return $result;
     }
 
     /**

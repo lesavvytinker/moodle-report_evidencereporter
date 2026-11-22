@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.0 (2026-11-30)
+- **Workshop:** under each linked competency, the learner's submission (with attachments and similarity results), the grade for the submission (and any override, with feedback), each assessment received with the reviewer's grade and feedback, and the grade for the assessments they gave. Peer reviewers are shown as "Peer reviewer"; staff are named unless redacted. Learners see grades once the workshop is closed. The pack gets a Workshop record PDF and the attachments.
+- **Attendance** (when the Attendance plugin is installed): every session recorded for the learner, with date, length, status, points, remarks and who took it, and a summary such as "6 sessions recorded, 83% of points (Present 5, Absent 1)". The pack gets an Attendance record PDF.
+- The forum contributions block is now a general "activity records" block that any evidence source can add to, and sources for optional plugins add their own "has the learner done anything here" test only when installed.
+
 ## 0.20.0 (2026-11-29)
 - **H5P activities:** each tracked attempt appears in the attempt history with its grade (or raw score, e.g. "4 / 5", when the activity isn't graded) and a link to the attempt report. The evidence pack has the score, completion, success, time spent and the result for each question.
 - **SCORM packages:** each attempt the package wrote to appears with its grade, worked out the way the activity grades attempts. Staff link to the attempt report; learners, who can't open SCORM reports, link to the activity. The evidence pack has the status, score, time spent and last access for each section (SCO).

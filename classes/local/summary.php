@@ -110,7 +110,15 @@ class summary {
                                                           AND lfp.deleted = 0)
                                             OR EXISTS (SELECT 1 FROM {forum_grades} lfg
                                                         WHERE lfg.forum = cm.instance AND lfg.userid = :u5
-                                                          AND lfg.grade IS NOT NULL))))";
+                                                          AND lfg.grade IS NOT NULL)))";
+        // Activity types whose tables exist only when their plugin is installed (e.g. Attendance) add their own test.
+        foreach (sources::all() as $source) {
+            $condition = $source->get_activity_done_sql('cm.instance', $userid);
+            if ($condition !== null && preg_match('/^[a-z0-9_]+$/', $source->get_modname())) {
+                $sql .= "\n                     OR (m.name = '{$source->get_modname()}' AND ({$condition}))";
+            }
+        }
+        $sql .= ")";
         $params = ['u1' => $userid, 'u2' => $userid, 'u3' => $userid, 'u4' => $userid, 'u5' => $userid, 'u6' => $userid,
             'u7' => $userid];
         if ($frameworkid) {
@@ -241,8 +249,8 @@ class summary {
         // Assessed attempts (failed ones included) at activities linked to each competency, in courses the viewer may see.
         $attemptsbycomp = self::get_attempts($userid, $competencyids, $viewfullnames, $identity);
 
-        // Forums linked to each competency where the learner has posts or a grade.
-        $forumsbycomp = self::get_forums($userid, $competencyids, $viewfullnames, $identity);
+        // Records from activities that keep them instead of attempts: forum posts, attendance, workshop submissions.
+        $recordsbycomp = self::get_records($userid, $competencyids, $viewfullnames, $identity);
 
         // Ratings frozen when a plan was completed take the place of current ones.
         $frozen = $scope->get_frozen_ratings();
@@ -280,7 +288,7 @@ class summary {
                 'judgementrating' => $judgement ? $judgement->ratinggiven : '',
                 'evidence' => $evidence,
                 'attempts' => $attemptsbycomp[$comp->id] ?? [],
-                'forums' => $forumsbycomp[$comp->id] ?? [],
+                'records' => $recordsbycomp[$comp->id] ?? [],
             ];
         }
 
@@ -293,33 +301,30 @@ class summary {
     }
 
     /**
-     * Forum contributions at forums linked to the competencies, grouped by competency ID.
+     * Activity records (forum contributions, attendance, workshop submissions...) at activities linked to the
+     * competencies, from each evidence source that keeps records rather than attempts, grouped by competency ID.
      *
      * @param int $userid
      * @param int[] $competencyids
      * @param bool $viewfullnames
      * @param identity|null $identity
-     * @return array competencyid => stdClass[] (activity, cmid, postcount, html, similarityallowed)
+     * @return array competencyid => stdClass[] (heading, activity, cmid, count, html)
      */
-    private static function get_forums(int $userid, array $competencyids, bool $viewfullnames, ?identity $identity): array {
+    private static function get_records(int $userid, array $competencyids, bool $viewfullnames, ?identity $identity): array {
+        $linksbymod = [];
+        foreach (self::get_linked_activities($userid, null, $competencyids) as $link) {
+            $linksbymod[$link->modname][] = $link;
+        }
         $result = [];
-        foreach (forum_posts::get_linked($userid, $competencyids) as $link) {
-            $data = forum_posts::for_user((int) $link->cmid, $userid);
-            if (!$data) {
+        foreach ($linksbymod as $modname => $links) {
+            $source = sources::get((string) $modname);
+            if (!$source) {
                 continue;
             }
-            $result[$link->competencyid][] = (object) [
-                'activity' => $data->cm->get_formatted_name(),
-                'cmid' => (int) $link->cmid,
-                'postcount' => count($data->posts),
-                'html' => forum_posts::html(
-                    $data,
-                    $identity,
-                    $viewfullnames,
-                    false,
-                    similarity::allowed((int) $link->cmid, 'forum')
-                ),
-            ];
+            foreach ($source->get_records($userid, $links, $viewfullnames, $identity) as $record) {
+                $record->heading = $source->get_records_heading();
+                $result[$record->competencyid][] = $record;
+            }
         }
         return $result;
     }

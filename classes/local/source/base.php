@@ -137,6 +137,41 @@ abstract class base {
     }
 
     /**
+     * SQL condition: has the learner done something in this activity worth showing? Only for activity types not built
+     * into the main query (e.g. plugins that may not be installed); built-in ones return null.
+     *
+     * @param string $instance SQL for the activity instance ID
+     * @param int $userid
+     * @return string|null
+     */
+    public function get_activity_done_sql(string $instance, int $userid): ?string {
+        return null;
+    }
+
+    /**
+     * Heading for this source's records on the summary, e.g. "Forum contributions".
+     *
+     * @return string
+     */
+    public function get_records_heading(): string {
+        return $this->get_name();
+    }
+
+    /**
+     * Records for activities that keep them instead of attempts (forum posts, attendance sessions, a workshop
+     * submission and its reviews), shown under each competency the activity is linked to.
+     *
+     * @param int $userid
+     * @param stdClass[] $links Linked activities of this type (competencyid, cmid, course)
+     * @param bool $viewfullnames
+     * @param identity|null $identity Redaction
+     * @return stdClass[] (competencyid, activity, cmid, count: short summary, html)
+     */
+    public function get_records(int $userid, array $links, bool $viewfullnames, ?identity $identity): array {
+        return [];
+    }
+
+    /**
      * Does this source supply its own feedback for this evidence row (instead of the gradebook feedback)?
      *
      * @param stdClass $row

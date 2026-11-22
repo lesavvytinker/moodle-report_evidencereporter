@@ -95,8 +95,8 @@ class summary_page implements renderable, templatable {
                 'attemptcount' => $attemptcount,
             ];
             $showattempts = branding::show('attempts');
-            $forums = $comp->forums ?? [];
-            if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts) || $forums)) {
+            $records = $comp->records ?? [];
+            if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts) || $records)) {
                 $details[] = [
                     'idnumber' => $comp->idnumber,
                     'name' => $comp->name,
@@ -105,8 +105,8 @@ class summary_page implements renderable, templatable {
                     'evidence' => array_map(fn($e) => (array) $e, $comp->evidence),
                     'hasattempts' => $attemptcount > 0 && $showattempts,
                     'attempts' => array_map(fn($a) => (array) $a, $comp->attempts),
-                    'hasforums' => (bool) $forums,
-                    'forums' => array_map(fn($f) => (array) $f, $forums),
+                    'hasrecords' => (bool) $records,
+                    'records' => array_map(fn($r) => (array) $r, $records),
                 ];
             }
         }

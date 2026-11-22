@@ -187,9 +187,10 @@ final class forum_posts_test extends \advanced_testcase {
         $summary = summary::build((int) $s->student->id, (int) $s->framework->get('id'));
         $comp = $summary->competencies[0];
         $this->assertEquals('8.00 / 10.00', $comp->evidence[0]->grade);
-        $this->assertCount(1, $comp->forums);
-        $this->assertEquals('Week 3 discussion', $comp->forums[0]->activity);
-        $this->assertEquals(3, $comp->forums[0]->postcount);
+        $this->assertCount(1, $comp->records);
+        $this->assertEquals('Forum contributions', $comp->records[0]->heading);
+        $this->assertEquals('Week 3 discussion', $comp->records[0]->activity);
+        $this->assertEquals('3 post(s) by the learner', $comp->records[0]->count);
 
         // Forum posts alone count as evidence for "units with evidence".
         $this->assertContains((int) $s->comp->get('id'), summary::get_assessed_competencyids((int) $s->student->id));
@@ -268,7 +269,7 @@ final class forum_posts_test extends \advanced_testcase {
 
         $summary = summary::build((int) $student->id, (int) $framework->get('id'));
         $this->assertEquals('7.00 / 10.00', $summary->competencies[0]->evidence[0]->grade);
-        $html = $summary->competencies[0]->forums[0]->html;
+        $html = $summary->competencies[0]->records[0]->html;
         $this->assertStringNotContainsString('Whole forum grade', $html);
         $this->assertStringContainsString('Ratings (Average of ratings): <strong>7.00 / 10.00</strong>', $html);
         $this->assertStringContainsString('1 post(s) by the learner', $html);
