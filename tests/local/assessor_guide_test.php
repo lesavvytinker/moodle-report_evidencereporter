@@ -20,6 +20,8 @@ namespace report_evidencereporter\local;
 
 use stdClass;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(assessor_guide::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(tool_details::class)]
 /**
  * Tests for blank assessor guides and assessment tool details.
  *
@@ -29,8 +31,6 @@ use stdClass;
  * @covers     \report_evidencereporter\local\assessor_guide
  * @covers     \report_evidencereporter\local\tool_details
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(assessor_guide::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(tool_details::class)]
 final class assessor_guide_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {

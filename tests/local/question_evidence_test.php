@@ -20,6 +20,8 @@ namespace report_evidencereporter\local;
 
 use stdClass;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(question_evidence::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
 /**
  * Tests for supporting evidence from quiz questions (needs the Question competencies plugin).
  *
@@ -29,8 +31,6 @@ use stdClass;
  * @covers     \report_evidencereporter\local\question_evidence
  * @covers     \report_evidencereporter\local\summary
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(question_evidence::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(summary::class)]
 final class question_evidence_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {
