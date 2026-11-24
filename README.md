@@ -111,6 +111,44 @@ If the [Checklist](https://moodle.org/plugins/mod_checklist) activity is install
 
 Checklists record competency evidence when they're completed, so set the checklist's activity completion (for example, a required percentage of items) to match what counts as competent.
 
+## Quiz questions as supporting evidence
+
+With the companion plugin **Question competencies** (`qbank_competencies`) installed, you can map individual questions in the question bank to competencies (the **Competencies** column or the question's action menu). The mapping covers every version of the question.
+
+The printable summary then shows, under each competency, a **Supporting evidence: quiz questions** table:
+
+- One block per quiz attempt with the **quiz result** (*Satisfactory* or *Not satisfactory*, from the quiz's grade to pass) and grade.
+- Each mapped question in that attempt with its number, mark and result (*Passed*, *Not passed*, *Awaiting marking*), and links to **View answer** (that question in the learner's attempt) and, for markers, **Comment or override mark**.
+- Flags where things disagree: a question **passed in a quiz that wasn't satisfactory**, a question **not passed in a satisfactory quiz**, and a quiz that **isn't linked to the competency** in its own settings.
+
+Question results are supporting evidence only. They never rate a competency or count as evidence on their own. The same access and release rules apply as for attempts: marks and results stay hidden until the quiz would show them. Questions drawn at random are included for the learners who got them. The share of a question's marks needed to count as passed is set in Question competencies' settings (100% by default). The section follows the **Assessment attempts** summary setting, and the evidence pack's summary PDF includes it.
+
+## Assessor guides (blank assessment tools)
+
+For quizzes, Evidence Reporter builds the **blank assessor guide**: the assessment tool as an assessor uses it, with no learner in it. Use it for review before use, validation and audits. Download it from **Assessment tool details → Download the assessor guide (PDF)** in the quiz's settings, or at `/report/evidencereporter/assessorguide.php?cmid=…`. Teachers, editing teachers and managers can download it (capability `report/evidencereporter:assessorguide`).
+
+The PDF contains:
+
+- **Tool details**: course, activity, tool version, review date and reviewer.
+- **Units** covered: the top-level competencies of everything the quiz and its questions are linked to.
+- Blank **learner and assessment details** (name, ID, assessor, dates, location).
+- **Instructions and conditions**: assessor instructions, the quiz description, conditions, resources allowed, time limit, attempts, open and close dates, grade to pass.
+- **Reasonable adjustment** guidance, with space to record adjustments made.
+- **Every question** in order, each with its **model answer**, any marking notes (the question's general feedback), Satisfactory / Not satisfactory boxes, a specific feedback box, and the competencies it's mapped to in small print (with Question competencies installed). Model answers come from the question's right answer; essays use **Information for graders**. Random questions list every question in the pool.
+- A **mapping matrix**: each competency, the questions mapped to it, and whether the quiz is linked to it.
+- An **outcome summary** with a row per allowed attempt (up to three), general feedback, the task outcome and assessor and learner sign-off.
+- **Review notes**: what the tool is missing (no model answer, no version or review date, no pass mark, random questions, questions mapped to competencies the quiz isn't linked to).
+
+Images in questions are shown as a note to see the question in Moodle.
+
+### Assessment tool details
+
+Activities Evidence Reporter reads get an **Assessment tool details** section in their settings: tool version, reviewed before use on, reviewed by, assessment conditions, resources allowed, instructions for the assessor and reasonable adjustment guidance. Moodle doesn't hold these anywhere else. They're removed when the activity is deleted. They aren't copied by backup and restore or course copy yet.
+
+### In evidence packs
+
+With **Include blank assessor guides in evidence packs** on (the default), each quiz's folder in the pack gets its blank guide: the tool the learner was assessed with.
+
 ## Learner identity and redaction
 
 Every official document (the printable summary, each PDF in an evidence pack, the pack README and the bulk index) shows the learner's **name, username, ID number** (if set) and **learner reference**. The reference (e.g. `L-3F9A12C0`) is worked out from the learner's ID and the site, so it's the same on every document for that learner, but it doesn't say who they are.

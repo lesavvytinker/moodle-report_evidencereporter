@@ -34,4 +34,14 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // Download the blank assessor guide (the assessment tool, with model answers) for an activity.
+    'report/evidencereporter:assessorguide' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 ];

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.23.0 (2026-12-02)
+- **Quiz questions as supporting evidence** (with the new Question competencies plugin, `qbank_competencies`): questions mapped to competencies in the question bank appear under each competency, grouped by quiz attempt with the whole quiz's result (Satisfactory / Not satisfactory) and grade.
+- Each question shows its number, mark and result, with links to the learner's answer to that question and, for markers, to comment on it or override the mark.
+- Flags: a question passed in a quiz that wasn't satisfactory, a question not passed in a satisfactory quiz, and a quiz that isn't linked to the competency.
+- Question results never rate a competency. They follow the same access and release rules as attempts, and appear in the evidence pack's summary PDF.
+- **Assessor guides** for quizzes: a PDF of the blank assessment tool (tool details, units, blank learner details, instructions and conditions, reasonable adjustment, every question with its model answer, Satisfactory / Not satisfactory boxes, specific feedback and mapped competencies, mapping matrix, outcome summary, sign-off, and review notes listing what's missing). New capability `report/evidencereporter:assessorguide` (teachers, editing teachers, managers).
+- **Assessment tool details** in activity settings: tool version, review date, reviewer, conditions, resources, assessor instructions and reasonable adjustment guidance.
+- Evidence packs include each quiz's blank assessor guide (setting *Include blank assessor guides in evidence packs*, on by default).
+- New terms for each profile: Satisfactory and Not satisfactory (Pass / Fail for higher education and UK apprenticeships, Competent / Not yet competent for South African occupational).
+
 ## 0.22.0 (2026-12-01)
 - **Validation sampling** (*Reports → Validation sampling*): draw a random sample of judgements (a learner's result in a unit) from a course or category, for a unit, a framework or all, filtered by date judged, result and marks (high, middle, borderline, low or a custom range), and spread evenly across assessors, results, mark bands or courses, in total or per group.
 - Each sample is recorded with its filters, the eligible population, a draw code and a population check, so it's provably random and reproducible.

@@ -50,7 +50,7 @@ class terms {
 
     /** @var string[] The terms a profile can change. */
     public const KEYS = ['learner', 'competency', 'competencies', 'framework', 'assessor', 'proficient', 'summarytitle',
-        'evidencepack', 'overviewcounts', 'unit', 'units'];
+        'evidencepack', 'overviewcounts', 'unit', 'units', 'satisfactory', 'notsatisfactory'];
 
     /**
      * The profiles, in menu order.

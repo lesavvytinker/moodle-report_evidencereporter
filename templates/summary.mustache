@@ -75,6 +75,16 @@
                  "grade": "80.00 / 100.00 (Pass)", "marker": "Priya Raman", "feedback": "<p>Well done.</p>",
                  "url": "https://example.com/mod/assign/view.php?id=1&action=grader&userid=2"}
              ],
+             "hasquestions": true, "questiongroups": [
+                {"activity": "AT2 Knowledge quiz", "label": "Attempt 1 (latest)", "quizresult": "Not satisfactory",
+                 "grade": "4.00 / 10.00 (Fail)", "hasflags": true, "flags": [{"text": "Quiz isn't linked to this competency"}],
+                 "questions": [
+                    {"number": "3", "name": "Hazard controls", "mark": "1.00 / 1.00", "outcome": "Passed", "passed": true,
+                     "flags": [{"text": "Passed, but the quiz result is Not satisfactory"}],
+                     "reviewurl": "https://example.com/mod/quiz/reviewquestion.php?attempt=7&slot=3",
+                     "commenturl": "https://example.com/mod/quiz/comment.php?attempt=7&slot=3"}
+                 ]}
+             ],
              "evidence": [
                 {"date": "9/11/26, 21:54", "type": "Logged", "source": "AT1 Project (Assignment)",
                  "description": "The activity 'AT1 Project' was completed.",
@@ -237,6 +247,43 @@
             </tbody>
         </table>
         {{/hasattempts}}
+        {{#hasquestions}}
+        <p class="fw-bold mb-1">{{#str}} questionsheading, report_evidencereporter {{/str}}</p>
+        <p class="small text-muted mb-1">{{#str}} questionsnote, report_evidencereporter {{/str}}</p>
+        <table class="table table-sm table-bordered er-questions">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} question, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} questionmark, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} questionresult, report_evidencereporter {{/str}}</th>
+                    <th scope="col">{{#str}} questionnotes, report_evidencereporter {{/str}}</th>
+                </tr>
+            </thead>
+            {{#questiongroups}}
+            <tbody>
+                <tr class="table-light">
+                    <th scope="rowgroup" colspan="4">
+                        {{activity}} · {{label}}
+                        {{#quizresult}} · {{#str}} quizresult, report_evidencereporter {{/str}}: {{.}}{{/quizresult}}{{#grade}} ({{.}}){{/grade}}
+                        {{#flags}}<br><span class="badge bg-warning text-dark text-wrap er-flag">{{text}}</span>{{/flags}}
+                    </th>
+                </tr>
+                {{#questions}}
+                <tr>
+                    <td>
+                        {{number}}. {{name}}
+                        {{#reviewurl}}<br><a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} viewquestionanswer, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a><span class="er-printurl">{{.}}</span>{{/reviewurl}}
+                        {{#commenturl}} · <a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} commentquestion, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a>{{/commenturl}}
+                    </td>
+                    <td>{{mark}}</td>
+                    <td>{{#passed}}<strong>{{outcome}}</strong>{{/passed}}{{^passed}}{{outcome}}{{/passed}}</td>
+                    <td>{{#flags}}<span class="badge bg-warning text-dark text-wrap er-flag">{{text}}</span> {{/flags}}</td>
+                </tr>
+                {{/questions}}
+            </tbody>
+            {{/questiongroups}}
+        </table>
+        {{/hasquestions}}
         {{#hasrecords}}
         {{#records}}
         <div class="er-record border rounded p-2 mb-2">

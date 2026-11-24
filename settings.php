@@ -115,6 +115,12 @@ if ($hassiteconfig && $settings) {
             1
         ));
     }
+    $settings->add(new admin_setting_configcheckbox(
+        'report_evidencereporter/packassessorguides',
+        get_string('settings_packassessorguides', 'report_evidencereporter'),
+        get_string('settings_packassessorguides_desc', 'report_evidencereporter'),
+        1
+    ));
     $settings->add(new admin_setting_configtext(
         'report_evidencereporter/signoffheading',
         get_string('settings_signoffheading', 'report_evidencereporter'),
@@ -204,6 +210,10 @@ if ($hassiteconfig && $settings) {
         $items = [];
         foreach (\report_evidencereporter\local\sources::all() as $source) {
             $items[] = html_writer::tag('strong', s($source->get_name())) . ': ' . s($source->get_description());
+        }
+        if (\report_evidencereporter\local\question_evidence::is_available()) {
+            $items[] = html_writer::tag('strong', s(get_string('questionsheading', 'report_evidencereporter'))) . ': '
+                . s(get_string('sourcedesc_questions', 'report_evidencereporter'));
         }
         $settings->add(new admin_setting_heading(
             'report_evidencereporter/sourcesheading',

@@ -18,6 +18,7 @@ namespace report_evidencereporter\output;
 
 use report_evidencereporter\local\branding;
 use report_evidencereporter\local\identity;
+use report_evidencereporter\local\question_evidence;
 use report_evidencereporter\local\terms;
 use report_evidencereporter\local\scope;
 use renderable;
@@ -96,7 +97,8 @@ class summary_page implements renderable, templatable {
             ];
             $showattempts = branding::show('attempts');
             $records = $comp->records ?? [];
-            if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts) || $records)) {
+            $questions = $showattempts ? ($comp->questions ?? []) : [];
+            if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts) || $records || $questions)) {
                 $details[] = [
                     'idnumber' => $comp->idnumber,
                     'name' => $comp->name,
@@ -107,6 +109,8 @@ class summary_page implements renderable, templatable {
                     'attempts' => array_map(fn($a) => (array) $a, $comp->attempts),
                     'hasrecords' => (bool) $records,
                     'records' => array_map(fn($r) => (array) $r, $records),
+                    'hasquestions' => (bool) $questions,
+                    'questiongroups' => question_evidence::export($questions),
                 ];
             }
         }

@@ -234,6 +234,20 @@ class evidence_pack {
             $folder = '02 ' . get_string('packassessments', 'report_evidencereporter') . '/'
                 . $this->safe_name(format_string($course->shortname) . ' - ' . $cm->get_formatted_name());
             $compnames = $this->competency_names($competenciesbycm[$cmid]);
+            // The blank assessment tool the learner was assessed with.
+            if (assessor_guide::supports($cm->modname) && get_config('report_evidencereporter', 'packassessorguides') !== '0') {
+                try {
+                    $guide = new assessor_guide($cm);
+                    $this->add_content($folder . '/' . $this->safe_name(
+                        get_string('assessorguide_packfile', 'report_evidencereporter')
+                    ) . '.pdf', $guide->build_pdf());
+                } catch (\Throwable $e) {
+                    debugging(
+                        'Evidence Reporter: the assessor guide could not be built: ' . $e->getMessage(),
+                        DEBUG_DEVELOPER
+                    );
+                }
+            }
             foreach ($rows as $row) {
                 $attempt = $this->redact_attempt(attempts::format($row, $this->viewfullnames));
                 $attemptfolder = $folder . '/' . get_string(
@@ -501,6 +515,9 @@ class evidence_pack {
                 }
                 $html .= '</table><p><small>' . s(get_string('packseeassessments', 'report_evidencereporter')) . '</small></p>';
             }
+            if (!empty($comp->questions) && branding::show('attempts')) {
+                $html .= $this->questions_html($comp->questions);
+            }
             if (!empty($comp->records)) {
                 $html .= '<p><strong>' . s(get_string('packrecords', 'report_evidencereporter')) . '</strong></p><ul>';
                 foreach ($comp->records as $record) {
@@ -517,6 +534,39 @@ class evidence_pack {
                 . s(get_string('date')) . ': ____________</p>';
         }
         return $html;
+    }
+
+    /**
+     * Supporting evidence from quiz questions, for the summary PDF: each quiz attempt with its result, and each question
+     * with its mark, result, flags and a link to the learner's answer.
+     *
+     * @param stdClass[] $groups From {@see question_evidence::get_for_user()}
+     * @return string HTML
+     */
+    private function questions_html(array $groups): string {
+        $html = '<p><strong>' . s(get_string('questionsheading', 'report_evidencereporter')) . '</strong><br><small>'
+            . s(get_string('questionsnote', 'report_evidencereporter')) . '</small></p>'
+            . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
+            . '<td width="45%">' . s(get_string('question', 'report_evidencereporter')) . '</td>'
+            . '<td width="15%">' . s(get_string('questionmark', 'report_evidencereporter')) . '</td>'
+            . '<td width="15%">' . s(get_string('questionresult', 'report_evidencereporter')) . '</td>'
+            . '<td width="25%">' . s(get_string('questionnotes', 'report_evidencereporter')) . '</td></tr>';
+        foreach ($groups as $group) {
+            $heading = $group->activity . ' · ' . $group->label
+                . ($group->quizresult !== '' ? ' · ' . get_string('quizresult', 'report_evidencereporter') . ': '
+                    . $group->quizresult : '')
+                . ($group->grade !== '' ? ' (' . $group->grade . ')' : '');
+            $html .= '<tr style="background-color:#f8f9fa;"><td colspan="4" width="100%"><strong>' . s($heading) . '</strong>'
+                . implode('', array_map(fn($flag) => '<br><small>' . s($flag) . '</small>', $group->flags)) . '</td></tr>';
+            foreach ($group->questions as $question) {
+                $html .= '<tr><td width="45%">' . s($question->number . '. ' . $question->name)
+                    . '<br><small>' . s($question->reviewurl) . '</small></td>'
+                    . '<td width="15%">' . s($question->mark) . '</td>'
+                    . '<td width="15%">' . s($question->outcome) . '</td>'
+                    . '<td width="25%">' . implode('<br>', array_map('s', $question->flags)) . '</td></tr>';
+            }
+        }
+        return $html . '</table>';
     }
 
     /**
@@ -584,6 +634,37 @@ class evidence_pack {
      * @return string PDF bytes
      */
     public function html_to_pdf(string $title, string $html): string {
+        $html = self::branded_html($html);
+        if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
+            $this->renderedhtml[] = $html;
+        }
+        return self::render_pdf($title, $html);
+    }
+
+    /**
+     * HTML for a PDF with the organisation's name and header text at the top and footer text at the end. Images are
+     * removed: they need a logged-in browser.
+     *
+     * @param string $html
+     * @return string
+     */
+    public static function branded_html(string $html): string {
+        $html = preg_replace('/<img[^>]*>/i', '', $html);
+        return '<p style="color:#555555;font-size:8pt;">' . s(branding::get_orgname())
+            . (branding::get_header() !== '' ? '<br>' . nl2br(s(branding::get_header())) : '') . '</p>'
+            . $html
+            . (branding::get_footer() !== '' ? '<p style="color:#555555;font-size:8pt;">'
+                . nl2br(s(branding::get_footer())) . '</p>' : '');
+    }
+
+    /**
+     * Render HTML (from {@see branded_html()}) to a PDF, with the organisation's logo at the top.
+     *
+     * @param string $title
+     * @param string $html
+     * @return string PDF bytes
+     */
+    public static function render_pdf(string $title, string $html): string {
         global $CFG;
         require_once($CFG->libdir . '/pdflib.php');
         $pdf = new \pdf();
@@ -595,9 +676,6 @@ class evidence_pack {
         $pdf->SetAutoPageBreak(true, 15);
         $pdf->SetFont('freesans', '', 9);
         $pdf->AddPage();
-        // Images and embedded media need a logged-in browser, so keep text only.
-        $html = preg_replace('/<img[^>]*>/i', '', $html);
-        // The organisation's logo, name and header text at the top; footer text at the end.
         if ($logo = branding::get_logo()) {
             try {
                 $pdf->Image('@' . $logo->get_content(), 15, 10, 0, 14, '', '', 'N', true);
@@ -605,14 +683,6 @@ class evidence_pack {
             } catch (\Throwable $e) {
                 debugging('Evidence Reporter: the logo could not be added to a PDF: ' . $e->getMessage(), DEBUG_DEVELOPER);
             }
-        }
-        $html = '<p style="color:#555555;font-size:8pt;">' . s(branding::get_orgname())
-            . (branding::get_header() !== '' ? '<br>' . nl2br(s(branding::get_header())) : '') . '</p>'
-            . $html
-            . (branding::get_footer() !== '' ? '<p style="color:#555555;font-size:8pt;">'
-                . nl2br(s(branding::get_footer())) . '</p>' : '');
-        if (defined('PHPUNIT_TEST') && PHPUNIT_TEST) {
-            $this->renderedhtml[] = $html;
         }
         $pdf->writeHTML($html);
         return $pdf->Output('', 'S');

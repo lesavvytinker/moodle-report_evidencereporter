@@ -70,7 +70,11 @@ class summary {
         global $DB;
         [$from, $where, $params] = self::get_base_sql($userid);
         $ids = $DB->get_fieldset_sql("SELECT DISTINCT c.id {$from} WHERE {$where}", $params);
-        $ids = array_merge($ids, array_column(self::get_linked_activities($userid), 'competencyid'));
+        $ids = array_merge(
+            $ids,
+            array_column(self::get_linked_activities($userid), 'competencyid'),
+            question_evidence::get_competencyids($userid)
+        );
         return array_values(array_unique(array_map('intval', $ids)));
     }
 
@@ -151,7 +155,8 @@ class summary {
         [$from, $where, $params] = self::get_base_sql($userid);
         return $DB->record_exists_sql("SELECT 1 {$from} WHERE {$where}", $params)
             || !empty(self::get_linked_activities($userid))
-            || !empty(checklist_items::get_linked($userid));
+            || !empty(checklist_items::get_linked($userid))
+            || !empty(question_evidence::get_competencyids($userid));
     }
 
     /**
@@ -185,7 +190,8 @@ class summary {
      * @param int $userid
      * @param scope|int $scope What to cover (a framework ID is short for that framework)
      * @param identity|null $identity Redaction for names and generated text
-     * @return stdClass competencies (in order, each with ->evidence rows), restricted (bool), scope
+     * @return stdClass competencies (in order, each with ->evidence rows, ->attempts, ->records and ->questions: supporting
+     *                  evidence from quiz questions, see {@see question_evidence::get_for_user()}), restricted (bool), scope
      */
     public static function build(int $userid, scope|int $scope, ?identity $identity = null): stdClass {
         global $DB, $USER;
@@ -252,6 +258,9 @@ class summary {
         // Records from activities that keep them instead of attempts: forum posts, attendance, workshop submissions.
         $recordsbycomp = self::get_records($userid, $competencyids, $viewfullnames, $identity);
 
+        // Supporting evidence: results on quiz questions mapped to the competencies (Question competencies plugin).
+        $questionsbycomp = question_evidence::get_for_user($userid, $competencyids, $viewfullnames);
+
         // Ratings frozen when a plan was completed take the place of current ones.
         $frozen = $scope->get_frozen_ratings();
 
@@ -289,6 +298,7 @@ class summary {
                 'evidence' => $evidence,
                 'attempts' => $attemptsbycomp[$comp->id] ?? [],
                 'records' => $recordsbycomp[$comp->id] ?? [],
+                'questions' => $questionsbycomp[$comp->id] ?? [],
             ];
         }
 

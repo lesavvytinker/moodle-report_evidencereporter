@@ -77,5 +77,26 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026120100, 'report', 'evidencereporter');
     }
+
+    if ($oldversion < 2026120201) {
+        // Assessment tool details for assessor guides.
+        $table = new xmldb_table('report_evidencereporter_tool');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('toolversion', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+        $table->add_field('reviewdate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('reviewedby', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+        $table->add_field('conditions', XMLDB_TYPE_TEXT);
+        $table->add_field('resources', XMLDB_TYPE_TEXT);
+        $table->add_field('instructions', XMLDB_TYPE_TEXT);
+        $table->add_field('adjustments', XMLDB_TYPE_TEXT);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN_UNIQUE, ['cmid'], 'course_modules', ['id']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026120201, 'report', 'evidencereporter');
+    }
     return true;
 }

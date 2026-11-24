@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="report/evidencereporter/db" VERSION="20261201" COMMENT="XMLDB file for Moodle report/evidencereporter"
+<XMLDB PATH="report/evidencereporter/db" VERSION="20261202" COMMENT="XMLDB file for Moodle report/evidencereporter"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -46,6 +46,24 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="sampleid" TYPE="foreign" FIELDS="sampleid" REFTABLE="report_evidencereporter_samp" REFFIELDS="id"/>
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="report_evidencereporter_tool" COMMENT="Assessment tool details for an activity, for its assessor guide: version, review and assessor information Moodle doesn't hold.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="toolversion" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Version of the assessment tool, e.g. 1.2"/>
+        <FIELD NAME="reviewdate" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When the tool was last reviewed before use"/>
+        <FIELD NAME="reviewedby" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Who reviewed it (as typed)"/>
+        <FIELD NAME="conditions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Assessment conditions, e.g. workplace or simulated environment"/>
+        <FIELD NAME="resources" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Resources allowed"/>
+        <FIELD NAME="instructions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Instructions for the assessor"/>
+        <FIELD NAME="adjustments" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Reasonable adjustment guidance"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="cmid" TYPE="foreign-unique" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

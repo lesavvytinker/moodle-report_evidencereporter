@@ -91,3 +91,27 @@ function report_evidencereporter_pluginfile($course, $cm, $context, $filearea, $
     }
     send_stored_file($file, 0, 0, true, $options);
 }
+
+/**
+ * Add the "Assessment tool details" section to the settings of activities Evidence Reporter reads.
+ *
+ * @param moodleform_mod $formwrapper
+ * @param MoodleQuickForm $mform
+ */
+function report_evidencereporter_coursemodule_standard_elements($formwrapper, $mform) {
+    $cm = $formwrapper->get_coursemodule();
+    $modname = $formwrapper->get_current()->modulename ?? ($cm->modname ?? '');
+    \report_evidencereporter\local\tool_details::add_form_elements($mform, (string) $modname, $cm ? (int) $cm->id : 0);
+}
+
+/**
+ * Save the "Assessment tool details" section.
+ *
+ * @param stdClass $data
+ * @param stdClass $course
+ * @return stdClass
+ */
+function report_evidencereporter_coursemodule_edit_post_actions($data, $course) {
+    \report_evidencereporter\local\tool_details::save_from_form($data);
+    return $data;
+}
