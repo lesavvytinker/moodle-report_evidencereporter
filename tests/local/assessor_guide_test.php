@@ -26,6 +26,8 @@ use stdClass;
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \report_evidencereporter\local\assessor_guide
+ * @covers     \report_evidencereporter\local\tool_details
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(assessor_guide::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(tool_details::class)]

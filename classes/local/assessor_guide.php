@@ -238,7 +238,8 @@ class assessor_guide {
         }
         foreach ($slots as $slot) {
             $number = $structure->get_displayed_number_for_slot($slot->slot);
-            if ($slot->qtype === 'random') {
+            // Random slots: qtype 'random' up to Moodle 5.1, no qtype and ->random from 5.2; both have a filter.
+            if (!empty($slot->filtercondition) || !empty($slot->random) || $slot->qtype === 'random') {
                 $html .= $this->random_html($slot, (string) $number, $quizcompetencies, $sat, $nys);
                 continue;
             }
