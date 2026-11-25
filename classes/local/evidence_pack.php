@@ -462,7 +462,13 @@ class evidence_pack {
                 . '<td width="10%">' . (count($comp->attempts) ?: '-') . '</td></tr>';
         }
         $html .= '</table>';
-        $html .= $this->adjustments_html(array_map(fn($comp) => (int) $comp->id, $summary->competencies));
+        $assessments = reasonable_adjustments::get_by_assessment(
+            $this->userid,
+            array_map(fn($comp) => (int) $comp->id, $summary->competencies),
+            $this->identity,
+            true
+        );
+        $html .= $this->adjustments_html($assessments);
 
         // Evidence detail per competency (unless switched off in the settings).
         $showdetail = branding::show('evidencedetail');
@@ -526,6 +532,16 @@ class evidence_pack {
                 }
                 $html .= '</ul><p><small>' . s(get_string('packseerecords', 'report_evidencereporter')) . '</small></p>';
             }
+            $lines = [];
+            foreach ($assessments as $assessment) {
+                if (in_array((int) $comp->id, $assessment->competencyids)) {
+                    $lines[] = s($assessment->activity) . ': ' . s($assessment->text);
+                }
+            }
+            if ($lines) {
+                $html .= '<p><small><strong>' . s(get_string('radjline', 'report_evidencereporter')) . ':</strong> '
+                    . implode(' &middot; ', $lines) . '</small></p>';
+            }
         }
         if (branding::show('signoff')) {
             $html .= '<p>&nbsp;</p><p><strong>' . s(branding::get_signoff_heading()) . '</strong></p>'
@@ -538,35 +554,42 @@ class evidence_pack {
     }
 
     /**
-     * Reasonable adjustments, for the summary PDF: reasons only when the site includes them in downloads.
+     * Reasonable adjustments by assessment, for the summary PDF ("N/A" when none): reasons only when the site includes
+     * them in downloads.
      *
-     * @param int[] $competencyids
-     * @return string HTML ('' when there are none)
+     * @param \stdClass[] $assessments From {@see reasonable_adjustments::get_by_assessment()}
+     * @return string HTML ('' when there are no assessments)
      */
-    private function adjustments_html(array $competencyids): string {
-        $adjustments = reasonable_adjustments::get_for_user($this->userid, $competencyids, $this->identity, true);
-        if (!$adjustments) {
+    private function adjustments_html(array $assessments): string {
+        if (!$assessments) {
             return '';
         }
-        $html = '<h2>' . s(get_string('adjustments', 'report_evidencereporter')) . '</h2>'
+        $html = '<h2>' . s(get_string('adjustmentsbyassessment', 'report_evidencereporter')) . '</h2>'
             . '<p><small>' . s(get_string('adjustmentsnote', 'report_evidencereporter')) . '</small></p>'
             . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
-            . '<td width="20%">' . s(get_string('activity', 'report_evidencereporter')) . '</td>'
-            . '<td width="18%">' . s(get_string('ratype', 'report_evidencereporter')) . '</td>'
+            . '<td width="20%">' . s(get_string('assessment', 'report_evidencereporter')) . '</td>'
+            . '<td width="18%">' . s(get_string('radjline', 'report_evidencereporter')) . '</td>'
             . '<td width="24%">' . s(get_string('radetails', 'report_evidencereporter')) . '</td>'
             . '<td width="18%">' . s(get_string('rareason', 'report_evidencereporter')) . '</td>'
             . '<td width="20%">' . s(get_string('raapprovedby', 'report_evidencereporter')) . ' / '
             . s(get_string('rarecorded', 'report_evidencereporter')) . '</td></tr>';
-        foreach ($adjustments as $item) {
-            $reason = $item->reason !== null ? nl2br(s($item->reason))
-                : ($item->hasreason ? '<em>' . s(get_string('rareasonleftout', 'report_evidencereporter')) . '</em>' : '');
-            $html .= '<tr><td width="20%">' . s($item->activity) . '</td>'
-                . '<td width="18%">' . s($item->type) . ($item->source !== '' ? '<br><small>'
-                    . s(get_string('rasource', 'report_evidencereporter') . ': ' . $item->source) . '</small>' : '') . '</td>'
-                . '<td width="24%">' . nl2br(s($item->details)) . '</td>'
-                . '<td width="18%">' . $reason . '</td>'
-                . '<td width="20%">' . s($item->approvedby) . '<br><small>' . s($item->recorded . ' · ' . $item->recordedby)
-                . '</small></td></tr>';
+        foreach ($assessments as $assessment) {
+            if (!$assessment->items) {
+                $html .= '<tr><td width="20%">' . s($assessment->activity) . '</td><td width="80%">'
+                    . s(get_string('radjna', 'report_evidencereporter')) . '</td></tr>';
+                continue;
+            }
+            foreach ($assessment->items as $item) {
+                $reason = $item->reason !== null ? nl2br(s($item->reason))
+                    : ($item->hasreason ? '<em>' . s(get_string('rareasonleftout', 'report_evidencereporter')) . '</em>' : '');
+                $html .= '<tr><td width="20%">' . s($assessment->activity) . '</td>'
+                    . '<td width="18%">' . s($item->type) . ($item->source !== '' ? '<br><small>'
+                        . s(get_string('rasource', 'report_evidencereporter') . ': ' . $item->source) . '</small>' : '')
+                    . '</td><td width="24%">' . nl2br(s($item->details)) . '</td>'
+                    . '<td width="18%">' . $reason . '</td>'
+                    . '<td width="20%">' . s($item->approvedby) . '<br><small>' . s($item->recorded . ' · ' . $item->recordedby)
+                    . '</small></td></tr>';
+            }
         }
         return $html . '</table>';
     }

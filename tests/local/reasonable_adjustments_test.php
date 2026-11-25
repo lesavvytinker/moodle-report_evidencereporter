@@ -59,7 +59,8 @@ final class reasonable_adjustments_test extends \advanced_testcase {
         $cgen->create_course_competency(['courseid' => $d->course->id, 'competencyid' => $d->pc->get('id')]);
         $d->quiz = $gen->create_module('quiz', ['course' => $d->course->id, 'name' => 'Knowledge quiz']);
         $d->assign = $gen->create_module('assign', ['course' => $d->course->id, 'name' => 'Practice plan']);
-        foreach ([$d->quiz, $d->assign] as $activity) {
+        $d->forum = $gen->create_module('forum', ['course' => $d->course->id, 'name' => 'Networking forum']);
+        foreach ([$d->quiz, $d->assign, $d->forum] as $activity) {
             $cgen->create_course_module_competency(['cmid' => $activity->cmid, 'competencyid' => $d->pc->get('id')]);
         }
         return $d;
@@ -179,10 +180,24 @@ final class reasonable_adjustments_test extends \advanced_testcase {
         $this->assertStringContainsString('Reasonable adjustments', $html);
         $this->assertStringContainsString('Learning support plan', $html);
         $this->assertStringContainsString('name="cmid"', $html, 'The teacher may record more.');
+        $this->assertStringContainsString('Reasonable adjustments by assessment', $html);
 
-        // A teacher in another course sees none of them.
+        // Every assessment is listed: those with none say N/A, there and under each competency.
+        $assessments = $summary->assessments;
+        $this->assertSame(
+            ['Knowledge quiz', 'Practice plan', 'Networking forum'],
+            array_map(fn($a) => $a->activity, $assessments)
+        );
+        $this->assertSame('N/A', $assessments[2]->text);
+        $this->assertSame([], $assessments[2]->items);
+        $pcsummary = array_values(array_filter($summary->competencies, fn($c) => (int) $c->id === (int) $d->pc->get('id')))[0];
+        $this->assertCount(3, $pcsummary->assessments);
+        $this->assertMatchesRegularExpression('~Networking forum</td>\\s*<td colspan="5">N/A</td>~', $html);
+
+        // A teacher in another course sees none of them, and no "N/A" either.
         $this->setUser($d->otherteacher);
         $this->assertSame([], reasonable_adjustments::get_for_user((int) $d->learner->id, [$pcid]));
+        $this->assertSame([], reasonable_adjustments::get_by_assessment((int) $d->learner->id, [$pcid]));
 
         // Downloads: reason left out by default, but noted; included when the site allows.
         $this->setUser($d->teacher);
@@ -210,7 +225,7 @@ final class reasonable_adjustments_test extends \advanced_testcase {
             (int) $d->unit->get('id')
         );
         $this->assertStringContainsString('Reason: Learning support plan', $line);
-        $this->assertSame('', reasonable_adjustments::for_judgement(
+        $this->assertSame('N/A', reasonable_adjustments::for_judgement(
             (int) $d->teacher->id,
             (int) $d->course->id,
             (int) $d->unit->get('id')
@@ -218,7 +233,7 @@ final class reasonable_adjustments_test extends \advanced_testcase {
 
         // The record menu lists activities the teacher may record in.
         $this->assertEqualsCanonicalizing(
-            [(int) $d->quiz->cmid, (int) $d->assign->cmid],
+            [(int) $d->quiz->cmid, (int) $d->assign->cmid, (int) $d->forum->cmid],
             array_keys(reasonable_adjustments::get_manageable_activities((int) $d->learner->id, [$pcid]))
         );
     }

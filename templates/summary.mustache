@@ -178,14 +178,14 @@
     </table>
 
     {{#showadjustments}}
-    <h3 class="h4 mt-4">{{#str}} adjustments, report_evidencereporter {{/str}}</h3>
+    <h3 class="h4 mt-4">{{#str}} adjustmentsbyassessment, report_evidencereporter {{/str}}</h3>
     <p class="small text-muted mb-1">{{#str}} adjustmentsnote, report_evidencereporter {{/str}}</p>
     {{#hasadjustments}}
     <table class="table table-sm table-bordered er-adjustments">
         <thead>
             <tr>
-                <th scope="col">{{#str}} activity, report_evidencereporter {{/str}}</th>
-                <th scope="col">{{#str}} ratype, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} assessment, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} radjline, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} radetails, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} rareason, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} raapprovedby, report_evidencereporter {{/str}}</th>
@@ -194,6 +194,13 @@
         </thead>
         <tbody>
             {{#adjustments}}
+            {{#none}}
+            <tr>
+                <td>{{activity}}</td>
+                <td colspan="5">{{#str}} radjna, report_evidencereporter {{/str}}</td>
+            </tr>
+            {{/none}}
+            {{^none}}
             <tr>
                 <td>{{activity}}</td>
                 <td>{{type}}{{#source}}<br><span class="small text-muted">{{#str}} rasource, report_evidencereporter {{/str}}: {{.}}</span>{{/source}}</td>
@@ -202,11 +209,12 @@
                 <td>{{approvedby}}</td>
                 <td>{{recorded}}{{#recordedby}}<br><span class="small">{{.}}</span>{{/recordedby}}</td>
             </tr>
+            {{/none}}
             {{/adjustments}}
         </tbody>
     </table>
     {{/hasadjustments}}
-    {{^hasadjustments}}<p class="text-muted">{{#str}} adjustmentsnone, report_evidencereporter {{/str}}</p>{{/hasadjustments}}
+    {{^hasadjustments}}<p class="text-muted">{{#str}} adjustmentsnoassessments, report_evidencereporter {{/str}}</p>{{/hasadjustments}}
     {{#adjustmentadd}}
     <form method="get" action="{{url}}" class="d-print-none er-noprint d-flex flex-wrap align-items-center gap-2 mb-3">
         <input type="hidden" name="userid" value="{{userid}}">
@@ -335,6 +343,11 @@
         </div>
         {{/records}}
         {{/hasrecords}}
+        {{#hasassessmentlines}}
+        <p class="small mb-3 er-adjustmentline"><strong>{{#str}} radjline, report_evidencereporter {{/str}}:</strong>
+            {{#assessmentlines}}{{#sep}} · {{/sep}}{{activity}}: {{#none}}{{#str}} radjna, report_evidencereporter {{/str}}{{/none}}{{^none}}{{text}}{{/none}}{{/assessmentlines}}
+        </p>
+        {{/hasassessmentlines}}
     </section>
     {{/details}}
 

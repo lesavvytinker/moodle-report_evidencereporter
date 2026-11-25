@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.25.1 (2026-12-05)
+- Reasonable adjustments are shown per assessment: the summary and the evidence pack list every assessment linked to the
+  learner's competencies, with "Reasonable adjustment: N/A" where none was made; each competency's evidence ends with
+  its assessments' adjustments; sample registers show "N/A" too. "N/A" appears only where the viewer may see
+  adjustments.
+
 ## 0.25.0 (2026-12-05)
 - **Reasonable adjustments:** record what was adjusted for a learner in an assessment, why, and who approved it, from
   the activity's **More > Reasonable adjustments** page or the learner's evidence summary. Quiz user overrides,

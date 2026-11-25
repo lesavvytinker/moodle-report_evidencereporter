@@ -100,7 +100,14 @@ class summary_page implements renderable, templatable {
             $records = $comp->records ?? [];
             $questions = $showattempts ? ($comp->questions ?? []) : [];
             if (branding::show('evidencedetail') && ($count || ($attemptcount && $showattempts) || $records || $questions)) {
+                $assessmentlines = [];
+                foreach ($comp->assessments ?? [] as $i => $assessment) {
+                    $assessmentlines[] = ['activity' => $assessment->activity, 'text' => $assessment->text,
+                        'none' => !$assessment->items, 'sep' => $i > 0];
+                }
                 $details[] = [
+                    'hasassessmentlines' => (bool) $assessmentlines,
+                    'assessmentlines' => $assessmentlines,
                     'idnumber' => $comp->idnumber,
                     'name' => $comp->name,
                     'currentrating' => $comp->currentrating,
@@ -116,11 +123,18 @@ class summary_page implements renderable, templatable {
             }
         }
 
-        // Reasonable adjustments, and where the viewer may record one for this learner.
-        $adjustments = array_map(
-            fn($a) => (array) $a + ['reasontext' => (string) $a->reason],
-            $this->summary->adjustments ?? []
-        );
+        // Reasonable adjustments by assessment ("N/A" when none), and where the viewer may record one for this learner.
+        $assessments = [];
+        foreach ($this->summary->assessments ?? [] as $assessment) {
+            if (!$assessment->items) {
+                $assessments[] = ['activity' => $assessment->activity, 'none' => true];
+                continue;
+            }
+            foreach ($assessment->items as $i => $item) {
+                $assessments[] = (array) $item + ['activity' => $assessment->activity, 'first' => $i === 0,
+                    'none' => false, 'reasontext' => (string) $item->reason];
+            }
+        }
         $addoptions = [];
         $competencyids = array_map(fn($comp) => (int) $comp->id, $this->summary->competencies);
         foreach (reasonable_adjustments::get_manageable_activities((int) $this->learner->id, $competencyids) as $cmid => $name) {
@@ -135,9 +149,9 @@ class summary_page implements renderable, templatable {
                 'label' => get_string($flag === 'redactname' ? 'redactlearnername' : $flag, 'report_evidencereporter')];
         }
         return [
-            'showadjustments' => $adjustments || $addoptions,
-            'hasadjustments' => (bool) $adjustments,
-            'adjustments' => $adjustments,
+            'showadjustments' => $assessments || $addoptions,
+            'hasadjustments' => (bool) $assessments,
+            'adjustments' => $assessments,
             'adjustmentadd' => $addoptions ? [
                 'url' => (new \moodle_url('/report/evidencereporter/adjustment.php'))->out(false),
                 'options' => $addoptions,

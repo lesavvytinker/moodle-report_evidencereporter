@@ -161,8 +161,10 @@ spoken responses, an alternative format and so on), the details, the reason and 
   **Record an adjustment for** on a learner's evidence summary.
 - **Moodle's own:** quiz user overrides, assignment user overrides and assignment extensions are listed as suggestions.
   **Confirm** records one with its reason and approver.
-- **Where they appear:** a Reasonable adjustments section on the evidence summary and in the evidence pack's summary
-  PDF, and a column in validation sample registers (the learner's adjustments in that course and unit).
+- **Where they appear, per assessment:** the evidence summary and the evidence pack's summary PDF list every assessment
+  linked to the learner's competencies, with its adjustments or "N/A"; each competency's evidence ends with a
+  "Reasonable adjustment" line for its assessments; validation sample registers have a column (the learner's
+  adjustments in that course and unit, or "N/A").
 - **Who sees them:** staff with `report/evidencereporter:viewadjustments` (teachers and managers by default) see
   adjustments and reasons; `report/evidencereporter:manageadjustments` records them. Learners see their own unless
   *Learners see their own adjustments* is off.

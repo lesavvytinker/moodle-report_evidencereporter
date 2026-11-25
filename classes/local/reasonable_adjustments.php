@@ -328,6 +328,97 @@ class reasonable_adjustments {
     }
 
     /**
+     * Every assessment linked to the given competencies, for the learner, with its reasonable adjustments (none: "N/A").
+     * Assessments are the learner's courses' activities linked to the competencies, plus any activity with an adjustment
+     * for them; only those where the current user may see adjustments are listed, so "N/A" is never shown to someone
+     * who couldn't see one.
+     *
+     * @param int $userid
+     * @param int[] $competencyids
+     * @param identity|null $identity Redaction for staff names
+     * @param bool $fordownload See {@see format()}
+     * @return stdClass[] cmid, activity, courseid, competencyids (int[]), items (see {@see get_for_user()}), text
+     *                    (one line: "N/A" or the adjustments)
+     */
+    public static function get_by_assessment(
+        int $userid,
+        array $competencyids,
+        ?identity $identity = null,
+        bool $fordownload = false
+    ): array {
+        global $DB;
+        if (!$competencyids) {
+            return [];
+        }
+        [$cinsql, $params] = $DB->get_in_or_equal(array_map('intval', $competencyids), SQL_PARAMS_NAMED, 'rbc');
+        $params['userid'] = $userid;
+        $courseids = array_map('intval', array_keys(enrol_get_all_users_courses($userid, false, 'id')));
+        $coursesql = '1 = 0';
+        if ($courseids) {
+            [$coursesql, $courseparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'rbo');
+            $coursesql = 'cm.course ' . $coursesql;
+            $params += $courseparams;
+        }
+        $links = $DB->get_recordset_sql("SELECT mc.id, mc.cmid, mc.competencyid
+                                           FROM {competency_modulecomp} mc
+                                           JOIN {course_modules} cm ON cm.id = mc.cmid
+                                          WHERE mc.competencyid {$cinsql} AND cm.deletioninprogress = 0
+                                            AND ({$coursesql}
+                                                 OR EXISTS (SELECT 1 FROM {" . self::TABLE . "} ra
+                                                             WHERE ra.cmid = mc.cmid AND ra.userid = :userid))", $params);
+        $bycm = [];
+        foreach ($links as $link) {
+            $bycm[(int) $link->cmid][] = (int) $link->competencyid;
+        }
+        $links->close();
+        if (!$bycm) {
+            return [];
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($bycm), SQL_PARAMS_NAMED, 'rbm');
+        $records = [];
+        foreach (
+            $DB->get_records_select(
+                self::TABLE,
+                "userid = :userid AND cmid {$insql}",
+                $inparams + ['userid' => $userid],
+                'timecreated, id'
+            ) as $record
+        ) {
+            $records[(int) $record->cmid][] = $record;
+        }
+        $result = [];
+        foreach ($bycm as $cmid => $compids) {
+            try {
+                [$course, $cm] = get_course_and_cm_from_cmid($cmid);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if (!self::supports($cm->modname) || (!$cm->visible && empty($records[$cmid]))) {
+                continue;
+            }
+            if (!self::can_view(context_module::instance($cm->id), $userid)) {
+                continue;
+            }
+            $items = self::format($records[$cmid] ?? [], $identity, $fordownload);
+            $result[] = (object) [
+                'cmid' => (int) $cm->id,
+                'activity' => $cm->get_formatted_name(),
+                'courseid' => (int) $course->id,
+                'coursename' => format_string($course->shortname, true, ['context' => \context_course::instance($course->id)]),
+                'sortkey' => sprintf('%010d-%05d-%010d', $course->id, $cm->sectionnum, array_search(
+                    $cm->id,
+                    array_keys(get_fast_modinfo($course)->get_cms())
+                )),
+                'competencyids' => array_values(array_unique($compids)),
+                'items' => $items,
+                'text' => $items ? self::to_text($items, false, '; ') : get_string('radjna', 'report_evidencereporter'),
+            ];
+        }
+        usort($result, fn($a, $b) => strcmp($a->sortkey, $b->sortkey));
+        return $result;
+    }
+
+    /**
      * Format adjustments for display, keeping those the current user may see.
      *
      * @param stdClass[] $records
@@ -372,9 +463,10 @@ class reasonable_adjustments {
      *
      * @param stdClass[] $formatted From {@see format()}
      * @param bool $withactivity Start each line with the activity
+     * @param string $separator Between adjustments
      * @return string
      */
-    public static function to_text(array $formatted, bool $withactivity = true): string {
+    public static function to_text(array $formatted, bool $withactivity = true, string $separator = "\n"): string {
         $lines = [];
         foreach ($formatted as $item) {
             $line = ($withactivity ? $item->activity . ': ' : '') . $item->type;
@@ -391,7 +483,7 @@ class reasonable_adjustments {
             }
             $lines[] = $line;
         }
-        return implode("\n", $lines);
+        return implode($separator, $lines);
     }
 
     /**
@@ -402,7 +494,7 @@ class reasonable_adjustments {
      * @param int $courseid
      * @param int $unitid
      * @param identity|null $identity
-     * @return string One line per adjustment
+     * @return string One line per adjustment, or "N/A"
      */
     public static function for_judgement(int $userid, int $courseid, int $unitid, ?identity $identity = null): string {
         global $DB;
@@ -420,7 +512,8 @@ class reasonable_adjustments {
                                                            AND (c.id = :unitid OR " . $DB->sql_like('c.path', ':path') . "))
                                        ORDER BY ra.timecreated, ra.id", ['courseid' => $courseid, 'userid' => $userid,
             'unitid' => $unitid, 'path' => '%/' . $unitid . '/%']);
-        return self::to_text(self::format($records, $identity, true));
+        $text = self::to_text(self::format($records, $identity, true));
+        return $text !== '' ? $text : get_string('radjna', 'report_evidencereporter');
     }
 
     /**
