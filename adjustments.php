@@ -32,7 +32,7 @@ $confirm = optional_param('confirm', 0, PARAM_BOOL);
 [$course, $cm] = get_course_and_cm_from_cmid($cmid);
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
-if (!reasonable_adjustments::supports($cm->modname)) {
+if (!reasonable_adjustments::available($cm)) {
     throw new moodle_exception('invalidcoursemodule');
 }
 if (!has_any_capability(['report/evidencereporter:viewadjustments', 'report/evidencereporter:manageadjustments'], $context)) {

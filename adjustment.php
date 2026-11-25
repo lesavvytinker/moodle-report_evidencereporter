@@ -44,7 +44,7 @@ if ($id) {
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
 require_capability('report/evidencereporter:manageadjustments', $context);
-if (!reasonable_adjustments::supports($cm->modname)) {
+if (!reasonable_adjustments::available($cm)) {
     throw new moodle_exception('invalidcoursemodule');
 }
 $learner = core_user::get_user($userid, '*', MUST_EXIST);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.25.3 (2026-12-05)
+- New setting **Record reasonable adjustments for**: the terminology profiles whose frameworks record reasonable
+  adjustments (Australian VET and UK apprenticeships by default). An activity follows the frameworks it's linked to, so
+  higher education courses get no Reasonable adjustments page, menu entry or "N/A" lines. Untick all to turn the
+  feature off.
+
 ## 0.25.2 (2026-12-05)
 - Learning plans changed in the same second are listed in a fixed order (oldest first), so units always appear in the
   same order.

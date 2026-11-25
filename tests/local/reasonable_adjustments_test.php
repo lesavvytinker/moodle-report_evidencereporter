@@ -293,4 +293,42 @@ final class reasonable_adjustments_test extends \advanced_testcase {
         ));
         $this->assertFalse($DB->record_exists(reasonable_adjustments::TABLE, ['id' => $id]));
     }
+
+    /**
+     * Only frameworks in profiles that record adjustments get them: Australian VET and UK apprenticeships by default;
+     * higher education, or every profile unticked, turns them off.
+     */
+    public function test_profiles(): void {
+        $d = $this->setup_data();
+        $this->record($d, (int) $d->quiz->cmid);
+        $pcid = (int) $d->pc->get('id');
+        $fid = (int) $d->framework->get('id');
+        $quizcm = get_fast_modinfo($d->course)->get_cm($d->quiz->cmid);
+
+        $this->assertSame([terms::AU_VET, terms::UK_APPRENTICESHIP], reasonable_adjustments::get_enabled_profiles());
+        $this->assertTrue(reasonable_adjustments::available($quizcm));
+        $this->assertCount(3, reasonable_adjustments::get_by_assessment((int) $d->learner->id, [$pcid]));
+
+        // The framework is higher education: no adjustments anywhere, not even "N/A".
+        set_config('frameworkprofiles', json_encode([$fid => terms::HIGHER_ED]), 'report_evidencereporter');
+        $this->assertFalse(reasonable_adjustments::available($quizcm));
+        $this->assertSame([], reasonable_adjustments::get_by_assessment((int) $d->learner->id, [$pcid]));
+        $this->assertSame([], reasonable_adjustments::get_for_user((int) $d->learner->id, [$pcid]));
+        $this->assertSame('', reasonable_adjustments::for_judgement(
+            (int) $d->learner->id,
+            (int) $d->course->id,
+            (int) $d->unit->get('id')
+        ));
+        $this->assertSame([], reasonable_adjustments::get_manageable_activities((int) $d->learner->id, [$pcid]));
+
+        // ...unless the site ticks higher education too.
+        set_config('radjprofiles', terms::AU_VET . ',' . terms::HIGHER_ED, 'report_evidencereporter');
+        $this->assertTrue(reasonable_adjustments::available($quizcm));
+
+        // Nothing ticked: off everywhere.
+        set_config('frameworkprofiles', '', 'report_evidencereporter');
+        set_config('radjprofiles', '', 'report_evidencereporter');
+        $this->assertFalse(reasonable_adjustments::available($quizcm));
+        $this->assertSame([], reasonable_adjustments::get_by_assessment((int) $d->learner->id, [$pcid]));
+    }
 }

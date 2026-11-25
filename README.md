@@ -157,6 +157,10 @@ With **Include blank assessor guides in evidence packs** on (the default), each 
 Record each reasonable adjustment made for a learner in an assessment: what was adjusted (extra time, a reader, a scribe,
 spoken responses, an alternative format and so on), the details, the reason and who approved it.
 
+- **Which courses:** *Record reasonable adjustments for* picks the terminology profiles that use them (Australian VET
+  and UK apprenticeships by default). An activity follows the profile of the frameworks it's linked to, so a higher
+  education course shows nothing about adjustments. Untick every profile to turn the feature off.
+
 - **Where:** each activity's **More > Reasonable adjustments** page lists its learners and their adjustments, or use
   **Record an adjustment for** on a learner's evidence summary.
 - **Moodle's own:** quiz user overrides, assignment user overrides and assignment extensions are listed as suggestions.

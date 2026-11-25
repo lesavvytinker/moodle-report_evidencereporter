@@ -50,6 +50,66 @@ class reasonable_adjustments {
     /** @var string Confirmed from an assignment extension. */
     public const SOURCE_ASSIGNEXTENSION = 'assignextension';
 
+    /** @var array Per request: cmid => enabled. */
+    private static array $enabledcms = [];
+
+    /**
+     * The profiles that record reasonable adjustments (site setting; by default Australian VET and UK apprenticeships).
+     *
+     * @return string[]
+     */
+    public static function get_enabled_profiles(): array {
+        $value = get_config('report_evidencereporter', 'radjprofiles');
+        if ($value === false || $value === null) {
+            return [terms::AU_VET, terms::UK_APPRENTICESHIP];
+        }
+        return array_values(array_filter(explode(',', (string) $value)));
+    }
+
+    /**
+     * Are reasonable adjustments recorded for these frameworks? Yes if any of them uses a profile that records them (a
+     * framework without its own profile uses the site's).
+     *
+     * @param int[] $frameworkids None: the site's profile
+     * @return bool
+     */
+    public static function enabled_for_frameworks(array $frameworkids): bool {
+        $enabled = self::get_enabled_profiles();
+        if (!$enabled) {
+            return false;
+        }
+        $map = terms::get_framework_profiles();
+        $site = terms::get_site_profile();
+        if (!$frameworkids) {
+            return in_array($site, $enabled);
+        }
+        foreach ($frameworkids as $id) {
+            if (in_array($map[(int) $id] ?? $site, $enabled)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Are reasonable adjustments recorded in this activity? Decided by the frameworks of the competencies it's linked to
+     * (or the site's profile when it isn't linked to any).
+     *
+     * @param int $cmid
+     * @return bool
+     */
+    public static function enabled_for_activity(int $cmid): bool {
+        global $DB;
+        if (!PHPUNIT_TEST && isset(self::$enabledcms[$cmid])) {
+            return self::$enabledcms[$cmid];
+        }
+        $frameworkids = $DB->get_fieldset_sql("SELECT DISTINCT c.competencyframeworkid
+                                                 FROM {competency_modulecomp} mc
+                                                 JOIN {competency} c ON c.id = mc.competencyid
+                                                WHERE mc.cmid = :cmid", ['cmid' => $cmid]);
+        return self::$enabledcms[$cmid] = self::enabled_for_frameworks(array_map('intval', $frameworkids));
+    }
+
     /**
      * Kinds of adjustment, for a menu.
      *
@@ -81,6 +141,16 @@ class reasonable_adjustments {
      */
     public static function supports(string $modname): bool {
         return in_array($modname, tool_details::get_modnames());
+    }
+
+    /**
+     * Can adjustments be recorded in this activity: a type Evidence Reporter reads, in a profile that records them?
+     *
+     * @param cm_info $cm
+     * @return bool
+     */
+    public static function available(cm_info $cm): bool {
+        return self::supports($cm->modname) && self::enabled_for_activity((int) $cm->id);
     }
 
     /**
@@ -393,7 +463,7 @@ class reasonable_adjustments {
             } catch (\Throwable $e) {
                 continue;
             }
-            if (!self::supports($cm->modname) || (!$cm->visible && empty($records[$cmid]))) {
+            if (!self::available($cm) || (!$cm->visible && empty($records[$cmid]))) {
                 continue;
             }
             if (!self::can_view(context_module::instance($cm->id), $userid)) {
@@ -435,7 +505,10 @@ class reasonable_adjustments {
             } catch (\Throwable $e) {
                 continue;
             }
-            if (!self::can_view(context_module::instance($cm->id), (int) $record->userid)) {
+            if (
+                !self::enabled_for_activity((int) $cm->id)
+                    || !self::can_view(context_module::instance($cm->id), (int) $record->userid)
+            ) {
                 continue;
             }
             $recorder = $record->usermodified ? \core_user::get_user($record->usermodified) : null;
@@ -498,8 +571,8 @@ class reasonable_adjustments {
      */
     public static function for_judgement(int $userid, int $courseid, int $unitid, ?identity $identity = null): string {
         global $DB;
-        $unit = $DB->get_record('competency', ['id' => $unitid], 'id, path');
-        if (!$unit) {
+        $unit = $DB->get_record('competency', ['id' => $unitid], 'id, path, competencyframeworkid');
+        if (!$unit || !self::enabled_for_frameworks([(int) $unit->competencyframeworkid])) {
             return '';
         }
         $records = $DB->get_records_sql("SELECT ra.*
@@ -547,7 +620,7 @@ class reasonable_adjustments {
             } catch (\Throwable $e) {
                 continue;
             }
-            if (self::supports($cm->modname) && self::can_manage(context_module::instance($cm->id))) {
+            if (self::available($cm) && self::can_manage(context_module::instance($cm->id))) {
                 $result[(int) $cm->id] = $cm->get_formatted_name();
             }
         }

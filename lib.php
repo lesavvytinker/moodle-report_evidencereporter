@@ -135,7 +135,7 @@ function report_evidencereporter_extend_navigation_module($navigation, $cm) {
     }
     $context = context_module::instance($cm->id);
     if (
-        \report_evidencereporter\local\reasonable_adjustments::supports($cm->modname)
+        \report_evidencereporter\local\reasonable_adjustments::available($cm)
         && has_any_capability(
             ['report/evidencereporter:viewadjustments', 'report/evidencereporter:manageadjustments'],
             $context

@@ -169,6 +169,13 @@ if ($hassiteconfig && $settings) {
         get_string('settings_radj', 'report_evidencereporter'),
         get_string('settings_radj_desc', 'report_evidencereporter')
     ));
+    $settings->add(new admin_setting_configmulticheckbox(
+        'report_evidencereporter/radjprofiles',
+        get_string('settings_radjprofiles', 'report_evidencereporter'),
+        get_string('settings_radjprofiles_desc', 'report_evidencereporter'),
+        [\report_evidencereporter\local\terms::AU_VET => 1, \report_evidencereporter\local\terms::UK_APPRENTICESHIP => 1],
+        \report_evidencereporter\local\terms::get_profiles()
+    ));
     $settings->add(new admin_setting_configcheckbox(
         'report_evidencereporter/radjlearner',
         get_string('settings_radjlearner', 'report_evidencereporter'),
