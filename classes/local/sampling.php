@@ -632,8 +632,8 @@ class sampling {
         $str = fn($id, $a = null) => get_string($id, 'report_evidencereporter', $a);
         $rows = [['#', terms::get('learner'), get_string('username'), get_string('idnumber'), terms::get('unit'),
             get_string('course'), terms::get('assessor'), $str('sampleresult'), $str('samplemark'), $str('samplejudged'),
-            $str('samplegroup'), $str('samplehow'), $str('samplestatus'), $str('bulkfile'), $str('samplefindings'),
-            $str('sampleconfirmed')]];
+            $str('samplegroup'), $str('samplehow'), $str('samplestatus'), $str('sampleadjustments'), $str('bulkfile'),
+            $str('samplefindings'), $str('sampleconfirmed')]];
         $items = self::get_items($sampleid);
         $number = [];
         foreach ($items as $n => $item) {
@@ -672,6 +672,12 @@ class sampling {
                 $item->groupkey,
                 $how,
                 $status,
+                reasonable_adjustments::for_judgement(
+                    (int) $item->userid,
+                    (int) $item->courseid,
+                    (int) $item->competencyid,
+                    $identity
+                ),
                 $fileforitem[(int) $item->id] ?? '',
                 '',
                 '',

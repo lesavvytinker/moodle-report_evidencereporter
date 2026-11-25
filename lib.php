@@ -117,22 +117,37 @@ function report_evidencereporter_coursemodule_edit_post_actions($data, $course) 
 }
 
 /**
- * Add "Assessor guide" to the activity's navigation (the More menu) for activities that have one.
+ * Add "Assessor guide" and "Reasonable adjustments" to the activity's navigation (the More menu).
  *
  * @param navigation_node $navigation
  * @param cm_info $cm
  */
 function report_evidencereporter_extend_navigation_module($navigation, $cm) {
-    if (!\report_evidencereporter\local\assessor_guide::can_view($cm)) {
-        return;
+    if (\report_evidencereporter\local\assessor_guide::can_view($cm)) {
+        $navigation->add(
+            get_string('assessorguide', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/assessorguide.php', ['cmid' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereporterassessorguide',
+            new pix_icon('t/print', '')
+        );
     }
-    $url = new moodle_url('/report/evidencereporter/assessorguide.php', ['cmid' => $cm->id]);
-    $navigation->add(
-        get_string('assessorguide', 'report_evidencereporter'),
-        $url,
-        navigation_node::TYPE_SETTING,
-        null,
-        'evidencereporterassessorguide',
-        new pix_icon('t/print', '')
-    );
+    $context = context_module::instance($cm->id);
+    if (
+        \report_evidencereporter\local\reasonable_adjustments::supports($cm->modname)
+        && has_any_capability(
+            ['report/evidencereporter:viewadjustments', 'report/evidencereporter:manageadjustments'],
+            $context
+        )
+    ) {
+        $navigation->add(
+            get_string('adjustments', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereporteradjustments',
+            new pix_icon('i/users', '')
+        );
+    }
 }

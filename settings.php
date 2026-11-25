@@ -163,6 +163,25 @@ if ($hassiteconfig && $settings) {
         60
     ));
 
+    // Reasonable adjustments made for learners (not the gradebook adjustments above).
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/radjheading',
+        get_string('settings_radj', 'report_evidencereporter'),
+        get_string('settings_radj_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'report_evidencereporter/radjlearner',
+        get_string('settings_radjlearner', 'report_evidencereporter'),
+        get_string('settings_radjlearner_desc', 'report_evidencereporter'),
+        1
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'report_evidencereporter/radjreasons',
+        get_string('settings_radjreasons', 'report_evidencereporter'),
+        get_string('settings_radjreasons_desc', 'report_evidencereporter'),
+        0
+    ));
+
     // Similarity checks (Turnitin, Ouriginal, Copyleaks...) through Moodle's plagiarism API.
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/similarityheading',

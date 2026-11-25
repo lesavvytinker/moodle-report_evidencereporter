@@ -44,4 +44,26 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // See reasonable adjustments recorded for learners in an activity, with their reasons.
+    'report/evidencereporter:viewadjustments' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // Record, change and delete reasonable adjustments for learners in an activity.
+    'report/evidencereporter:manageadjustments' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 ];

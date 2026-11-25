@@ -462,6 +462,7 @@ class evidence_pack {
                 . '<td width="10%">' . (count($comp->attempts) ?: '-') . '</td></tr>';
         }
         $html .= '</table>';
+        $html .= $this->adjustments_html(array_map(fn($comp) => (int) $comp->id, $summary->competencies));
 
         // Evidence detail per competency (unless switched off in the settings).
         $showdetail = branding::show('evidencedetail');
@@ -534,6 +535,40 @@ class evidence_pack {
                 . s(get_string('date')) . ': ____________</p>';
         }
         return $html;
+    }
+
+    /**
+     * Reasonable adjustments, for the summary PDF: reasons only when the site includes them in downloads.
+     *
+     * @param int[] $competencyids
+     * @return string HTML ('' when there are none)
+     */
+    private function adjustments_html(array $competencyids): string {
+        $adjustments = reasonable_adjustments::get_for_user($this->userid, $competencyids, $this->identity, true);
+        if (!$adjustments) {
+            return '';
+        }
+        $html = '<h2>' . s(get_string('adjustments', 'report_evidencereporter')) . '</h2>'
+            . '<p><small>' . s(get_string('adjustmentsnote', 'report_evidencereporter')) . '</small></p>'
+            . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
+            . '<td width="20%">' . s(get_string('activity', 'report_evidencereporter')) . '</td>'
+            . '<td width="18%">' . s(get_string('ratype', 'report_evidencereporter')) . '</td>'
+            . '<td width="24%">' . s(get_string('radetails', 'report_evidencereporter')) . '</td>'
+            . '<td width="18%">' . s(get_string('rareason', 'report_evidencereporter')) . '</td>'
+            . '<td width="20%">' . s(get_string('raapprovedby', 'report_evidencereporter')) . ' / '
+            . s(get_string('rarecorded', 'report_evidencereporter')) . '</td></tr>';
+        foreach ($adjustments as $item) {
+            $reason = $item->reason !== null ? nl2br(s($item->reason))
+                : ($item->hasreason ? '<em>' . s(get_string('rareasonleftout', 'report_evidencereporter')) . '</em>' : '');
+            $html .= '<tr><td width="20%">' . s($item->activity) . '</td>'
+                . '<td width="18%">' . s($item->type) . ($item->source !== '' ? '<br><small>'
+                    . s(get_string('rasource', 'report_evidencereporter') . ': ' . $item->source) . '</small>' : '') . '</td>'
+                . '<td width="24%">' . nl2br(s($item->details)) . '</td>'
+                . '<td width="18%">' . $reason . '</td>'
+                . '<td width="20%">' . s($item->approvedby) . '<br><small>' . s($item->recorded . ' · ' . $item->recordedby)
+                . '</small></td></tr>';
+        }
+        return $html . '</table>';
     }
 
     /**

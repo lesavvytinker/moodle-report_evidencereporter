@@ -191,7 +191,8 @@ class summary {
      * @param scope|int $scope What to cover (a framework ID is short for that framework)
      * @param identity|null $identity Redaction for names and generated text
      * @return stdClass competencies (in order, each with ->evidence rows, ->attempts, ->records and ->questions: supporting
-     *                  evidence from quiz questions, see {@see question_evidence::get_for_user()}), restricted (bool), scope
+     *                  evidence from quiz questions, see {@see question_evidence::get_for_user()}), adjustments (reasonable
+     *                  adjustments, see {@see reasonable_adjustments::get_for_user()}), restricted (bool), scope
      */
     public static function build(int $userid, scope|int $scope, ?identity $identity = null): stdClass {
         global $DB, $USER;
@@ -201,7 +202,7 @@ class summary {
         $ordered = $scope->get_competencies();
         $competencyids = array_map(fn($comp) => (int) $comp->id, $ordered);
         if (!$competencyids) {
-            return (object) ['competencies' => [], 'scope' => $scope,
+            return (object) ['competencies' => [], 'adjustments' => [], 'scope' => $scope,
                 'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
         }
         [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'sc');
@@ -304,6 +305,8 @@ class summary {
 
         return (object) [
             'competencies' => $competencies,
+            // Reasonable adjustments in activities linked to these competencies, that the viewer may see.
+            'adjustments' => reasonable_adjustments::get_for_user($userid, $competencyids, $identity),
             'scope' => $scope,
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,

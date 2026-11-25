@@ -22,6 +22,7 @@ use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
 use core_privacy\local\request\{approved_contextlist, approved_userlist, contextlist, userlist, writer};
 use report_evidencereporter\local\bulk;
+use report_evidencereporter\local\reasonable_adjustments;
 use report_evidencereporter\local\sampling;
 
 /**
@@ -29,8 +30,9 @@ use report_evidencereporter\local\sampling;
  *
  * The plugin stores bulk evidence downloads (ZIP files kept in the requesting user's own file area for
  * {@see bulk::KEEP_DAYS} days) and validation samples (in the system context): which learners' judgements were drawn,
- * who drew them, who assessed them and who swapped them out. Everything else it shows comes from the competency and
- * gradebook subsystems.
+ * who drew them, who assessed them and who swapped them out; and reasonable adjustments made for learners (in each
+ * activity's context): what, why, who approved and who recorded them. Everything else it shows comes from the competency
+ * and gradebook subsystems.
  *
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
@@ -60,6 +62,15 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'removedreason' => 'privacy:metadata:sitem:removedreason',
             'removedby' => 'privacy:metadata:sitem:removedby',
         ], 'privacy:metadata:sitem');
+        $collection->add_database_table(reasonable_adjustments::TABLE, [
+            'userid' => 'privacy:metadata:radj:userid',
+            'adjtype' => 'privacy:metadata:radj:adjtype',
+            'details' => 'privacy:metadata:radj:details',
+            'reason' => 'privacy:metadata:radj:reason',
+            'approvedby' => 'privacy:metadata:radj:approvedby',
+            'usermodified' => 'privacy:metadata:radj:usermodified',
+            'timemodified' => 'privacy:metadata:radj:timemodified',
+        ], 'privacy:metadata:radj');
         return $collection;
     }
 
@@ -81,6 +92,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         if (self::has_sample_data($userid)) {
             $contextlist->add_system_context();
         }
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {" . reasonable_adjustments::TABLE . "} ra ON ra.cmid = ctx.instanceid
+                 WHERE ctx.contextlevel = :modlevel AND (ra.userid = :u1 OR ra.usermodified = :u2)";
+        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid]);
         return $contextlist;
     }
 
@@ -95,6 +111,16 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             $userlist->add_from_sql('createdby', 'SELECT createdby FROM {' . sampling::TABLE . '}', []);
             foreach (['userid', 'assessorid', 'removedby'] as $field) {
                 $userlist->add_from_sql($field, "SELECT $field FROM {" . sampling::ITEMS . "} WHERE $field > 0", []);
+            }
+            return;
+        }
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            foreach (['userid', 'usermodified'] as $field) {
+                $userlist->add_from_sql(
+                    $field,
+                    "SELECT $field FROM {" . reasonable_adjustments::TABLE . "} WHERE cmid = :cmid AND $field > 0",
+                    ['cmid' => $context->instanceid]
+                );
             }
             return;
         }
@@ -116,6 +142,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             if ($context->contextlevel == CONTEXT_SYSTEM) {
                 self::export_samples((int) $contextlist->get_user()->id);
             }
+            if ($context->contextlevel == CONTEXT_MODULE) {
+                self::export_adjustments($context, (int) $contextlist->get_user()->id);
+            }
             if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $contextlist->get_user()->id) {
                 foreach (bulk::get_files((int) $context->instanceid) as $file) {
                     writer::with_context($context)->export_file([get_string('bulkdownloads', 'report_evidencereporter')], $file);
@@ -135,6 +164,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             $DB->delete_records(sampling::ITEMS);
             $DB->delete_records(sampling::TABLE);
         }
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            $DB->delete_records(reasonable_adjustments::TABLE, ['cmid' => $context->instanceid]);
+        }
         if ($context->contextlevel == CONTEXT_USER) {
             get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
         }
@@ -149,6 +181,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         foreach ($contextlist->get_contexts() as $context) {
             if ($context->contextlevel == CONTEXT_SYSTEM) {
                 self::delete_sample_data([(int) $contextlist->get_user()->id]);
+            }
+            if ($context->contextlevel == CONTEXT_MODULE) {
+                self::delete_adjustments((int) $context->instanceid, [(int) $contextlist->get_user()->id]);
             }
             if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $contextlist->get_user()->id) {
                 get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
@@ -165,6 +200,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $context = $userlist->get_context();
         if ($context->contextlevel == CONTEXT_SYSTEM) {
             self::delete_sample_data(array_map('intval', $userlist->get_userids()));
+        }
+        if ($context->contextlevel == CONTEXT_MODULE) {
+            self::delete_adjustments((int) $context->instanceid, array_map('intval', $userlist->get_userids()));
         }
         if ($context->contextlevel == CONTEXT_USER && in_array($context->instanceid, $userlist->get_userids())) {
             get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
@@ -239,5 +277,55 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $DB->set_field_select(sampling::ITEMS, 'assessorid', 0, "assessorid $in", $params);
         $DB->set_field_select(sampling::ITEMS, 'removedby', 0, "removedby $in", $params);
         $DB->set_field_select(sampling::TABLE, 'createdby', 0, "createdby $in", $params);
+    }
+
+    /**
+     * Export reasonable adjustments in an activity: those made for the user, and those they recorded.
+     *
+     * @param \context $context Module context
+     * @param int $userid
+     */
+    protected static function export_adjustments(\context $context, int $userid): void {
+        global $DB;
+        $item = fn($r) => [
+            'adjustment' => reasonable_adjustments::type_label($r->adjtype),
+            'details' => $r->details,
+            'reason' => $r->reason,
+            'approvedby' => $r->approvedby,
+            'timemodified' => \core_privacy\local\request\transform::datetime($r->timemodified),
+        ];
+        $data = [
+            'madeforyou' => array_values(array_map($item, $DB->get_records(
+                reasonable_adjustments::TABLE,
+                ['cmid' => $context->instanceid, 'userid' => $userid],
+                'id'
+            ))),
+            'recordedbyyou' => array_values(array_map($item, $DB->get_records(
+                reasonable_adjustments::TABLE,
+                ['cmid' => $context->instanceid, 'usermodified' => $userid],
+                'id'
+            ))),
+        ];
+        if (array_filter($data)) {
+            writer::with_context($context)->export_data([get_string('adjustments', 'report_evidencereporter')], (object) $data);
+        }
+    }
+
+    /**
+     * Delete users' reasonable adjustment data in an activity: adjustments made for them go; as the staff member who
+     * recorded one, they're anonymised.
+     *
+     * @param int $cmid
+     * @param int[] $userids
+     */
+    protected static function delete_adjustments(int $cmid, array $userids): void {
+        global $DB;
+        if (!$userids) {
+            return;
+        }
+        [$in, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        $params['cmid'] = $cmid;
+        $DB->delete_records_select(reasonable_adjustments::TABLE, "cmid = :cmid AND userid $in", $params);
+        $DB->set_field_select(reasonable_adjustments::TABLE, 'usermodified', 0, "cmid = :cmid AND usermodified $in", $params);
     }
 }

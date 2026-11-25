@@ -152,6 +152,25 @@ Activities Evidence Reporter reads get an **Assessment tool details** section in
 
 With **Include blank assessor guides in evidence packs** on (the default), each quiz's folder in the pack gets its blank guide: the tool the learner was assessed with.
 
+## Reasonable adjustments
+
+Record each reasonable adjustment made for a learner in an assessment: what was adjusted (extra time, a reader, a scribe,
+spoken responses, an alternative format and so on), the details, the reason and who approved it.
+
+- **Where:** each activity's **More > Reasonable adjustments** page lists its learners and their adjustments, or use
+  **Record an adjustment for** on a learner's evidence summary.
+- **Moodle's own:** quiz user overrides, assignment user overrides and assignment extensions are listed as suggestions.
+  **Confirm** records one with its reason and approver.
+- **Where they appear:** a Reasonable adjustments section on the evidence summary and in the evidence pack's summary
+  PDF, and a column in validation sample registers (the learner's adjustments in that course and unit).
+- **Who sees them:** staff with `report/evidencereporter:viewadjustments` (teachers and managers by default) see
+  adjustments and reasons; `report/evidencereporter:manageadjustments` records them. Learners see their own unless
+  *Learners see their own adjustments* is off.
+- **Reasons in downloads:** evidence packs, bulk downloads and sample downloads show each adjustment and that a reason
+  was recorded, but leave the reason out, unless *Include reasons in downloads* is on. Reasons may touch on disability
+  or health.
+- Changes are logged (events), the privacy provider exports and deletes them, and they're deleted with their activity.
+
 ## Learner identity and redaction
 
 Every official document (the printable summary, each PDF in an evidence pack, the pack README and the bulk index) shows the learner's **name, username, ID number** (if set) and **learner reference**. The reference (e.g. `L-3F9A12C0`) is worked out from the learner's ID and the site, so it's the same on every document for that learner, but it doesn't say who they are.

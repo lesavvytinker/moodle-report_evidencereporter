@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.25.0 (2026-12-05)
+- **Reasonable adjustments:** record what was adjusted for a learner in an assessment, why, and who approved it, from
+  the activity's **More > Reasonable adjustments** page or the learner's evidence summary. Quiz user overrides,
+  assignment user overrides and assignment extensions are offered to confirm with a reason.
+- Adjustments appear on the evidence summary, in the evidence pack's summary PDF, and in a new column of validation
+  sample registers.
+- New capabilities `report/evidencereporter:viewadjustments` and `report/evidencereporter:manageadjustments`; settings
+  for whether learners see their own, and whether reasons go into downloads (off by default). New events, and the
+  privacy provider covers them.
+
 ## 0.24.0 (2026-12-04)
 - Quiz question evidence now also reads mappings from **Question Bank Competency Mapping** (`qbank_comp_ext`, on the
   Moodle Marketplace), as well as Question competencies (`qbank_competencies`). Either or both can be installed; a

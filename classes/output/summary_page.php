@@ -19,6 +19,7 @@ namespace report_evidencereporter\output;
 use report_evidencereporter\local\branding;
 use report_evidencereporter\local\identity;
 use report_evidencereporter\local\question_evidence;
+use report_evidencereporter\local\reasonable_adjustments;
 use report_evidencereporter\local\terms;
 use report_evidencereporter\local\scope;
 use renderable;
@@ -115,6 +116,17 @@ class summary_page implements renderable, templatable {
             }
         }
 
+        // Reasonable adjustments, and where the viewer may record one for this learner.
+        $adjustments = array_map(
+            fn($a) => (array) $a + ['reasontext' => (string) $a->reason],
+            $this->summary->adjustments ?? []
+        );
+        $addoptions = [];
+        $competencyids = array_map(fn($comp) => (int) $comp->id, $this->summary->competencies);
+        foreach (reasonable_adjustments::get_manageable_activities((int) $this->learner->id, $competencyids) as $cmid => $name) {
+            $addoptions[] = ['cmid' => $cmid, 'name' => $name];
+        }
+
         $identity = $this->identity;
         $flags = $identity->get_flags();
         $redactoptions = [];
@@ -123,6 +135,14 @@ class summary_page implements renderable, templatable {
                 'label' => get_string($flag === 'redactname' ? 'redactlearnername' : $flag, 'report_evidencereporter')];
         }
         return [
+            'showadjustments' => $adjustments || $addoptions,
+            'hasadjustments' => (bool) $adjustments,
+            'adjustments' => $adjustments,
+            'adjustmentadd' => $addoptions ? [
+                'url' => (new \moodle_url('/report/evidencereporter/adjustment.php'))->out(false),
+                'options' => $addoptions,
+                'returnto' => $this->get_return_url(),
+            ] : null,
             'learnername' => $identity->name(),
             'learnerusername' => $identity->username(),
             'learneridnumber' => $identity->idnumber(),
@@ -180,5 +200,19 @@ class summary_page implements renderable, templatable {
             'packurl' => (new \moodle_url('/report/evidencereporter/pack.php', ['userid' => $this->learner->id,
                 'includefeedback' => 1, 'sesskey' => sesskey()] + $this->scope->get_params() + $flags))->out(false),
         ];
+    }
+
+    /**
+     * This page, to come back to after recording an adjustment.
+     *
+     * @return string Local URL
+     */
+    protected function get_return_url(): string {
+        global $PAGE;
+        if ($PAGE->has_set_url()) {
+            return $PAGE->url->out_as_local_url(false);
+        }
+        return (new \moodle_url('/report/evidencereporter/print.php', ['userid' => $this->learner->id]
+            + $this->scope->get_params()))->out_as_local_url(false);
     }
 }

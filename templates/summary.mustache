@@ -177,6 +177,49 @@
         </tbody>
     </table>
 
+    {{#showadjustments}}
+    <h3 class="h4 mt-4">{{#str}} adjustments, report_evidencereporter {{/str}}</h3>
+    <p class="small text-muted mb-1">{{#str}} adjustmentsnote, report_evidencereporter {{/str}}</p>
+    {{#hasadjustments}}
+    <table class="table table-sm table-bordered er-adjustments">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}} activity, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} ratype, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} radetails, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} rareason, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} raapprovedby, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} rarecorded, report_evidencereporter {{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#adjustments}}
+            <tr>
+                <td>{{activity}}</td>
+                <td>{{type}}{{#source}}<br><span class="small text-muted">{{#str}} rasource, report_evidencereporter {{/str}}: {{.}}</span>{{/source}}</td>
+                <td>{{details}}</td>
+                <td>{{reasontext}}</td>
+                <td>{{approvedby}}</td>
+                <td>{{recorded}}{{#recordedby}}<br><span class="small">{{.}}</span>{{/recordedby}}</td>
+            </tr>
+            {{/adjustments}}
+        </tbody>
+    </table>
+    {{/hasadjustments}}
+    {{^hasadjustments}}<p class="text-muted">{{#str}} adjustmentsnone, report_evidencereporter {{/str}}</p>{{/hasadjustments}}
+    {{#adjustmentadd}}
+    <form method="get" action="{{url}}" class="d-print-none er-noprint d-flex flex-wrap align-items-center gap-2 mb-3">
+        <input type="hidden" name="userid" value="{{userid}}">
+        <input type="hidden" name="returnto" value="{{returnto}}">
+        <label class="small" for="report_evidencereporter-adjustcm">{{#str}} adjustmentssummaryadd, report_evidencereporter {{/str}}</label>
+        <select class="form-select form-select-sm w-auto" id="report_evidencereporter-adjustcm" name="cmid">
+            {{#options}}<option value="{{cmid}}">{{name}}</option>{{/options}}
+        </select>
+        <button type="submit" class="btn btn-sm btn-outline-secondary">{{#str}} adjustmentsadd, report_evidencereporter {{/str}}</button>
+    </form>
+    {{/adjustmentadd}}
+    {{/showadjustments}}
+
     {{#hasdetails}}
     <h3 class="h4 mt-4 er-pagebreak">{{#str}} detailheading, report_evidencereporter {{/str}}</h3>
     {{/hasdetails}}

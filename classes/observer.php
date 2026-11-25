@@ -31,5 +31,6 @@ class observer {
      */
     public static function course_module_deleted(\core\event\course_module_deleted $event): void {
         local\tool_details::delete((int) $event->objectid);
+        local\reasonable_adjustments::delete_for_activity((int) $event->objectid);
     }
 }
