@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.1 (2026-12-03)
+- Assessment tool details start from example text for quizzes with nothing saved yet. Each text box begins with "EXAMPLE:" (assessor instructions, conditions, resources as open book with the learner guide, reasonable adjustment), and the assessor guide's review notes list any example text left in. Admins can change the examples under Language customisation (`toolexample_*` strings).
+- **Print assessor guide** button in the quiz's Assessment tool details section, and **Assessor guide** in the quiz's More menu. Both open the PDF in a new tab ready to print or save (add `download=1` to save it straight away).
+
 ## 0.23.0 (2026-12-02)
 - **Quiz questions as supporting evidence** (with the new Question competencies plugin, `qbank_competencies`): questions mapped to competencies in the question bank appear under each competency, grouped by quiz attempt with the whole quiz's result (Satisfactory / Not satisfactory) and grade.
 - Each question shows its number, mark and result, with links to the learner's answer to that question and, for markers, to comment on it or override the mark.

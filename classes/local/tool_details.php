@@ -70,6 +70,38 @@ class tool_details {
     }
 
     /**
+     * Does the activity have tool details saved?
+     *
+     * @param int $cmid
+     * @return bool
+     */
+    public static function exists(int $cmid): bool {
+        global $DB;
+        return $cmid && $DB->record_exists(self::TABLE, ['cmid' => $cmid]);
+    }
+
+    /**
+     * Example text for a text field, marked as an example, to start from.
+     *
+     * @param string $field One of TEXTFIELDS
+     * @return string
+     */
+    public static function example(string $field): string {
+        return get_string('toolexample', 'report_evidencereporter') . ' '
+            . get_string('toolexample_' . $field, 'report_evidencereporter');
+    }
+
+    /**
+     * Is this text still (or still marked as) example text?
+     *
+     * @param string $text
+     * @return bool
+     */
+    public static function is_example(string $text): bool {
+        return str_starts_with(trim($text), get_string('toolexample', 'report_evidencereporter'));
+    }
+
+    /**
      * Save an activity's tool details. Empty details remove the record.
      *
      * @param int $cmid
@@ -152,7 +184,7 @@ class tool_details {
             $mform->addHelpButton($p . $field, 'tool' . $field, 'report_evidencereporter');
         }
 
-        if ($cmid) {
+        if (self::exists($cmid)) {
             $details = self::get($cmid);
             $mform->setDefault($p . 'toolversion', $details->toolversion);
             $mform->setDefault($p . 'reviewdate', $details->reviewdate);
@@ -160,12 +192,37 @@ class tool_details {
             foreach (self::TEXTFIELDS as $field) {
                 $mform->setDefault($p . $field, $details->$field);
             }
-            if (assessor_guide::supports($modname)) {
+        } else if (assessor_guide::supports($modname)) {
+            // Nothing saved yet: start from example text, clearly marked, so there's something to edit.
+            foreach (self::TEXTFIELDS as $field) {
+                $mform->setDefault($p . $field, self::example($field));
+            }
+            $mform->insertElementBefore(
+                $mform->createElement('static', $p . 'examples', '', \html_writer::div(
+                    get_string('tooldetails_examples', 'report_evidencereporter'),
+                    'alert alert-info'
+                )),
+                $p . 'toolversion'
+            );
+        }
+
+        if ($cmid && assessor_guide::supports($modname)) {
+            [, $cm] = get_course_and_cm_from_cmid($cmid);
+            if (assessor_guide::can_view($cm)) {
+                global $OUTPUT;
                 $url = new \moodle_url('/report/evidencereporter/assessorguide.php', ['cmid' => $cmid]);
-                $mform->addElement('static', $p . 'guide', '', \html_writer::link(
+                $button = \html_writer::link(
                     $url,
-                    get_string('downloadassessorguide', 'report_evidencereporter')
-                ));
+                    $OUTPUT->pix_icon('t/print', '') . get_string('printassessorguide', 'report_evidencereporter'),
+                    ['class' => 'btn btn-secondary', 'target' => '_blank']
+                );
+                $mform->insertElementBefore(
+                    $mform->createElement('static', $p . 'guide', '', $button . \html_writer::div(
+                        get_string('printassessorguide_help', 'report_evidencereporter'),
+                        'form-text text-muted'
+                    )),
+                    $mform->elementExists($p . 'examples') ? $p . 'examples' : $p . 'toolversion'
+                );
             }
         }
     }

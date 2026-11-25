@@ -228,6 +228,15 @@ class assessor_guide {
         if ($details->adjustments === '') {
             $this->reviewnotes[] = get_string('reviewnote_noadjustments', 'report_evidencereporter');
         }
+        foreach (tool_details::TEXTFIELDS as $field) {
+            if (tool_details::is_example($details->$field)) {
+                $this->reviewnotes[] = get_string(
+                    'reviewnote_example',
+                    'report_evidencereporter',
+                    get_string('tool' . $field, 'report_evidencereporter')
+                );
+            }
+        }
 
         // Questions.
         $html .= '<h2>' . s(get_string('questionsandanswers', 'report_evidencereporter')) . '</h2>';

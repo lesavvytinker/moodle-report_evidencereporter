@@ -115,3 +115,24 @@ function report_evidencereporter_coursemodule_edit_post_actions($data, $course) 
     \report_evidencereporter\local\tool_details::save_from_form($data);
     return $data;
 }
+
+/**
+ * Add "Assessor guide" to the activity's navigation (the More menu) for activities that have one.
+ *
+ * @param navigation_node $navigation
+ * @param cm_info $cm
+ */
+function report_evidencereporter_extend_navigation_module($navigation, $cm) {
+    if (!\report_evidencereporter\local\assessor_guide::can_view($cm)) {
+        return;
+    }
+    $url = new moodle_url('/report/evidencereporter/assessorguide.php', ['cmid' => $cm->id]);
+    $navigation->add(
+        get_string('assessorguide', 'report_evidencereporter'),
+        $url,
+        navigation_node::TYPE_SETTING,
+        null,
+        'evidencereporterassessorguide',
+        new pix_icon('t/print', '')
+    );
+}

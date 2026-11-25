@@ -37,4 +37,5 @@ if (!assessor_guide::supports($cm->modname)) {
 $guide = new assessor_guide($cm);
 $pdf = $guide->build_pdf();
 \core\session\manager::write_close();
-send_file($pdf, $guide->get_filename(), 0, 0, true, true, 'application/pdf');
+// Shown in the browser, ready to print or save; download=1 saves it straight away.
+send_file($pdf, $guide->get_filename(), 0, 0, true, optional_param('download', 0, PARAM_BOOL), 'application/pdf');

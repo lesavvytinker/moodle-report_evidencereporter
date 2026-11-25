@@ -179,6 +179,39 @@ final class assessor_guide_test extends \advanced_testcase {
         $this->assertContains('No review date: record when the tool was reviewed before use.', $notes);
         $this->assertContains('No reasonable adjustment guidance (activity settings, Assessment tool details).', $notes);
         $this->assertStringContainsString('Review notes', $html);
+        $this->assertEmpty(array_filter($notes, fn($note) => str_contains($note, 'example text')));
+    }
+
+    /**
+     * Example text left in the tool details is printed as it is and listed in the review notes.
+     */
+    public function test_review_notes_for_example_text(): void {
+        [, $quiz] = $this->setup_quiz();
+        $cmid = (int) $quiz->cmid;
+        tool_details::save($cmid, (object) [
+            'toolversion' => '1.0',
+            'conditions' => tool_details::example('conditions'),
+            'resources' => 'Open book: learners may use their learner guide.',
+            'instructions' => tool_details::example('instructions') . ' Plus our own note.',
+            'adjustments' => '',
+        ]);
+        $this->assertTrue(tool_details::is_example(tool_details::example('resources')));
+        $this->assertFalse(tool_details::is_example('Open book: learners may use their learner guide.'));
+
+        $guide = new assessor_guide(get_fast_modinfo($quiz->course)->get_cm($cmid));
+        $html = $guide->build_html();
+        $notes = $guide->get_review_notes();
+        $this->assertContains(
+            'Assessment conditions still has example text (activity settings, Assessment tool details).',
+            $notes
+        );
+        $this->assertContains('Instructions for the assessor still has example text (activity settings, '
+            . 'Assessment tool details).', $notes);
+        $this->assertNotContains(
+            'Resources allowed still has example text (activity settings, Assessment tool details).',
+            $notes
+        );
+        $this->assertStringContainsString('EXAMPLE: Simulated environment', $html);
     }
 
     /**
@@ -247,9 +280,73 @@ final class assessor_guide_test extends \advanced_testcase {
         $this->assertTrue($mform->elementExists('ertool_guide'));
         $this->assertSame('3.0', $mform->getElement('ertool_toolversion')->getValue());
 
+        // Saved details are shown as they are, with no example text.
+        $this->assertFalse($mform->elementExists('ertool_examples'));
+        $this->assertSame('', $mform->getElement('ertool_resources')->getValue());
+
         $mform = new \MoodleQuickForm('test2', 'post', '');
         tool_details::add_form_elements($mform, 'label', 0);
         $this->assertFalse($mform->elementExists('ertool_toolversion'));
+    }
+
+    /**
+     * A quiz with nothing saved (new, or existing) starts from marked example text; the print button needs a saved quiz.
+     */
+    public function test_form_examples(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/formslib.php');
+        [$course, $quiz] = $this->setup_quiz();
+
+        $mform = new \MoodleQuickForm('new', 'post', '');
+        tool_details::add_form_elements($mform, 'quiz', 0);
+        $this->assertTrue($mform->elementExists('ertool_examples'));
+        $this->assertFalse($mform->elementExists('ertool_guide'));
+        $this->assertSame(
+            'EXAMPLE: Open book: learners may use their learner guide.',
+            $mform->getElement('ertool_resources')->getValue()
+        );
+        $this->assertEmpty($mform->getElement('ertool_toolversion')->getValue());
+
+        $mform = new \MoodleQuickForm('existing', 'post', '');
+        tool_details::add_form_elements($mform, 'quiz', (int) $quiz->cmid);
+        $this->assertTrue($mform->elementExists('ertool_examples'));
+        $this->assertTrue($mform->elementExists('ertool_guide'));
+        $this->assertTrue(tool_details::is_example($mform->getElement('ertool_conditions')->getValue()));
+
+        // Other activity types read by Evidence Reporter get the section but no quiz examples or button.
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id]);
+        $mform = new \MoodleQuickForm('assign', 'post', '');
+        tool_details::add_form_elements($mform, 'assign', (int) $assign->cmid);
+        $this->assertTrue($mform->elementExists('ertool_conditions'));
+        $this->assertFalse($mform->elementExists('ertool_examples'));
+        $this->assertFalse($mform->elementExists('ertool_guide'));
+
+        // Students don't get the button (they can't see the form anyway, but the check is the guide's own).
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+        $mform = new \MoodleQuickForm('student', 'post', '');
+        tool_details::add_form_elements($mform, 'quiz', (int) $quiz->cmid);
+        $this->assertFalse($mform->elementExists('ertool_guide'));
+    }
+
+    /**
+     * "Assessor guide" in the quiz's navigation, for staff only.
+     */
+    public function test_navigation(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/report/evidencereporter/lib.php');
+        [$course, $quiz] = $this->setup_quiz();
+        $cm = get_fast_modinfo($course)->get_cm((int) $quiz->cmid);
+
+        $node = \navigation_node::create('root');
+        report_evidencereporter_extend_navigation_module($node, $cm);
+        $child = $node->get('evidencereporterassessorguide');
+        $this->assertNotFalse($child);
+        $this->assertStringEndsWith('/report/evidencereporter/assessorguide.php', $child->action->get_path(false));
+
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+        $node = \navigation_node::create('root');
+        report_evidencereporter_extend_navigation_module($node, $cm);
+        $this->assertFalse($node->get('evidencereporterassessorguide'));
     }
 
     /**
