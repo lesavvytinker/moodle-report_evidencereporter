@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.2 (2026-12-05)
+- Learning plans changed in the same second are listed in a fixed order (oldest first), so units always appear in the
+  same order.
+
 ## 0.25.1 (2026-12-05)
 - Reasonable adjustments are shown per assessment: the summary and the evidence pack list every assessment linked to the
   learner's competencies, with "Reasonable adjustment: N/A" where none was made; each competency's evidence ends with

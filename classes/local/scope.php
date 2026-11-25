@@ -253,6 +253,9 @@ class scope {
                 $plans[] = $plan;
             }
         }
+        // Most recently changed first; plans changed in the same second in the order they were made.
+        usort($plans, fn(plan $a, plan $b) => [(int) $b->get('timemodified'), (int) $a->get('id')]
+            <=> [(int) $a->get('timemodified'), (int) $b->get('id')]);
         return $plans;
     }
 
