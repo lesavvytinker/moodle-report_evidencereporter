@@ -213,7 +213,11 @@ if ($hassiteconfig && $settings) {
         }
         if (\report_evidencereporter\local\question_evidence::is_available()) {
             $items[] = html_writer::tag('strong', s(get_string('questionsheading', 'report_evidencereporter'))) . ': '
-                . s(get_string('sourcedesc_questions', 'report_evidencereporter'));
+                . s(get_string(
+                    'sourcedesc_questions',
+                    'report_evidencereporter',
+                    implode(', ', \report_evidencereporter\local\question_mappings::get_source_names())
+                ));
         }
         $settings->add(new admin_setting_heading(
             'report_evidencereporter/sourcesheading',

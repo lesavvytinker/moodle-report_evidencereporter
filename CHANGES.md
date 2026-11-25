@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.24.0 (2026-12-04)
+- Quiz question evidence now also reads mappings from **Question Bank Competency Mapping** (`qbank_comp_ext`, on the
+  Moodle Marketplace), as well as Question competencies (`qbank_competencies`). Either or both can be installed; a
+  question mapped in both shows once. `qbank_comp_ext` maps each version of a question separately: a mapping on any
+  version counts, so editing a question doesn't lose it. It works on Moodle 4.5, where Question competencies needs 5.0.
+- Assessor guides list a question's competencies from either plugin.
+- Questions pass with full marks, or with Question competencies' pass setting when that plugin is installed.
+
 ## 0.23.1 (2026-12-03)
 - Assessment tool details start from example text for quizzes with nothing saved yet. Each text box begins with "EXAMPLE:" (assessor instructions, conditions, resources as open book with the learner guide, reasonable adjustment), and the assessor guide's review notes list any example text left in. Admins can change the examples under Language customisation (`toolexample_*` strings).
 - **Print assessor guide** button in the quiz's Assessment tool details section, and **Assessor guide** in the quiz's More menu. Both open the PDF in a new tab ready to print or save (add `download=1` to save it straight away).

@@ -76,6 +76,9 @@ jobs:
         if: ${{ matrix.moodle-branch != 'MOODLE_405_STABLE' }}
         run: moodle-plugin-ci add-plugin lesavvytinker/moodle-qbank_competencies
 
+      - name: Add Question Bank Competency Mapping (qbank_comp_ext), for the question evidence tests
+        run: moodle-plugin-ci add-plugin --branch master engfeda-ui/moodle-qbank_comp_ext
+
       - name: Install moodle-plugin-ci
         run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:

@@ -113,7 +113,10 @@ Checklists record competency evidence when they're completed, so set the checkli
 
 ## Quiz questions as supporting evidence
 
-With the companion plugin **Question competencies** (`qbank_competencies`) installed, you can map individual questions in the question bank to competencies (the **Competencies** column or the question's action menu). The mapping covers every version of the question.
+With a plugin that maps questions to competencies installed, questions mapped in the question bank appear as supporting evidence. Evidence Reporter reads either of these, or both together:
+
+- **Question competencies** (`qbank_competencies`), the companion plugin (Moodle 5.0+). Mappings cover every version of a question and go with course backups.
+- **Question Bank Competency Mapping** (`qbank_comp_ext`), a free plugin on the Moodle Marketplace (Moodle 4.5+). It maps each version of a question separately; Evidence Reporter treats a question as mapped if any of its versions is.
 
 The printable summary then shows, under each competency, a **Supporting evidence: quiz questions** table:
 
@@ -121,7 +124,7 @@ The printable summary then shows, under each competency, a **Supporting evidence
 - Each mapped question in that attempt with its number, mark and result (*Passed*, *Not passed*, *Awaiting marking*), and links to **View answer** (that question in the learner's attempt) and, for markers, **Comment or override mark**.
 - Flags where things disagree: a question **passed in a quiz that wasn't satisfactory**, a question **not passed in a satisfactory quiz**, and a quiz that **isn't linked to the competency** in its own settings.
 
-Question results are supporting evidence only. They never rate a competency or count as evidence on their own. The same access and release rules apply as for attempts: marks and results stay hidden until the quiz would show them. Questions drawn at random are included for the learners who got them. The share of a question's marks needed to count as passed is set in Question competencies' settings (100% by default). The section follows the **Assessment attempts** summary setting, and the evidence pack's summary PDF includes it.
+Question results are supporting evidence only. They never rate a competency or count as evidence on their own. The same access and release rules apply as for attempts: marks and results stay hidden until the quiz would show them. Questions drawn at random are included for the learners who got them. A question counts as passed with full marks, or with the share of its marks set in Question competencies' settings when that plugin is installed. The section follows the **Assessment attempts** summary setting, and the evidence pack's summary PDF includes it.
 
 ## Assessor guides (blank assessment tools)
 
@@ -134,7 +137,7 @@ The PDF contains:
 - Blank **learner and assessment details** (name, ID, assessor, dates, location).
 - **Instructions and conditions**: assessor instructions, the quiz description, conditions, resources allowed, time limit, attempts, open and close dates, grade to pass.
 - **Reasonable adjustment** guidance, with space to record adjustments made.
-- **Every question** in order, each with its **model answer**, any marking notes (the question's general feedback), Satisfactory / Not satisfactory boxes, a specific feedback box, and the competencies it's mapped to in small print (with Question competencies installed). Model answers come from the question's right answer; essays use **Information for graders**. Random questions list every question in the pool.
+- **Every question** in order, each with its **model answer**, any marking notes (the question's general feedback), Satisfactory / Not satisfactory boxes, a specific feedback box, and the competencies it's mapped to in small print (with either mapping plugin installed). Model answers come from the question's right answer; essays use **Information for graders**. Random questions list every question in the pool.
 - A **mapping matrix**: each competency, the questions mapped to it, and whether the quiz is linked to it.
 - An **outcome summary** with a row per allowed attempt (up to three), general feedback, the task outcome and assessor and learner sign-off.
 - **Review notes**: what the tool is missing (no model answer, no version or review date, no pass mark, random questions, questions mapped to competencies the quiz isn't linked to).

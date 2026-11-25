@@ -19,8 +19,8 @@ namespace report_evidencereporter\local;
 use stdClass;
 
 /**
- * Supporting evidence from quiz questions mapped to competencies (with the Question competencies plugin,
- * qbank_competencies).
+ * Supporting evidence from quiz questions mapped to competencies (with Question competencies, qbank_competencies, or
+ * Question Bank Competency Mapping, qbank_comp_ext: see {@see question_mappings}).
  *
  * Each result sits under the quiz attempt it came from, with the whole quiz's result, because a question is only ever
  * supporting evidence: it never rates the competency. A question passed in a quiz that wasn't satisfactory is flagged,
@@ -31,23 +31,13 @@ use stdClass;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class question_evidence {
-    /** @var string The plugin that holds the mappings. */
-    public const COMPONENT = 'qbank_competencies';
-
     /**
-     * Is Question competencies installed and enabled?
+     * Is a plugin that maps questions to competencies installed and enabled?
      *
      * @return bool
      */
     public static function is_available(): bool {
-        if (
-            \core_component::get_component_directory(self::COMPONENT) === null
-                || !class_exists('\qbank_competencies\local\api')
-        ) {
-            return false;
-        }
-        $info = \core_plugin_manager::instance()->get_plugin_info(self::COMPONENT);
-        return $info && $info->is_installed_and_upgraded() && $info->is_enabled() !== false;
+        return question_mappings::is_available();
     }
 
     /**
@@ -55,13 +45,13 @@ class question_evidence {
      *
      * @param int $userid
      * @param int[]|null $competencyids
-     * @return stdClass[] See \qbank_competencies\local\api::get_user_results()
+     * @return stdClass[] See {@see question_mappings::get_user_results()}
      */
     private static function get_rows(int $userid, ?array $competencyids): array {
         if (!self::is_available()) {
             return [];
         }
-        return \qbank_competencies\local\api::get_user_results(
+        return question_mappings::get_user_results(
             $userid,
             $competencyids,
             access::get_sql('qza.userid', 'cm.course')
@@ -173,7 +163,7 @@ class question_evidence {
             } else if ($group->visible && $group->quizoutcome === 'pass' && $outcomekey === 'notpassed') {
                 $qflags[] = get_string('qflag_notpassedins', 'report_evidencereporter', terms::get('satisfactory'));
             }
-            $review = \qbank_competencies\local\api::review_url($row->attemptid, $row->slot);
+            $review = question_mappings::review_url($row->attemptid, $row->slot);
             $group->questions[] = (object) [
                 'number' => $number,
                 'name' => format_string($row->questionname, true, ['context' => \context_module::instance($row->cmid)]),
@@ -185,7 +175,7 @@ class question_evidence {
                 'flags' => $qflags,
                 'reviewurl' => $review->out(false),
                 'commenturl' => $cangrade[$row->cmid]
-                    ? \qbank_competencies\local\api::comment_url($row->attemptid, $row->slot)->out(false) : '',
+                    ? question_mappings::comment_url($row->attemptid, $row->slot)->out(false) : '',
             ];
         }
 

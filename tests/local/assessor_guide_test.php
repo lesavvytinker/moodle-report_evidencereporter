@@ -95,11 +95,16 @@ final class assessor_guide_test extends \advanced_testcase {
         \mod_quiz\quiz_settings::create((int) $quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
 
         $cgen->create_course_module_competency(['cmid' => $quiz->cmid, 'competencyid' => $pc1]);
-        if (question_evidence::is_available()) {
-            \qbank_competencies\local\api::set_competencies(
-                \qbank_competencies\local\api::get_entryid((int) $tf->id),
-                [$pc1, $pc2]
-            );
+        // Map the true/false question with whichever mapping plugin is installed (Question competencies first).
+        $sources = question_mappings::get_sources();
+        if (in_array(question_mappings::QBANK_COMPETENCIES, $sources)) {
+            \qbank_competencies\local\api::set_competencies(question_mappings::get_entryid((int) $tf->id), [$pc1, $pc2]);
+        } else if ($sources) {
+            global $DB;
+            foreach ([$pc1, $pc2] as $pc) {
+                $DB->insert_record('qbank_comp_ext_qmap', ['courseid' => $course->id, 'questionid' => $tf->id,
+                    'competencyid' => $pc, 'timecreated' => time()]);
+            }
         }
         return [$course, $quiz, $pc1, $pc2, $framework];
     }

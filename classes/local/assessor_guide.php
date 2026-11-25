@@ -489,7 +489,7 @@ class assessor_guide {
     }
 
     /**
-     * Competencies a question is mapped to (Question competencies plugin), as labels.
+     * Competencies a question is mapped to (see {@see question_mappings}), as labels.
      *
      * @param int $questionid
      * @return array competencyid => label
@@ -498,14 +498,13 @@ class assessor_guide {
         if (!question_evidence::is_available()) {
             return [];
         }
-        try {
-            $entryid = \qbank_competencies\local\api::get_entryid($questionid);
-        } catch (\Throwable $e) {
+        $entryid = question_mappings::get_entryid($questionid);
+        if (!$entryid) {
             return [];
         }
         $labels = [];
-        foreach (\qbank_competencies\local\api::get_for_entries([$entryid])[$entryid] ?? [] as $competency) {
-            $labels[(int) $competency->id] = \qbank_competencies\local\api::label($competency);
+        foreach (question_mappings::get_for_entries([$entryid])[$entryid] ?? [] as $competency) {
+            $labels[(int) $competency->id] = question_mappings::label($competency);
         }
         return $labels;
     }
@@ -519,7 +518,8 @@ class assessor_guide {
      */
     private function question_competencyids(stdClass $quiz, \context $context): array {
         global $DB;
-        if (!question_evidence::is_available()) {
+        $mappings = question_mappings::get_sql();
+        if ($mappings === null) {
             return [];
         }
         $ids = $DB->get_fieldset_sql("SELECT DISTINCT qcm.competencyid
@@ -527,7 +527,7 @@ class assessor_guide {
                                         JOIN {question_references} qr ON qr.usingcontextid = :ctx
                                              AND qr.component = 'mod_quiz' AND qr.questionarea = 'slot'
                                              AND qr.itemid = qs.id
-                                        JOIN {qbank_competencies} qcm ON qcm.questionbankentryid = qr.questionbankentryid
+                                        JOIN {$mappings} qcm ON qcm.questionbankentryid = qr.questionbankentryid
                                        WHERE qs.quizid = :quizid", ['ctx' => $context->id, 'quizid' => $quiz->id]);
         return array_map('intval', $ids);
     }
