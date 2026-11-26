@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="report/evidencereporter/db" VERSION="20261202" COMMENT="XMLDB file for Moodle report/evidencereporter"
+<XMLDB PATH="report/evidencereporter/db" VERSION="20261207" COMMENT="XMLDB file for Moodle report/evidencereporter"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -54,7 +54,8 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="toolversion" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Version of the assessment tool, e.g. 1.2"/>
         <FIELD NAME="reviewdate" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When the tool was last reviewed before use"/>
-        <FIELD NAME="reviewedby" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Who reviewed it (as typed)"/>
+        <FIELD NAME="reviewedby" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Who reviewed it, as typed (someone without an account here)"/>
+        <FIELD NAME="reviewedbyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who reviewed it, chosen from staff"/>
         <FIELD NAME="conditions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Assessment conditions, e.g. workplace or simulated environment"/>
         <FIELD NAME="resources" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Resources allowed"/>
         <FIELD NAME="instructions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Instructions for the assessor"/>
@@ -74,7 +75,8 @@
         <FIELD NAME="adjtype" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="Kind of adjustment, e.g. extratime, reader, scribe"/>
         <FIELD NAME="details" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="What was adjusted"/>
         <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Why (may touch on disability or health)"/>
-        <FIELD NAME="approvedby" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Who approved it (as typed)"/>
+        <FIELD NAME="approvedby" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Who approved it, as typed (someone without an account here)"/>
+        <FIELD NAME="approvedbyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who approved it, chosen from staff"/>
         <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual, or the Moodle setting it was confirmed from: quizoverride, assignoverride, assignextension"/>
         <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The override or extension it was confirmed from"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who recorded it"/>
@@ -90,6 +92,31 @@
       <INDEXES>
         <INDEX NAME="cmid_userid" UNIQUE="false" FIELDS="cmid, userid"/>
       </INDEXES>
+    </TABLE>
+    <TABLE NAME="report_evidencereporter_jsnap" COMMENT="What each judgement was made against, as it was at the time: the competency's and framework's wording and the assessor's credentials.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="evidenceid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The judgement (competency evidence)"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The learner"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="frameworkid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="compidnumber" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Competency ID number when judged"/>
+        <FIELD NAME="compshortname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Competency name when judged"/>
+        <FIELD NAME="compdescription" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Competency description when judged"/>
+        <FIELD NAME="compdescriptionformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="fwidnumber" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Framework ID number when judged"/>
+        <FIELD NAME="fwshortname" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Framework name when judged"/>
+        <FIELD NAME="assessorid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who made the judgement, when known"/>
+        <FIELD NAME="credentials" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON: the assessor's credentials from the chosen profile fields when judged"/>
+        <FIELD NAME="backfilled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1: recorded on upgrade, after the judgement, with no credentials"/>
+        <FIELD NAME="timecaptured" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="evidenceid" TYPE="foreign-unique" FIELDS="evidenceid" REFTABLE="competency_evidence" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="assessorid" TYPE="foreign" FIELDS="assessorid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
     </TABLE>
   </TABLES>
 </XMLDB>

@@ -165,7 +165,7 @@ class assessor_guide {
             . $this->row(get_string('toolversion', 'report_evidencereporter'), $this->value($details->toolversion))
             . $this->row(get_string('toolreviewdate', 'report_evidencereporter'), $details->reviewdate
                 ? s(userdate($details->reviewdate, get_string('strftimedate', 'langconfig'))) : $this->notset())
-            . $this->row(get_string('toolreviewedby', 'report_evidencereporter'), $this->value($details->reviewedby))
+            . $this->row(get_string('toolreviewedby', 'report_evidencereporter'), $this->value(tool_details::reviewer($details)))
             . '</table>';
         if ($details->toolversion === '') {
             $this->reviewnotes[] = get_string('reviewnote_noversion', 'report_evidencereporter');

@@ -124,5 +124,49 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026120500, 'report', 'evidencereporter');
     }
+
+    if ($oldversion < 2026120700) {
+        // What each judgement was made against, kept as it was at the time.
+        $table = new xmldb_table('report_evidencereporter_jsnap');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('evidenceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('competencyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('frameworkid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('compidnumber', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+        $table->add_field('compshortname', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+        $table->add_field('compdescription', XMLDB_TYPE_TEXT);
+        $table->add_field('compdescriptionformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('fwidnumber', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+        $table->add_field('fwshortname', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+        $table->add_field('assessorid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('credentials', XMLDB_TYPE_TEXT);
+        $table->add_field('backfilled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecaptured', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('evidenceid', XMLDB_KEY_FOREIGN_UNIQUE, ['evidenceid'], 'competency_evidence', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('assessorid', XMLDB_KEY_FOREIGN, ['assessorid'], 'user', ['id']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Reviewers and approvers chosen from staff, rather than typed.
+        $field = new xmldb_field('reviewedbyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'reviewedby');
+        $tooltable = new xmldb_table('report_evidencereporter_tool');
+        if (!$dbman->field_exists($tooltable, $field)) {
+            $dbman->add_field($tooltable, $field);
+        }
+        $field = new xmldb_field('approvedbyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'approvedby');
+        $radjtable = new xmldb_table('report_evidencereporter_radj');
+        if (!$dbman->field_exists($radjtable, $field)) {
+            $dbman->add_field($radjtable, $field);
+        }
+
+        // Existing judgements: keep today's wording, so later edits to the framework show up.
+        \report_evidencereporter\local\judgement_snapshot::backfill();
+
+        upgrade_plugin_savepoint(true, 2026120700, 'report', 'evidencereporter');
+    }
     return true;
 }

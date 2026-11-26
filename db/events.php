@@ -29,4 +29,8 @@ $observers = [
         'eventname' => '\core\event\course_module_deleted',
         'callback' => '\report_evidencereporter\observer::course_module_deleted',
     ],
+    [
+        'eventname' => '\core\event\competency_evidence_created',
+        'callback' => '\report_evidencereporter\observer::competency_evidence_created',
+    ],
 ];

@@ -76,8 +76,9 @@ if (!$record && $source !== '') {
 }
 $defaults->returnto = $returnto;
 
+$currentapprover = $record ? (int) $record->approvedbyid : 0;
 $form = new \report_evidencereporter\form\adjustment_form($url, ['activity' => $cm->get_formatted_name(),
-    'learner' => fullname($learner)]);
+    'learner' => fullname($learner), 'context' => $context, 'approvedbyid' => $currentapprover]);
 $form->set_data($defaults);
 if ($form->is_cancelled()) {
     redirect($back);
@@ -86,6 +87,10 @@ if ($data = $form->get_data()) {
     $data->id = $id;
     $data->cmid = $cmid;
     $data->userid = $userid;
+    // Only staff (or the approver already saved) can be chosen.
+    if (!\report_evidencereporter\local\staff::is_valid_choice((int) ($data->approvedbyid ?? 0), $context, $currentapprover)) {
+        $data->approvedbyid = $currentapprover;
+    }
     reasonable_adjustments::save($data);
     redirect($back, get_string('adjustmentssaved', 'report_evidencereporter'), null, \core\output\notification::NOTIFY_SUCCESS);
 }

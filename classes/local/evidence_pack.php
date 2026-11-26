@@ -451,17 +451,30 @@ class evidence_pack {
             if (!empty($comp->group)) {
                 $html .= '<tr><td colspan="5" style="background-color:#f8f9fa;"><strong>' . s($comp->group) . '</strong></td></tr>';
             }
-            $judgement = $comp->judgementdate ? trim(($comp->judgementrating ? $comp->judgementrating . ' · ' : '')
+            $judgement = $comp->judgementdate ? s(trim(($comp->judgementrating ? $comp->judgementrating . ' · ' : '')
                 . userdate($comp->judgementdate, get_string('strftimedate', 'core_langconfig'))
-                . ($comp->judgementby ? ' · ' . $comp->judgementby : '')) : '';
+                . ($comp->judgementby ? ' · ' . $comp->judgementby : ''))) : '';
+            if (!empty($comp->judgementcredentials)) {
+                $judgement .= '<br><small>' . s($comp->judgementcredentials) . '</small>';
+            }
+            if (!empty($comp->judgedagainst)) {
+                $judgement .= '<br><small><i>' . s(get_string(
+                    'judgedagainst',
+                    'report_evidencereporter',
+                    $comp->judgedagainst->wording
+                )) . '</i></small>';
+            }
             $html .= '<tr><td width="40%">' . str_repeat('&nbsp;&nbsp;&nbsp;', (int) $comp->depth)
                 . '<strong>' . s($comp->idnumber) . '</strong> ' . s($comp->name) . '</td>'
                 . '<td width="18%">' . s($comp->currentrating) . '</td>'
-                . '<td width="22%">' . s($judgement) . '</td>'
+                . '<td width="22%">' . $judgement . '</td>'
                 . '<td width="10%">' . (count($comp->evidence) ?: '-') . '</td>'
                 . '<td width="10%">' . (count($comp->attempts) ?: '-') . '</td></tr>';
         }
         $html .= '</table>';
+        if (!empty($summary->changedsincejudged)) {
+            $html .= '<p><em>' . s(get_string('changedsincejudged', 'report_evidencereporter')) . '</em></p>';
+        }
         $assessments = reasonable_adjustments::get_by_assessment(
             $this->userid,
             array_map(fn($comp) => (int) $comp->id, $summary->competencies),
@@ -477,6 +490,17 @@ class evidence_pack {
                 continue;
             }
             $html .= '<h3>' . s($comp->idnumber . ' ' . $comp->name) . '</h3>';
+            if (!empty($comp->judgedagainst)) {
+                $then = $comp->judgedagainst;
+                $html .= '<p><small>' . s(get_string('judgedagainst', 'report_evidencereporter', $then->wording))
+                    . ' (' . s($then->framework) . ')'
+                    . ($then->description !== '' ? '<br>' . nl2br(s($then->description)) : '')
+                    . '<br><i>' . s(get_string(
+                        $then->backfilled ? 'judgedagainstbackfilled' : 'judgedagainstrecorded',
+                        'report_evidencereporter',
+                        $then->recorded
+                    )) . '</i></small></p>';
+            }
             if ($comp->evidence) {
                 $html .= '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
                     . '<td width="16%">' . s(get_string('timecreated', 'report_evidencereporter')) . '</td>'
@@ -500,7 +524,9 @@ class evidence_pack {
                     $html .= '<tr><td width="16%">' . s($item->date) . '<br><small>' . s($item->type) . '</small></td>'
                         . '<td width="' . ($this->includefeedback ? 34 : 54) . '%">' . $source . '</td>'
                         . '<td width="14%">' . s($item->ratinggiven) . '</td>'
-                        . '<td width="16%">' . s($item->assessor) . ($item->note ? '<br><small>' . $item->note . '</small>' : '')
+                        . '<td width="16%">' . s($item->assessor)
+                        . (!empty($item->credentials) ? '<br><small>' . s($item->credentials) . '</small>' : '')
+                        . ($item->note ? '<br><small>' . $item->note . '</small>' : '')
                         . '</td>'
                         . ($this->includefeedback ? '<td width="20%">' . $item->feedback . '</td>' : '')
                         . '</tr>';

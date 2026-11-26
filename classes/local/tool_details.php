@@ -50,14 +50,15 @@ class tool_details {
      * An activity's tool details, or empty ones.
      *
      * @param int $cmid
-     * @return stdClass toolversion, reviewdate, reviewedby, conditions, resources, instructions, adjustments, timemodified
+     * @return stdClass toolversion, reviewdate, reviewedbyid (chosen from staff), reviewedby (typed, for someone without an
+     *                  account), conditions, resources, instructions, adjustments, timemodified
      */
     public static function get(int $cmid): stdClass {
         global $DB;
         $record = $DB->get_record(self::TABLE, ['cmid' => $cmid]);
         if (!$record) {
             $record = (object) ['cmid' => $cmid, 'toolversion' => '', 'reviewdate' => 0, 'reviewedby' => '',
-                'timemodified' => 0];
+                'reviewedbyid' => 0, 'timemodified' => 0];
             foreach (self::TEXTFIELDS as $field) {
                 $record->$field = '';
             }
@@ -66,7 +67,18 @@ class tool_details {
             $record->$field = (string) ($record->$field ?? '');
         }
         $record->reviewdate = (int) $record->reviewdate;
+        $record->reviewedbyid = (int) ($record->reviewedbyid ?? 0);
         return $record;
+    }
+
+    /**
+     * Who reviewed the tool: the staff member chosen, else the name typed.
+     *
+     * @param stdClass $details From {@see get()}
+     * @return string
+     */
+    public static function reviewer(stdClass $details): string {
+        return staff::name((int) ($details->reviewedbyid ?? 0), (string) ($details->reviewedby ?? ''));
     }
 
     /**
@@ -105,7 +117,7 @@ class tool_details {
      * Save an activity's tool details. Empty details remove the record.
      *
      * @param int $cmid
-     * @param stdClass $data toolversion, reviewdate, reviewedby and the text fields
+     * @param stdClass $data toolversion, reviewdate, reviewedbyid, reviewedby and the text fields
      */
     public static function save(int $cmid, stdClass $data): void {
         global $DB;
@@ -114,9 +126,10 @@ class tool_details {
             'toolversion' => \core_text::substr(trim((string) ($data->toolversion ?? '')), 0, 100),
             'reviewdate' => (int) ($data->reviewdate ?? 0),
             'reviewedby' => \core_text::substr(trim((string) ($data->reviewedby ?? '')), 0, 255),
+            'reviewedbyid' => (int) ($data->reviewedbyid ?? 0),
             'timemodified' => time(),
         ];
-        $empty = $record->toolversion === '' && !$record->reviewdate && $record->reviewedby === '';
+        $empty = $record->toolversion === '' && !$record->reviewdate && $record->reviewedby === '' && !$record->reviewedbyid;
         foreach (self::TEXTFIELDS as $field) {
             $record->$field = trim((string) ($data->$field ?? ''));
             $empty = $empty && $record->$field === '';
@@ -152,8 +165,14 @@ class tool_details {
      * @param MoodleQuickForm $mform
      * @param string $modname
      * @param int $cmid 0 for a new activity
+     * @param \context|null $context Where reviewers are listed from (the course, for a new activity)
      */
-    public static function add_form_elements(MoodleQuickForm $mform, string $modname, int $cmid): void {
+    public static function add_form_elements(
+        MoodleQuickForm $mform,
+        string $modname,
+        int $cmid,
+        ?\context $context = null
+    ): void {
         if (!in_array($modname, self::get_modnames())) {
             return;
         }
@@ -170,9 +189,15 @@ class tool_details {
             get_string('toolreviewdate', 'report_evidencereporter'),
             ['optional' => true]
         );
-        $mform->addElement('text', $p . 'reviewedby', get_string('toolreviewedby', 'report_evidencereporter'), ['size' => 40]);
-        $mform->setType($p . 'reviewedby', PARAM_TEXT);
-        $mform->addRule($p . 'reviewedby', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $saved = self::exists($cmid) ? self::get($cmid) : null;
+        staff::add_form_elements(
+            $mform,
+            $p . 'reviewedby',
+            'toolreviewedby',
+            'toolreviewedbyother',
+            $context ?? ($cmid ? \context_module::instance($cmid) : \context_system::instance()),
+            $saved ? $saved->reviewedbyid : 0
+        );
         foreach (self::TEXTFIELDS as $field) {
             $mform->addElement(
                 'textarea',
@@ -184,10 +209,11 @@ class tool_details {
             $mform->addHelpButton($p . $field, 'tool' . $field, 'report_evidencereporter');
         }
 
-        if (self::exists($cmid)) {
-            $details = self::get($cmid);
+        if ($saved) {
+            $details = $saved;
             $mform->setDefault($p . 'toolversion', $details->toolversion);
             $mform->setDefault($p . 'reviewdate', $details->reviewdate);
+            $mform->setDefault($p . 'reviewedbyid', $details->reviewedbyid);
             $mform->setDefault($p . 'reviewedby', $details->reviewedby);
             foreach (self::TEXTFIELDS as $field) {
                 $mform->setDefault($p . $field, $details->$field);
@@ -241,9 +267,24 @@ class tool_details {
             return;
         }
         $values = new stdClass();
-        foreach (array_merge(['toolversion', 'reviewdate', 'reviewedby'], self::TEXTFIELDS) as $field) {
+        foreach (array_merge(['toolversion', 'reviewdate', 'reviewedby', 'reviewedbyid'], self::TEXTFIELDS) as $field) {
             $values->$field = $data->{$p . $field} ?? '';
         }
+        // Only staff (or the reviewer already saved) can be chosen.
+        $current = self::get((int) $data->coursemodule)->reviewedbyid;
+        if (!staff::is_valid_choice((int) $values->reviewedbyid, \context_module::instance($data->coursemodule), $current)) {
+            $values->reviewedbyid = $current;
+        }
         self::save((int) $data->coursemodule, $values);
+    }
+
+    /**
+     * Validate the section on the activity's settings form.
+     *
+     * @param array $data Submitted data
+     * @return string[] errors
+     */
+    public static function validate_form(array $data): array {
+        return staff::validate($data, self::PREFIX . 'reviewedby');
     }
 }

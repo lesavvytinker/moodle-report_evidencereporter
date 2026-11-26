@@ -35,6 +35,7 @@
         "scoperows": [{"label": "Learning plan", "value": "Diploma core (Active, from template: Diploma)"}],
         "redactflags": [],
         "frozennote": false,
+        "changednote": false,
         "redactoptions": [{"name": "redactname", "label": "Learner name", "checked": false}],
         "sitename": "Equip English",
         "overviewtext": "12 competencies · 9 with evidence · 7 proficient",
@@ -61,6 +62,7 @@
              "evidencecount": 0, "noevidence": true, "attemptcount": 0},
             {"group": "", "idnumber": "0101.1.1", "name": "1.1 Confirm scope", "indent": true, "currentrating": "Competent",
              "proficient": true, "judgementdate": "10 November 2026", "judgementby": "Priya Raman", "judgementrating": "Competent",
+             "judgementcredentials": "Training qualification: TAE40122; Industry currency: 1 March 2026", "judgedagainst": false,
              "evidencecount": 2, "noevidence": false, "attemptcount": 2}
         ],
         "hasdetails": true,
@@ -147,6 +149,7 @@
     </table>
     {{#redactionnote}}<p class="er-redactionnote fst-italic">{{.}}</p>{{/redactionnote}}
     {{#frozennote}}<p class="er-frozennote fst-italic">{{#str}} frozenratings, report_evidencereporter {{/str}}</p>{{/frozennote}}
+    {{#changednote}}<p class="er-changednote fst-italic">{{#str}} changedsincejudged, report_evidencereporter {{/str}}</p>{{/changednote}}
     <p class="er-feedbackexcluded fst-italic">{{#str}} feedbackexcluded, report_evidencereporter {{/str}}</p>
     {{#restricted}}
         <div class="alert alert-info">{{#str}} restrictednotice, report_evidencereporter {{/str}}</div>
@@ -169,7 +172,7 @@
             <tr class="{{^indent}}er-parent{{/indent}}">
                 <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}</td>
                 <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{terms.proficient}}</span>{{/proficient}}</td>
-                <td>{{#judgementrating}}{{.}} &middot; {{/judgementrating}}{{judgementdate}}{{#judgementby}}<br><span class="small">{{.}}</span>{{/judgementby}}</td>
+                <td>{{#judgementrating}}{{.}} &middot; {{/judgementrating}}{{judgementdate}}{{#judgementby}}<br><span class="small">{{.}}</span>{{/judgementby}}{{#judgementcredentials}}<br><span class="small text-muted er-credentials">{{.}}</span>{{/judgementcredentials}}{{#judgedagainst}}<br><span class="small er-judgedagainst">{{#str}} judgedagainst, report_evidencereporter, {{wording}} {{/str}}</span>{{/judgedagainst}}</td>
                 <td>{{#noevidence}}<span class="text-muted">{{#str}} noevidence, report_evidencereporter {{/str}}</span>{{/noevidence}}{{^noevidence}}{{evidencecount}}{{/noevidence}}</td>
                 <td>{{#attemptcount}}{{.}}{{/attemptcount}}</td>
             </tr>
@@ -234,6 +237,13 @@
     {{#details}}
     <section class="er-competency mb-4">
         <h4 class="h5"><span class="er-idnumber">{{idnumber}}</span> {{name}}{{#currentrating}} &middot; {{.}}{{/currentrating}}</h4>
+        {{#judgedagainst}}
+        <div class="er-judgedagainst small border-start ps-2 mb-2">
+            <div>{{#str}} judgedagainst, report_evidencereporter, {{wording}} {{/str}} ({{framework}})</div>
+            {{#description}}<div class="text-muted">{{.}}</div>{{/description}}
+            <div class="fst-italic">{{#backfilled}}{{#str}} judgedagainstbackfilled, report_evidencereporter, {{recorded}} {{/str}}{{/backfilled}}{{^backfilled}}{{#str}} judgedagainstrecorded, report_evidencereporter, {{recorded}} {{/str}}{{/backfilled}}</div>
+        </div>
+        {{/judgedagainst}}
         {{#hasevidence}}
         <table class="table table-sm table-bordered er-evidence">
             <colgroup>
@@ -261,7 +271,7 @@
                         {{#url}}<br><a href="{{.}}" class="er-link" target="_blank" rel="noopener">{{#str}} viewevidence, report_evidencereporter {{/str}}<span class="visually-hidden"> {{#str}} opensinnewwindowbracketed {{/str}}</span></a><span class="er-printurl">{{.}}</span>{{/url}}
                     </td>
                     <td>{{ratinggiven}}</td>
-                    <td>{{assessor}}{{#note}}<br><span class="small">{{#str}} note, report_evidencereporter {{/str}}: {{{.}}}</span>{{/note}}</td>
+                    <td>{{assessor}}{{#credentials}}<br><span class="small text-muted er-credentials">{{.}}</span>{{/credentials}}{{#note}}<br><span class="small">{{#str}} note, report_evidencereporter {{/str}}: {{{.}}}</span>{{/note}}</td>
                     <td class="er-feedback">{{{feedback}}}{{#releasestatus}}<br><span class="small text-muted">{{.}}</span>{{/releasestatus}}</td>
                 </tr>
                 {{/evidence}}

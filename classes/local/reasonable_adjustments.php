@@ -192,7 +192,8 @@ class reasonable_adjustments {
     /**
      * Save an adjustment (insert when it has no id).
      *
-     * @param stdClass $data cmid, userid, adjtype, details, reason, approvedby, source, sourceid; id to update
+     * @param stdClass $data cmid, userid, adjtype, details, reason, approvedbyid (chosen from staff), approvedby (typed,
+     *                      for someone without an account), source, sourceid; id to update
      * @return int The id
      */
     public static function save(stdClass $data): int {
@@ -205,6 +206,7 @@ class reasonable_adjustments {
             'details' => trim((string) ($data->details ?? '')),
             'reason' => trim((string) ($data->reason ?? '')),
             'approvedby' => \core_text::substr(trim((string) ($data->approvedby ?? '')), 0, 255),
+            'approvedbyid' => (int) ($data->approvedbyid ?? 0),
             'source' => in_array($data->source ?? '', [self::SOURCE_QUIZOVERRIDE, self::SOURCE_ASSIGNOVERRIDE,
                 self::SOURCE_ASSIGNEXTENSION]) ? $data->source : self::SOURCE_MANUAL,
             'sourceid' => (int) ($data->sourceid ?? 0),
@@ -521,7 +523,7 @@ class reasonable_adjustments {
                 'details' => (string) $record->details,
                 'reason' => $withreasons ? (string) $record->reason : null,
                 'hasreason' => trim((string) $record->reason) !== '',
-                'approvedby' => $identity ? $identity->staff((string) $record->approvedby) : (string) $record->approvedby,
+                'approvedby' => $identity ? $identity->staff(self::approver($record)) : self::approver($record),
                 'recordedby' => $identity ? $identity->staff($recordername) : $recordername,
                 'recorded' => userdate((int) $record->timemodified, get_string('strftimedate', 'core_langconfig')),
                 'source' => $record->source === self::SOURCE_MANUAL ? ''
@@ -529,6 +531,16 @@ class reasonable_adjustments {
             ];
         }
         return $result;
+    }
+
+    /**
+     * Who approved an adjustment: the staff member chosen, else the name typed.
+     *
+     * @param stdClass $record
+     * @return string
+     */
+    public static function approver(stdClass $record): string {
+        return staff::name((int) ($record->approvedbyid ?? 0), (string) ($record->approvedby ?? ''));
     }
 
     /**

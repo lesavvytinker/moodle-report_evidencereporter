@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.27.0 (2026-12-07)
+- **Judgements as they were:** when a judgement is recorded (a rating, or a competency completed), Evidence Reporter
+  now keeps the competency's and framework's ID number, name and description as they were, and the assessor's
+  credentials from user profile fields chosen in the new **Credential profile fields** setting (e.g. kept up to date
+  from the student management system). Moodle's frameworks are live, so editing a unit used to change past evidence.
+- The evidence summary and the evidence pack's summary PDF show the assessor's credentials with each judgement (even
+  when staff names are redacted), and, where a unit or framework has been edited since, the wording it was judged
+  against, with a note.
+- New setting **Learners see assessors' credentials** (off by default).
+- On upgrade, existing judgements get today's wording, marked as recorded after the judgement, and no credentials.
+- **Chosen, not typed:** *Reviewed by* (assessment tool details) and *Approved by* (reasonable adjustments) are now
+  chosen from the course's staff, so the record names the actual person. A name can still be typed for someone
+  without an account, such as an industry representative; existing typed names are kept.
+- The privacy provider covers judgement snapshots, chosen reviewers and chosen approvers.
+
 ## 0.26.0 (2026-12-06)
 - **Marking page** for assessors (course Reports > Marking, and All my courses): learners by assessment for a unit or
   all units, most urgent first, with each cell's status (to mark with days waiting, feedback needed, not satisfactory,
