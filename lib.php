@@ -101,7 +101,23 @@ function report_evidencereporter_pluginfile($course, $cm, $context, $filearea, $
 function report_evidencereporter_coursemodule_standard_elements($formwrapper, $mform) {
     $cm = $formwrapper->get_coursemodule();
     $modname = $formwrapper->get_current()->modulename ?? ($cm->modname ?? '');
-    \report_evidencereporter\local\tool_details::add_form_elements($mform, (string) $modname, $cm ? (int) $cm->id : 0);
+    \report_evidencereporter\local\tool_details::add_form_elements(
+        $mform,
+        (string) $modname,
+        $cm ? (int) $cm->id : 0,
+        $cm ? context_module::instance($cm->id) : context_course::instance($formwrapper->get_course()->id)
+    );
+}
+
+/**
+ * Validate the "Assessment tool details" section.
+ *
+ * @param moodleform_mod $formwrapper
+ * @param array $data
+ * @return array errors
+ */
+function report_evidencereporter_coursemodule_validation($formwrapper, $data) {
+    return \report_evidencereporter\local\tool_details::validate_form((array) $data);
 }
 
 /**

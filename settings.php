@@ -184,6 +184,26 @@ if ($hassiteconfig && $settings) {
         PARAM_INT
     ));
 
+    // Assessor credentials, from user profile fields (usually kept up to date from the student management system).
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/credentialsheading',
+        get_string('settings_credentials', 'report_evidencereporter'),
+        get_string('settings_credentials_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configmultiselect(
+        'report_evidencereporter/credentialfields',
+        get_string('settings_credentialfields', 'report_evidencereporter'),
+        get_string('settings_credentialfields_desc', 'report_evidencereporter'),
+        [],
+        \report_evidencereporter\local\judgement_snapshot::field_choices()
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'report_evidencereporter/credentialslearner',
+        get_string('settings_credentialslearner', 'report_evidencereporter'),
+        get_string('settings_credentialslearner_desc', 'report_evidencereporter'),
+        0
+    ));
+
     // Reasonable adjustments made for learners (not the gradebook adjustments above).
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/radjheading',

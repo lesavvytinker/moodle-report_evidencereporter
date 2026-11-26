@@ -22,17 +22,20 @@ use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
 use core_privacy\local\request\{approved_contextlist, approved_userlist, contextlist, userlist, writer};
 use report_evidencereporter\local\bulk;
+use report_evidencereporter\local\judgement_snapshot;
 use report_evidencereporter\local\reasonable_adjustments;
 use report_evidencereporter\local\sampling;
+use report_evidencereporter\local\tool_details;
 
 /**
  * Privacy provider.
  *
  * The plugin stores bulk evidence downloads (ZIP files kept in the requesting user's own file area for
  * {@see bulk::KEEP_DAYS} days) and validation samples (in the system context): which learners' judgements were drawn,
- * who drew them, who assessed them and who swapped them out; and reasonable adjustments made for learners (in each
- * activity's context): what, why, who approved and who recorded them. Everything else it shows comes from the competency
- * and gradebook subsystems.
+ * who drew them, who assessed them and who swapped them out; what each judgement was made against and the assessor's
+ * credentials at the time (also in the system context); reasonable adjustments made for learners (in each activity's
+ * context): what, why, who approved and who recorded them; and who reviewed each assessment tool (in the activity's
+ * context). Everything else it shows comes from the competency and gradebook subsystems.
  *
  * @package    report_evidencereporter
  * @copyright  2026 Daniel Maloney
@@ -68,9 +71,21 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'details' => 'privacy:metadata:radj:details',
             'reason' => 'privacy:metadata:radj:reason',
             'approvedby' => 'privacy:metadata:radj:approvedby',
+            'approvedbyid' => 'privacy:metadata:radj:approvedbyid',
             'usermodified' => 'privacy:metadata:radj:usermodified',
             'timemodified' => 'privacy:metadata:radj:timemodified',
         ], 'privacy:metadata:radj');
+        $collection->add_database_table(judgement_snapshot::TABLE, [
+            'userid' => 'privacy:metadata:jsnap:userid',
+            'competencyid' => 'privacy:metadata:jsnap:competencyid',
+            'assessorid' => 'privacy:metadata:jsnap:assessorid',
+            'credentials' => 'privacy:metadata:jsnap:credentials',
+            'timecaptured' => 'privacy:metadata:jsnap:timecaptured',
+        ], 'privacy:metadata:jsnap');
+        $collection->add_database_table(tool_details::TABLE, [
+            'reviewedbyid' => 'privacy:metadata:tool:reviewedbyid',
+            'timemodified' => 'privacy:metadata:tool:timemodified',
+        ], 'privacy:metadata:tool');
         return $collection;
     }
 
@@ -95,8 +110,13 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $sql = "SELECT ctx.id
                   FROM {context} ctx
                   JOIN {" . reasonable_adjustments::TABLE . "} ra ON ra.cmid = ctx.instanceid
-                 WHERE ctx.contextlevel = :modlevel AND (ra.userid = :u1 OR ra.usermodified = :u2)";
-        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid]);
+                 WHERE ctx.contextlevel = :modlevel AND (ra.userid = :u1 OR ra.usermodified = :u2 OR ra.approvedbyid = :u3)";
+        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid, 'u3' => $userid]);
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {" . tool_details::TABLE . "} td ON td.cmid = ctx.instanceid
+                 WHERE ctx.contextlevel = :modlevel AND td.reviewedbyid = :userid";
+        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'userid' => $userid]);
         return $contextlist;
     }
 
@@ -112,16 +132,24 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             foreach (['userid', 'assessorid', 'removedby'] as $field) {
                 $userlist->add_from_sql($field, "SELECT $field FROM {" . sampling::ITEMS . "} WHERE $field > 0", []);
             }
+            foreach (['userid', 'assessorid'] as $field) {
+                $userlist->add_from_sql($field, "SELECT $field FROM {" . judgement_snapshot::TABLE . "} WHERE $field > 0", []);
+            }
             return;
         }
         if ($context->contextlevel == CONTEXT_MODULE) {
-            foreach (['userid', 'usermodified'] as $field) {
+            foreach (['userid', 'usermodified', 'approvedbyid'] as $field) {
                 $userlist->add_from_sql(
                     $field,
                     "SELECT $field FROM {" . reasonable_adjustments::TABLE . "} WHERE cmid = :cmid AND $field > 0",
                     ['cmid' => $context->instanceid]
                 );
             }
+            $userlist->add_from_sql(
+                'reviewedbyid',
+                "SELECT reviewedbyid FROM {" . tool_details::TABLE . "} WHERE cmid = :cmid AND reviewedbyid > 0",
+                ['cmid' => $context->instanceid]
+            );
             return;
         }
         if ($context->contextlevel != CONTEXT_USER) {
@@ -144,6 +172,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             }
             if ($context->contextlevel == CONTEXT_MODULE) {
                 self::export_adjustments($context, (int) $contextlist->get_user()->id);
+                self::export_tool_review($context, (int) $contextlist->get_user()->id);
             }
             if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $contextlist->get_user()->id) {
                 foreach (bulk::get_files((int) $context->instanceid) as $file) {
@@ -163,9 +192,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         if ($context->contextlevel == CONTEXT_SYSTEM) {
             $DB->delete_records(sampling::ITEMS);
             $DB->delete_records(sampling::TABLE);
+            $DB->delete_records(judgement_snapshot::TABLE);
         }
         if ($context->contextlevel == CONTEXT_MODULE) {
             $DB->delete_records(reasonable_adjustments::TABLE, ['cmid' => $context->instanceid]);
+            $DB->set_field(tool_details::TABLE, 'reviewedbyid', 0, ['cmid' => $context->instanceid]);
         }
         if ($context->contextlevel == CONTEXT_USER) {
             get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
@@ -219,6 +250,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         global $DB;
         return $DB->record_exists(sampling::TABLE, ['createdby' => $userid])
             || $DB->record_exists_select(
+                judgement_snapshot::TABLE,
+                'userid = :u1 OR assessorid = :u2',
+                ['u1' => $userid, 'u2' => $userid]
+            )
+            || $DB->record_exists_select(
                 sampling::ITEMS,
                 'userid = :u1 OR assessorid = :u2 OR removedby = :u3',
                 ['u1' => $userid, 'u2' => $userid, 'u3' => $userid]
@@ -259,6 +295,50 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         if (array_filter($data)) {
             writer::with_context($context)->export_data($folder, (object) $data);
         }
+
+        // What judgements were made against, and the credentials recorded with judgements the user made.
+        $snapshot = fn($j) => [
+            'unit' => trim($j->compidnumber . ' ' . $j->compshortname),
+            'framework' => $j->fwshortname,
+            'credentials' => $j->credentials ? judgement_snapshot::format_credentials((array) json_decode($j->credentials)) : '',
+            'timecaptured' => $time((int) $j->timecaptured),
+        ];
+        $data = [
+            'judgedyou' => array_values(array_map($snapshot, $DB->get_records(
+                judgement_snapshot::TABLE,
+                ['userid' => $userid],
+                'id'
+            ))),
+            'judgedbyyou' => array_values(array_map($snapshot, $DB->get_records(
+                judgement_snapshot::TABLE,
+                ['assessorid' => $userid],
+                'id'
+            ))),
+        ];
+        if (array_filter($data)) {
+            writer::with_context($context)->export_data(
+                [get_string('privacy:metadata:jsnap', 'report_evidencereporter')],
+                (object) $data
+            );
+        }
+    }
+
+    /**
+     * Export the user's review of an assessment tool, if they're recorded as its reviewer.
+     *
+     * @param \context $context Module context
+     * @param int $userid
+     */
+    protected static function export_tool_review(\context $context, int $userid): void {
+        global $DB;
+        $record = $DB->get_record(tool_details::TABLE, ['cmid' => $context->instanceid, 'reviewedbyid' => $userid]);
+        if ($record) {
+            writer::with_context($context)->export_data([get_string('tooldetails', 'report_evidencereporter')], (object) [
+                'toolversion' => $record->toolversion,
+                'reviewdate' => $record->reviewdate ? \core_privacy\local\request\transform::date($record->reviewdate) : null,
+                'timemodified' => \core_privacy\local\request\transform::datetime($record->timemodified),
+            ]);
+        }
     }
 
     /**
@@ -272,6 +352,8 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         if (!$userids) {
             return;
         }
+        judgement_snapshot::delete_for_learners($userids);
+        judgement_snapshot::anonymise_assessors($userids);
         [$in, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $DB->delete_records_select(sampling::ITEMS, "userid $in", $params);
         $DB->set_field_select(sampling::ITEMS, 'assessorid', 0, "assessorid $in", $params);
@@ -291,7 +373,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'adjustment' => reasonable_adjustments::type_label($r->adjtype),
             'details' => $r->details,
             'reason' => $r->reason,
-            'approvedby' => $r->approvedby,
+            'approvedby' => reasonable_adjustments::approver($r),
             'timemodified' => \core_privacy\local\request\transform::datetime($r->timemodified),
         ];
         $data = [
@@ -303,6 +385,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'recordedbyyou' => array_values(array_map($item, $DB->get_records(
                 reasonable_adjustments::TABLE,
                 ['cmid' => $context->instanceid, 'usermodified' => $userid],
+                'id'
+            ))),
+            'approvedbyyou' => array_values(array_map($item, $DB->get_records(
+                reasonable_adjustments::TABLE,
+                ['cmid' => $context->instanceid, 'approvedbyid' => $userid],
                 'id'
             ))),
         ];
@@ -327,5 +414,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $params['cmid'] = $cmid;
         $DB->delete_records_select(reasonable_adjustments::TABLE, "cmid = :cmid AND userid $in", $params);
         $DB->set_field_select(reasonable_adjustments::TABLE, 'usermodified', 0, "cmid = :cmid AND usermodified $in", $params);
+        $DB->set_field_select(reasonable_adjustments::TABLE, 'approvedbyid', 0, "cmid = :cmid AND approvedbyid $in", $params);
+        $DB->set_field_select(tool_details::TABLE, 'reviewedbyid', 0, "cmid = :cmid AND reviewedbyid $in", $params);
     }
 }

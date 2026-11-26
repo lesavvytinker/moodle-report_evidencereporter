@@ -33,4 +33,16 @@ class observer {
         local\tool_details::delete((int) $event->objectid);
         local\reasonable_adjustments::delete_for_activity((int) $event->objectid);
     }
+
+    /**
+     * Competency evidence was added: if it's a judgement, keep what it was made against as it is now.
+     *
+     * @param \core\event\competency_evidence_created $event
+     */
+    public static function competency_evidence_created(\core\event\competency_evidence_created $event): void {
+        if (!in_array((int) ($event->other['action'] ?? -1), local\judgement_snapshot::ACTIONS)) {
+            return;
+        }
+        local\judgement_snapshot::capture((int) $event->objectid);
+    }
 }

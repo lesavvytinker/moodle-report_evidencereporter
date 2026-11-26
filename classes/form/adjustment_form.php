@@ -21,6 +21,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
 use report_evidencereporter\local\reasonable_adjustments;
+use report_evidencereporter\local\staff;
 
 /**
  * Form: one reasonable adjustment for a learner in an activity.
@@ -69,10 +70,25 @@ class adjustment_form extends \moodleform {
         $mform->addElement('textarea', 'reason', get_string('rareason', 'report_evidencereporter'), ['rows' => 3, 'cols' => 60]);
         $mform->setType('reason', PARAM_TEXT);
         $mform->addHelpButton('reason', 'rareason', 'report_evidencereporter');
-        $mform->addElement('text', 'approvedby', get_string('raapprovedby', 'report_evidencereporter'), ['size' => 40]);
-        $mform->setType('approvedby', PARAM_TEXT);
-        $mform->addRule('approvedby', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-        $mform->addHelpButton('approvedby', 'raapprovedby', 'report_evidencereporter');
+        staff::add_form_elements(
+            $mform,
+            'approvedby',
+            'raapprovedby',
+            'raapprovedbyother',
+            $this->_customdata['context'],
+            (int) ($this->_customdata['approvedbyid'] ?? 0)
+        );
         $this->add_action_buttons();
+    }
+
+    /**
+     * Validation: a staff member or a typed name, not both.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function validation($data, $files) {
+        return parent::validation($data, $files) + staff::validate($data, 'approvedby');
     }
 }

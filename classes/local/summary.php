@@ -193,7 +193,9 @@ class summary {
      * @return stdClass competencies (in order, each with ->evidence rows, ->attempts, ->records and ->questions: supporting
      *                  evidence from quiz questions, see {@see question_evidence::get_for_user()}), assessments (each linked
      *                  assessment with its reasonable adjustments, see {@see reasonable_adjustments::get_by_assessment()};
-     *                  also per competency), adjustments (the adjustments alone), restricted (bool), scope
+     *                  also per competency), adjustments (the adjustments alone), restricted (bool), scope,
+     *                  changedsincejudged (bool: some competency was edited after it was judged, see
+     *                  {@see judgement_snapshot}; each competency's judgedagainst then holds the wording at the time)
      */
     public static function build(int $userid, scope|int $scope, ?identity $identity = null): stdClass {
         global $DB, $USER;
@@ -204,6 +206,7 @@ class summary {
         $competencyids = array_map(fn($comp) => (int) $comp->id, $ordered);
         if (!$competencyids) {
             return (object) ['competencies' => [], 'assessments' => [], 'adjustments' => [], 'scope' => $scope,
+                'changedsincejudged' => false,
                 'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
         }
         [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'sc');
@@ -266,6 +269,26 @@ class summary {
         // Ratings frozen when a plan was completed take the place of current ones.
         $frozen = $scope->get_frozen_ratings();
 
+        // What each judgement was made against, as it was then: wording, and the assessor's credentials.
+        $judgementids = [];
+        foreach ($evidencebycomp as $items) {
+            foreach ($items as $item) {
+                if ($item->isjudgement) {
+                    $judgementids[] = $item->evidenceid;
+                }
+            }
+        }
+        $snapshots = judgement_snapshot::describe(
+            judgement_snapshot::get_many($judgementids),
+            judgement_snapshot::can_view_credentials($userid)
+        );
+        foreach ($evidencebycomp as $items) {
+            foreach ($items as $item) {
+                $snapshot = $item->isjudgement ? ($snapshots[$item->evidenceid] ?? null) : null;
+                $item->credentials = $snapshot ? $snapshot->credentials : '';
+            }
+        }
+
         // Every competency covered, in order, so gaps show up.
         $competencies = [];
         foreach ($ordered as $comp) {
@@ -276,6 +299,7 @@ class summary {
                     $judgement = $item;
                 }
             }
+            $snapshot = $judgement ? ($snapshots[$judgement->evidenceid] ?? null) : null;
             $latest = $current[$comp->id] ?? null;
             if (isset($frozen[$comp->id])) {
                 $currentrating = rating::name((int) $comp->id, $frozen[$comp->id]->grade);
@@ -297,6 +321,10 @@ class summary {
                 'judgementdate' => $judgement ? $judgement->timecreated : null,
                 'judgementby' => $judgement ? $judgement->assessor : '',
                 'judgementrating' => $judgement ? $judgement->ratinggiven : '',
+                // The assessor's credentials when they judged it ('' when none recorded, or the viewer may not see them).
+                'judgementcredentials' => $snapshot ? $snapshot->credentials : '',
+                // The competency's wording when judged, where it (or its framework) has been edited since; else null.
+                'judgedagainst' => $snapshot && $snapshot->changed ? $snapshot : null,
                 'evidence' => $evidence,
                 'attempts' => $attemptsbycomp[$comp->id] ?? [],
                 'records' => $recordsbycomp[$comp->id] ?? [],
@@ -318,6 +346,8 @@ class summary {
             'assessments' => $assessments,
             'adjustments' => array_merge([], ...array_map(fn($a) => $a->items, $assessments)),
             'scope' => $scope,
+            // Some unit was edited after it was judged.
+            'changedsincejudged' => (bool) array_filter($competencies, fn($comp) => $comp->judgedagainst !== null),
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
         ];
@@ -450,6 +480,7 @@ class summary {
             $description = $identity->text($description);
         }
         return (object) [
+            'evidenceid' => (int) $row->id,
             'timecreated' => (int) $row->timecreated,
             'date' => userdate($row->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
             'type' => $types[$action] ?? (string) $action,

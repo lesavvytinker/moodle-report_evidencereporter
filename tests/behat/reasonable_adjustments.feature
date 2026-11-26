@@ -27,16 +27,33 @@ Feature: Reasonable adjustments
     And I should see "None recorded"
     And I click on "Record an adjustment" "link"
     And I set the following fields to these values:
-      | Adjustment         | Reader                     |
-      | What was adjusted  | Questions read aloud       |
-      | Reason             | Learning support plan      |
-      | Approved by        | Learner support officer    |
+      | Adjustment                         | Reader                  |
+      | What was adjusted                  | Questions read aloud    |
+      | Reason                             | Learning support plan   |
+      | Or someone without an account here | Learner support officer |
     And I press "Save changes"
     And I should see "Adjustment saved."
     And I should see "Questions read aloud"
     And I should see "Learning support plan"
     And I should see "Learner support officer"
     And I should not see "None recorded"
+
+  @javascript
+  Scenario: The approver is chosen from staff, not typed as well
+    Given I am on the "Knowledge quiz" "quiz activity" page logged in as "teacher1"
+    When I navigate to "Reasonable adjustments" in current page administration
+    And I click on "Record an adjustment" "link"
+    And I set the following fields to these values:
+      | Adjustment                         | Reader               |
+      | What was adjusted                  | Questions read aloud |
+      | Approved by                        | Tess Teacher         |
+      | Or someone without an account here | Someone else         |
+    And I press "Save changes"
+    Then I should see "Choose someone from the list or type a name, not both."
+    And I set the field "Or someone without an account here" to ""
+    And I press "Save changes"
+    And I should see "Adjustment saved."
+    And "Tess Teacher" "text" should exist in the "Questions read aloud" "table_row"
 
   Scenario: Learners don't get the adjustments page
     Given I am on the "Knowledge quiz" "quiz activity" page logged in as "student1"

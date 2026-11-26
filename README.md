@@ -83,6 +83,8 @@ Uses the same capability as bulk downloads.
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
 | **Sign-off heading and statement** | Your own heading (e.g. "Assessor declaration") and a declaration printed above the signature lines. |
+| **Credential profile fields** | The user profile fields holding assessors' credentials (see [Judgements as they were](#judgements-as-they-were)). None chosen: no credentials are kept. |
+| **Learners see assessors' credentials** | Off by default: only staff see credentials on summaries and packs. |
 
 The page also lists the evidence sources found on the site.
 
@@ -146,7 +148,7 @@ Images in questions are shown as a note to see the question in Moodle.
 
 ### Assessment tool details
 
-Activities Evidence Reporter reads get an **Assessment tool details** section in their settings: tool version, reviewed before use on, reviewed by, assessment conditions, resources allowed, instructions for the assessor and reasonable adjustment guidance. Moodle doesn't hold these anywhere else. They're removed when the activity is deleted. They aren't copied by backup and restore or course copy yet.
+Activities Evidence Reporter reads get an **Assessment tool details** section in their settings: tool version, reviewed before use on, reviewed by (chosen from the course's staff, or typed for a reviewer without an account, such as an industry representative), assessment conditions, resources allowed, instructions for the assessor and reasonable adjustment guidance. Moodle doesn't hold these anywhere else. They're removed when the activity is deleted. They aren't copied by backup and restore or course copy yet.
 
 ### In evidence packs
 
@@ -175,10 +177,36 @@ confirming, per learner and assessment. Open it from the course's **Reports > Ma
 - **Who:** `report/evidencereporter:marking` (teachers and managers by default), limited to their groups when the course
   uses separate groups.
 
+## Judgements as they were
+
+Moodle's competency frameworks are live: edit a unit's ID number, name or description and every course, plan and
+learner record using it changes, past judgements included. So when a judgement is recorded (a rating, or a unit
+completed), Evidence Reporter keeps:
+
+- the unit's ID number, name and description, and its framework's, as they were;
+- the assessor's credentials, from the profile fields chosen in *Credential profile fields*, as they were that day.
+
+The evidence summary and the evidence pack's summary PDF show the credentials under the judgement, and on each
+judgement in the evidence detail (even when staff names are redacted, so a redacted pack still shows the assessor was
+qualified). Where a unit or its framework has been edited since it was judged, they also show the wording it was judged
+against, with a note.
+
+**Credentials:** keep a summary in profile fields (e.g. training qualification code, vocational competency, industry
+currency date, expiry), not certificates. Ideally they're kept up to date from your student management system (a user
+upload or sync) and locked, so staff can't edit their own. Credentials changed later don't change past judgements.
+
+**On upgrade**, existing judgements get the wording as it is then, marked as recorded after the judgement, and no
+credentials (today's credentials say nothing about the day of the judgement).
+
+**Versioning frameworks:** this records what happened, but the better practice is still not to edit a framework that's
+in use. When a unit is superseded, duplicate the framework (or import the new version) and move courses to it.
+
 ## Reasonable adjustments
 
 Record each reasonable adjustment made for a learner in an assessment: what was adjusted (extra time, a reader, a scribe,
-spoken responses, an alternative format and so on), the details, the reason and who approved it.
+spoken responses, an alternative format and so on), the details, the reason and who approved it. The approver is
+chosen from staff (anyone who can grade, manage activities or record adjustments there), so the record names the actual
+person; a name can be typed instead for someone without an account.
 
 - **Which courses:** *Record reasonable adjustments for* picks the terminology profiles that use them (Australian VET
   and UK apprenticeships by default). An activity follows the profile of the frameworks it's linked to, so a higher
