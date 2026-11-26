@@ -124,5 +124,34 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026120500, 'report', 'evidencereporter');
     }
+
+    if ($oldversion < 2026120700) {
+        // Snapshots of Not satisfactory attempts in activities without attempts of their own.
+        $table = new xmldb_table('report_evidencereporter_snap');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('attemptno', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL);
+        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('grade', XMLDB_TYPE_NUMBER, '10, 5');
+        $table->add_field('assessorid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('gradefeedback', XMLDB_TYPE_TEXT);
+        $table->add_field('feedback', XMLDB_TYPE_TEXT);
+        $table->add_field('source', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'live');
+        $table->add_field('timemarked', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timefrozen', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN, ['cmid'], 'course_modules', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'grade_items', ['id']);
+        $table->add_index('cmid_userid_attempt', XMLDB_INDEX_UNIQUE, ['cmid', 'userid', 'attemptno']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Fill in earlier attempts from the gradebook's history, in the background.
+        \core\task\manager::queue_adhoc_task(new \report_evidencereporter\task\backfill_snapshots(), true);
+        upgrade_plugin_savepoint(true, 2026120700, 'report', 'evidencereporter');
+    }
     return true;
 }

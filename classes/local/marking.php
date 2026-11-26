@@ -248,7 +248,8 @@ class marking {
      * @param cm_info $cm
      * @param int[] $userids
      * @return array userid => stdClass: status, days (waiting, or null), age, submitted (time or null), graded (time or
-     *               null), grade (text), attempt (e.g. "Attempt 2 of 3", or ''), url, adjustments (count), toconfirm
+     *               null), grade (text), attempt (e.g. "Attempt 2 of 3", or ''), noattemptsleft (bool: Not satisfactory
+     *               on the last attempt), url, adjustments (count), toconfirm
      *               (count), adjustmentsurl (null when the activity doesn't record them)
      */
     public static function get_cells(cm_info $cm, array $userids): array {
@@ -323,6 +324,22 @@ class marking {
             } else if (!in_array($cm->modname, self::SUBMITTED_TYPES)) {
                 $cell->status = self::STATUS_NOTMARKED;
             }
+            // Attempts: the activity's own, or kept by Evidence Reporter for those without (attempt snapshots).
+            $attemptno = $fact->attemptno ?? 0;
+            $max = $fact->maxattempts ?? 0;
+            if (attempt_snapshots::tracks($cm->modname)) {
+                $attemptno = attempt_snapshots::attempts_used($cm, $userid, $gradevalue !== null);
+                $max = attempt_snapshots::get_max_attempts();
+                if ($attemptno) {
+                    $cell->attempt = get_string(
+                        'markingattempt',
+                        'report_evidencereporter',
+                        (object) ['no' => $attemptno, 'max' => $max ?: '∞']
+                    );
+                }
+            }
+            $cell->noattemptsleft = $max > 0 && $attemptno >= $max
+                && in_array($cell->status, [self::STATUS_FEEDBACK, self::STATUS_NOTSATISFACTORY]);
             $result[$userid] = $cell;
         }
         return $result;
@@ -384,6 +401,8 @@ class marking {
                             && $row->workflowstate !== 'released',
                         'attempt' => get_string('markingattempt', 'report_evidencereporter', (object) [
                             'no' => (int) $row->attemptnumber + 1, 'max' => $max > 0 ? $max : '∞']),
+                        'attemptno' => (int) $row->attemptnumber + 1,
+                        'maxattempts' => $max > 0 ? $max : 0,
                     ];
                 }
                 break;
@@ -408,6 +427,8 @@ class marking {
                         'attemptid' => (int) $row->id,
                         'attempt' => get_string('markingattempt', 'report_evidencereporter', (object) [
                             'no' => (int) $row->attempt, 'max' => (int) $quiz->attempts > 0 ? (int) $quiz->attempts : '∞']),
+                        'attemptno' => (int) $row->attempt,
+                        'maxattempts' => max(0, (int) $quiz->attempts),
                     ];
                 }
                 break;

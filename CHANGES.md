@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.27.0 (2026-12-07)
+- **Attempt history for databases, forums, workshops and checklists.** These activities don't have attempts of their
+  own, so when an assessor marks one Not satisfactory, Evidence Reporter keeps a snapshot: the result, who marked it,
+  when, and the feedback given (gradebook feedback, checklist comments, database comments, and the assessor's replies to
+  the learner's forum posts). The snapshot keeps collecting feedback until the learner does more work or is marked
+  again, then it's closed, so later edits and overwritten comments don't change it. Satisfactory results aren't
+  snapshotted; the live result is shown as the latest attempt. Assessors don't do anything differently.
+- Existing Not satisfactory marking is filled in from the gradebook's history after upgrading.
+- Shown under each competency on the printable summary and in the evidence pack ("Attempt 1", "Attempt 2",
+  "Attempt 3 (latest)"), and on the marking page as "Attempt n of 3" with a **No attempts left** flag when the last one
+  is Not satisfactory.
+- New setting **Attempts allowed** (default 3) for these activities.
+- Privacy: snapshots are exported for the learner and the assessor, and deleted with the learner or the activity.
+
 ## 0.26.0 (2026-12-06)
 - **Marking page** for assessors (course Reports > Marking, and All my courses): learners by assessment for a unit or
   all units, most urgent first, with each cell's status (to mark with days waiting, feedback needed, not satisfactory,

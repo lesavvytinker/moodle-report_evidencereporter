@@ -110,6 +110,7 @@ foreach ($grid->rows as $row) {
             'attempt' => in_array($cell->status, [marking::STATUS_NOTSUBMITTED, marking::STATUS_NOTMARKED]) ? '' : $cell->attempt,
             'url' => $cell->url,
             'flag' => $cell->status === marking::STATUS_FEEDBACK,
+            'noattemptsleft' => !empty($cell->noattemptsleft),
             'adjustmentsurl' => $cell->adjustmentsurl,
             'hasadjustments' => $cell->adjustments > 0,
             'adjustments' => $cell->adjustments,

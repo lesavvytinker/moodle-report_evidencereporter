@@ -364,7 +364,7 @@ class summary {
     private static function get_attempts(int $userid, array $competencyids, bool $viewfullnames, ?identity $identity): array {
         $links = self::get_linked_activities($userid, null, $competencyids);
         if (!$links) {
-            return [];
+            return self::add_snapshot_trails([], $userid, $competencyids, $identity);
         }
         $byactivity = attempts::get_for_user($userid, array_column($links, 'cmid'));
         $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
@@ -395,6 +395,79 @@ class summary {
                         ? data_entries::comments_html($attempt->comments, $identity) : $identity->text($attempt->feedback))),
                     'url' => $attempt->url ? $attempt->url->out(false) : '',
                 ];
+            }
+        }
+        return self::add_snapshot_trails($result, $userid, $competencyids, $identity);
+    }
+
+    /**
+     * Add the attempt trail of activities without attempts of their own (see {@see attempt_snapshots}): each Not
+     * satisfactory attempt kept, then the latest result.
+     *
+     * @param array $result competencyid => attempt rows, to add to
+     * @param int $userid
+     * @param int[] $competencyids
+     * @param identity|null $identity
+     * @return array
+     */
+    private static function add_snapshot_trails(array $result, int $userid, array $competencyids, ?identity $identity): array {
+        global $DB;
+        if (!$competencyids) {
+            return $result;
+        }
+        [$insql, $params] = $DB->get_in_or_equal(array_map('intval', $competencyids), SQL_PARAMS_NAMED, 'stc');
+        $params['userid'] = $userid;
+        $links = $DB->get_records_sql("SELECT mc.id, mc.competencyid, mc.cmid, cm.course
+                                         FROM {competency_modulecomp} mc
+                                         JOIN {course_modules} cm ON cm.id = mc.cmid
+                                        WHERE mc.competencyid {$insql}
+                                          AND EXISTS (SELECT 1 FROM {" . attempt_snapshots::TABLE . "} sn
+                                                       WHERE sn.cmid = mc.cmid AND sn.userid = :userid)", $params);
+        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
+        $trails = [];
+        foreach ($links as $link) {
+            if (!isset($trails[$link->cmid])) {
+                try {
+                    $cm = get_fast_modinfo((int) $link->course)->get_cm((int) $link->cmid);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+                $context = \context_module::instance($cm->id);
+                $rows = [];
+                foreach (attempt_snapshots::get_trail($cm, $userid) as $attempt) {
+                    $assessor = $attempt->assessorid ? \core_user::get_user($attempt->assessorid) : null;
+                    $name = $assessor ? fullname($assessor) : '';
+                    $feedback = implode('', array_map(
+                        fn($p) => attempt_snapshots::piece_html($p, $context),
+                        $attempt->feedback
+                    ));
+                    $plain = implode("\n", array_map(fn($p) => get_string(
+                        'snapsource_' . $p['source'],
+                        'report_evidencereporter'
+                    ) . ($p['label'] !== '' ? ' (' . $p['label'] . ')' : '') . ': '
+                        . trim(html_to_text($p['text'], 0, false)), $attempt->feedback));
+                    $rows[] = (object) [
+                        'activity' => $cm->get_formatted_name(),
+                        'label' => get_string(
+                            $attempt->live ? 'snapattemptlatest' : 'snapattempt',
+                            'report_evidencereporter',
+                            $attempt->attemptno
+                        ),
+                        'attemptno' => $attempt->attemptno,
+                        'submitted' => '',
+                        'graded' => userdate($attempt->time, $datefmt),
+                        'grade' => activity_grade::format_value($attempt->gradeitemid, $attempt->grade),
+                        'marker' => $identity ? $identity->staff($name) : $name,
+                        'feedback' => $identity ? $identity->text($feedback) : $feedback,
+                        'feedbackplain' => $identity ? $identity->text($plain) : $plain,
+                        'url' => $cm->url ? $cm->url->out(false) : '',
+                        'snapshot' => true,
+                    ];
+                }
+                $trails[$link->cmid] = $rows;
+            }
+            foreach ($trails[$link->cmid] as $row) {
+                $result[$link->competencyid][] = $row;
             }
         }
         return $result;

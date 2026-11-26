@@ -32,5 +32,98 @@ class observer {
     public static function course_module_deleted(\core\event\course_module_deleted $event): void {
         local\tool_details::delete((int) $event->objectid);
         local\reasonable_adjustments::delete_for_activity((int) $event->objectid);
+        local\attempt_snapshots::delete_for_activity((int) $event->objectid);
+    }
+
+    /**
+     * A grade was saved: snapshot a Not satisfactory result in an activity without attempts of its own.
+     *
+     * @param \core\event\user_graded $event
+     */
+    public static function user_graded(\core\event\user_graded $event): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/gradelib.php');
+        try {
+            $itemid = (int) ($event->other['itemid'] ?? 0);
+            $item = \grade_item::fetch(['id' => $itemid]);
+            if (!$item || $item->itemtype !== 'mod' || !local\attempt_snapshots::tracks((string) $item->itemmodule)) {
+                return;
+            }
+            $cm = get_coursemodule_from_instance($item->itemmodule, $item->iteminstance, $item->courseid);
+            if (!$cm) {
+                return;
+            }
+            $cminfo = get_fast_modinfo($cm->course)->get_cm($cm->id);
+            $main = local\attempt_snapshots::get_grade_item($cminfo);
+            if (!$main || (int) $main->id !== (int) $item->id) {
+                return;
+            }
+            $grade = $DB->get_record('grade_grades', ['itemid' => $item->id, 'userid' => $event->relateduserid]);
+            local\attempt_snapshots::graded(
+                $cminfo,
+                (int) $event->relateduserid,
+                $item,
+                $grade && $grade->finalgrade !== null ? (float) $grade->finalgrade : null,
+                (int) ($grade->usermodified ?? $event->userid),
+                (int) $event->timecreated
+            );
+        } catch (\Throwable $e) {
+            // Never stop a grade being saved.
+            debugging('Evidence Reporter attempt snapshot: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * A forum post: an assessor's reply to a learner is feedback for the learner's open attempt.
+     *
+     * @param \core\event\base $event post_created or post_updated
+     */
+    public static function forum_post(\core\event\base $event): void {
+        global $DB;
+        try {
+            $post = $DB->get_record('forum_posts', ['id' => $event->objectid], 'id, parent, userid');
+            if (!$post || !$post->parent) {
+                return;
+            }
+            $learner = (int) $DB->get_field('forum_posts', 'userid', ['id' => $post->parent]);
+            if ($learner && $learner !== (int) $post->userid) {
+                local\attempt_snapshots::feedback_given((int) $event->contextinstanceid, $learner);
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter attempt snapshot: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * A comment on a database entry: feedback for the entry's author's open attempt.
+     *
+     * @param \core\event\base $event
+     */
+    public static function data_comment(\core\event\base $event): void {
+        global $DB;
+        try {
+            $recordid = (int) ($event->other['itemid'] ?? 0);
+            $learner = (int) $DB->get_field('data_records', 'userid', ['id' => $recordid]);
+            if ($learner && $learner !== (int) $event->userid) {
+                local\attempt_snapshots::feedback_given((int) $event->contextinstanceid, $learner);
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter attempt snapshot: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * A teacher updated a learner's checklist (ticks and comments): feedback for the learner's open attempt.
+     *
+     * @param \core\event\base $event
+     */
+    public static function checklist_checks(\core\event\base $event): void {
+        try {
+            if ($event->relateduserid) {
+                local\attempt_snapshots::feedback_given((int) $event->contextinstanceid, (int) $event->relateduserid);
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter attempt snapshot: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
 }

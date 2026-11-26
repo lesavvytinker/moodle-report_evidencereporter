@@ -229,3 +229,16 @@
 .report-evidencereporter-marking .er-markingoverview thead th::first-letter {
     text-transform: uppercase;
 }
+
+.report-evidencereporter-marking .er-noattempts {
+    background-color: #a1281f;
+    color: #fff;
+}
+
+.er-snappiece {
+    margin-bottom: .25rem;
+}
+
+.er-snappiece > .small {
+    display: block;
+}

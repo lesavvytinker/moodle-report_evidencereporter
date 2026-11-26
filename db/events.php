@@ -29,4 +29,25 @@ $observers = [
         'eventname' => '\core\event\course_module_deleted',
         'callback' => '\report_evidencereporter\observer::course_module_deleted',
     ],
+    // Attempt snapshots: a result saved, and feedback given outside the gradebook.
+    [
+        'eventname' => '\core\event\user_graded',
+        'callback' => '\report_evidencereporter\observer::user_graded',
+    ],
+    [
+        'eventname' => '\mod_forum\event\post_created',
+        'callback' => '\report_evidencereporter\observer::forum_post',
+    ],
+    [
+        'eventname' => '\mod_forum\event\post_updated',
+        'callback' => '\report_evidencereporter\observer::forum_post',
+    ],
+    [
+        'eventname' => '\mod_data\event\comment_created',
+        'callback' => '\report_evidencereporter\observer::data_comment',
+    ],
+    [
+        'eventname' => '\mod_checklist\event\teacher_checks_updated',
+        'callback' => '\report_evidencereporter\observer::checklist_checks',
+    ],
 ];

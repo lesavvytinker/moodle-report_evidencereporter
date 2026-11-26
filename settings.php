@@ -177,6 +177,13 @@ if ($hassiteconfig && $settings) {
         PARAM_INT
     ));
     $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/snapattempts',
+        get_string('settings_snapattempts', 'report_evidencereporter'),
+        get_string('settings_snapattempts_desc', 'report_evidencereporter'),
+        3,
+        PARAM_INT
+    ));
+    $settings->add(new admin_setting_configtext(
         'report_evidencereporter/markingred',
         get_string('settings_markingred', 'report_evidencereporter'),
         get_string('settings_markingred_desc', 'report_evidencereporter'),

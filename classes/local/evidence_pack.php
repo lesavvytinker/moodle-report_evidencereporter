@@ -519,6 +519,10 @@ class evidence_pack {
                     $html .= '<tr><td width="30%">' . s($item->activity) . '</td><td width="10%">' . s($item->label)
                         . '</td><td width="20%">' . s($item->graded) . '</td><td width="20%">' . s($item->grade)
                         . '</td><td width="20%">' . s($item->marker) . '</td></tr>';
+                    if (!empty($item->snapshot) && $item->feedbackplain !== '') {
+                        // Activities without attempts of their own: the feedback each attempt got.
+                        $html .= '<tr><td width="100%"><small>' . nl2br(s($item->feedbackplain)) . '</small></td></tr>';
+                    }
                 }
                 $html .= '</table><p><small>' . s(get_string('packseeassessments', 'report_evidencereporter')) . '</small></p>';
             }

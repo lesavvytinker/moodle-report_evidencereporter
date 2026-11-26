@@ -23,6 +23,7 @@ use core_privacy\local\request\plugin\provider as plugin_provider;
 use core_privacy\local\request\{approved_contextlist, approved_userlist, contextlist, userlist, writer};
 use report_evidencereporter\local\bulk;
 use report_evidencereporter\local\reasonable_adjustments;
+use report_evidencereporter\local\attempt_snapshots;
 use report_evidencereporter\local\sampling;
 
 /**
@@ -71,6 +72,13 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'usermodified' => 'privacy:metadata:radj:usermodified',
             'timemodified' => 'privacy:metadata:radj:timemodified',
         ], 'privacy:metadata:radj');
+        $collection->add_database_table(attempt_snapshots::TABLE, [
+            'userid' => 'privacy:metadata:snap:userid',
+            'grade' => 'privacy:metadata:snap:grade',
+            'assessorid' => 'privacy:metadata:snap:assessorid',
+            'feedback' => 'privacy:metadata:snap:feedback',
+            'timemarked' => 'privacy:metadata:snap:timemarked',
+        ], 'privacy:metadata:snap');
         return $collection;
     }
 
@@ -97,6 +105,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
                   JOIN {" . reasonable_adjustments::TABLE . "} ra ON ra.cmid = ctx.instanceid
                  WHERE ctx.contextlevel = :modlevel AND (ra.userid = :u1 OR ra.usermodified = :u2)";
         $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid]);
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {" . attempt_snapshots::TABLE . "} sn ON sn.cmid = ctx.instanceid
+                 WHERE ctx.contextlevel = :modlevel AND (sn.userid = :u1 OR sn.assessorid = :u2)";
+        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid]);
         return $contextlist;
     }
 
@@ -122,6 +135,13 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
                     ['cmid' => $context->instanceid]
                 );
             }
+            foreach (['userid', 'assessorid'] as $field) {
+                $userlist->add_from_sql(
+                    $field,
+                    "SELECT $field FROM {" . attempt_snapshots::TABLE . "} WHERE cmid = :cmid AND $field > 0",
+                    ['cmid' => $context->instanceid]
+                );
+            }
             return;
         }
         if ($context->contextlevel != CONTEXT_USER) {
@@ -144,6 +164,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             }
             if ($context->contextlevel == CONTEXT_MODULE) {
                 self::export_adjustments($context, (int) $contextlist->get_user()->id);
+                self::export_snapshots($context, (int) $contextlist->get_user()->id);
             }
             if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $contextlist->get_user()->id) {
                 foreach (bulk::get_files((int) $context->instanceid) as $file) {
@@ -166,6 +187,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         }
         if ($context->contextlevel == CONTEXT_MODULE) {
             $DB->delete_records(reasonable_adjustments::TABLE, ['cmid' => $context->instanceid]);
+            $DB->delete_records(attempt_snapshots::TABLE, ['cmid' => $context->instanceid]);
         }
         if ($context->contextlevel == CONTEXT_USER) {
             get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
@@ -327,5 +349,38 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $params['cmid'] = $cmid;
         $DB->delete_records_select(reasonable_adjustments::TABLE, "cmid = :cmid AND userid $in", $params);
         $DB->set_field_select(reasonable_adjustments::TABLE, 'usermodified', 0, "cmid = :cmid AND usermodified $in", $params);
+        $DB->delete_records_select(attempt_snapshots::TABLE, "cmid = :cmid AND userid $in", $params);
+        $DB->set_field_select(attempt_snapshots::TABLE, 'assessorid', 0, "cmid = :cmid AND assessorid $in", $params);
+    }
+
+    /**
+     * Export attempt snapshots in an activity: the user's own attempts, and those they marked.
+     *
+     * @param \context $context Module context
+     * @param int $userid
+     */
+    protected static function export_snapshots(\context $context, int $userid): void {
+        global $DB;
+        $item = fn($r) => [
+            'attempt' => (int) $r->attemptno,
+            'grade' => $r->grade,
+            'feedback' => array_map(fn($p) => $p['text'], json_decode((string) $r->feedback, true) ?: []),
+            'timemarked' => \core_privacy\local\request\transform::datetime($r->timemarked),
+        ];
+        $data = [
+            'yourattempts' => array_values(array_map($item, $DB->get_records(
+                attempt_snapshots::TABLE,
+                ['cmid' => $context->instanceid, 'userid' => $userid],
+                'attemptno'
+            ))),
+            'attemptsyoumarked' => array_values(array_map($item, $DB->get_records(
+                attempt_snapshots::TABLE,
+                ['cmid' => $context->instanceid, 'assessorid' => $userid],
+                'attemptno'
+            ))),
+        ];
+        if (array_filter($data)) {
+            writer::with_context($context)->export_data([get_string('snapattempts', 'report_evidencereporter')], (object) $data);
+        }
     }
 }

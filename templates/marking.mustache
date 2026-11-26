@@ -27,7 +27,7 @@
         "assessments": [{"name": "AT1 Quiz", "url": "https://example.com/mod/quiz/view.php?id=1", "icon": "https://example.com/icon.svg"}],
         "rows": [{"name": "Paige Palette", "profileurl": "https://example.com/user/view.php?id=3", "highlight": "amber",
             "cells": [{"status": "tomark", "age": "amber", "label": "To mark: 8 days", "grade": "", "attempt": "Attempt 1 of 3",
-                "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false,
+                "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false, "noattemptsleft": false,
                 "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "hasadjustments": true,
                 "adjustments": 1, "hastoconfirm": false, "toconfirm": 0}],
             "unit": null, "hasready": false, "readycount": 0,
@@ -95,6 +95,7 @@
                     <a href="{{url}}" class="er-celllink">{{#flag}}<span class="er-flag" aria-hidden="true">&#9873;</span> {{/flag}}{{label}}</a>
                     {{#grade}}<div class="small">{{.}}</div>{{/grade}}
                     {{#attempt}}<div class="small text-muted">{{.}}</div>{{/attempt}}
+                    {{#noattemptsleft}}<div><span class="badge er-noattempts">{{#str}} snapnoattemptsleft, report_evidencereporter {{/str}}</span></div>{{/noattemptsleft}}
                     {{#adjustmentsurl}}
                     <div class="small">
                         <a href="{{.}}" class="er-ra">{{#hasadjustments}}{{#str}} markingra, report_evidencereporter, {{adjustments}} {{/str}}{{/hasadjustments}}{{^hasadjustments}}{{#str}} markingrana, report_evidencereporter {{/str}}{{/hasadjustments}}</a>

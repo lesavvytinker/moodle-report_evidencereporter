@@ -91,5 +91,31 @@
         <INDEX NAME="cmid_userid" UNIQUE="false" FIELDS="cmid, userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="report_evidencereporter_snap" COMMENT="Snapshots of Not satisfactory attempts in activities without attempts of their own.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The activity"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The learner"/>
+        <FIELD NAME="attemptno" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false" COMMENT="1 for the first attempt"/>
+        <FIELD NAME="gradeitemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The grade item marked"/>
+        <FIELD NAME="grade" TYPE="number" LENGTH="10" NOTNULL="false" SEQUENCE="false" DECIMALS="5" COMMENT="The final grade at the time"/>
+        <FIELD NAME="assessorid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who marked it"/>
+        <FIELD NAME="gradefeedback" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Gradebook feedback for the attempt"/>
+        <FIELD NAME="feedback" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="All the attempt's feedback, as JSON pieces"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="live" SEQUENCE="false" COMMENT="live, or history (filled in from the gradebook history)"/>
+        <FIELD NAME="timemarked" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timefrozen" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="When the attempt closed; 0 while open"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="cmid" TYPE="foreign" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="gradeitemid" TYPE="foreign" FIELDS="gradeitemid" REFTABLE="grade_items" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cmid_userid_attempt" UNIQUE="true" FIELDS="cmid, userid, attemptno"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>
