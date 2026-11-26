@@ -149,8 +149,8 @@ final class judgement_snapshot_test extends \advanced_testcase {
         // The evidence pack's summary PDF says so too.
         $pack = new evidence_pack((int) $d->learner->id, (int) $d->framework->get('id'));
         $html = $this->call_summary_html($pack, (int) $d->learner->id, (int) $d->framework->get('id'));
-        $this->assertStringContainsString(s(get_string('judgedagainst', 'report_evidencereporter',
-            'CSCSAS001 Maintain security')), $html);
+        $expected = s(get_string('judgedagainst', 'report_evidencereporter', 'CSCSAS001 Maintain security'));
+        $this->assertStringContainsString($expected, $html);
         $this->assertStringContainsString('TAE40122', $html);
     }
 
