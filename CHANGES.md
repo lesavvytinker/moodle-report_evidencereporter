@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.0 (2026-12-06)
+- **Marking page** for assessors (course Reports > Marking, and All my courses): learners by assessment for a unit or
+  all units, most urgent first, with each cell's status (to mark with days waiting, feedback needed, not satisfactory,
+  not released, satisfactory), grade and attempt, a link to mark it, and its reasonable adjustments. Amber after 7 days,
+  red after 14 (new settings). Units ready to sign off are flagged, with links to the rating page, evidence summary and
+  learning plan.
+- New capability `report/evidencereporter:marking`.
+
 ## 0.25.3 (2026-12-05)
 - New setting **Record reasonable adjustments for**: the terminology profiles whose frameworks record reasonable
   adjustments (Australian VET and UK apprenticeships by default). An activity follows the frameworks it's linked to, so

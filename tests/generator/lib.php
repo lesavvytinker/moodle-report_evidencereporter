@@ -63,6 +63,18 @@ class report_evidencereporter_generator extends component_generator_base {
     }
 
     /**
+     * Link an activity to a competency.
+     *
+     * @param array|stdClass $record cmid, competencyid
+     * @return \core_competency\course_module_competency
+     */
+    public function create_activity_competency($record): \core_competency\course_module_competency {
+        $record = (object) $record;
+        return $this->datagenerator->get_plugin_generator('core_competency')->create_course_module_competency([
+            'cmid' => $record->cmid, 'competencyid' => $record->competencyid]);
+    }
+
+    /**
      * A learner's rating in a competency in a course, as an assessor would give it on the course competencies page:
      * the course rating, plus the evidence recording who rated it.
      *

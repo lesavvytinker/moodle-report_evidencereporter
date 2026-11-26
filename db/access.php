@@ -66,4 +66,15 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // See the marking page for a course: what needs marking, per learner and assessment.
+    'report/evidencereporter:marking' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 ];

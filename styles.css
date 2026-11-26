@@ -149,3 +149,83 @@
 .report-evidencereporter-summary .er-adjustment p {
     margin-bottom: 0;
 }
+
+/* Marking page. */
+.report-evidencereporter-marking .er-marking th,
+.report-evidencereporter-marking .er-marking td {
+    min-width: 9rem;
+    vertical-align: top;
+}
+
+.report-evidencereporter-marking .er-marking thead th img.icon {
+    margin-right: .25rem;
+}
+
+.report-evidencereporter-marking .er-markingcounts .er-count {
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.report-evidencereporter-marking .er-celllink {
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.report-evidencereporter-marking .er-status-satisfactory {
+    background-color: #e5f4e4;
+}
+
+.report-evidencereporter-marking .er-status-tomark {
+    background-color: #e7f1fb;
+}
+
+.report-evidencereporter-marking .er-status-tomark.er-age-amber,
+.report-evidencereporter-marking tr.er-row-amber > th {
+    background-color: #fdf0d5;
+}
+
+.report-evidencereporter-marking .er-status-tomark.er-age-red,
+.report-evidencereporter-marking .er-status-feedback,
+.report-evidencereporter-marking tr.er-row-red > th {
+    background-color: #fbe3e3;
+}
+
+.report-evidencereporter-marking .er-status-notsatisfactory {
+    background-color: #f9ece7;
+}
+
+.report-evidencereporter-marking .er-status-notreleased {
+    background-color: #efedff;
+}
+
+.report-evidencereporter-marking .er-status-notsubmitted,
+.report-evidencereporter-marking .er-status-notmarked {
+    color: #6a737b;
+}
+
+.report-evidencereporter-marking .er-flag,
+.report-evidencereporter-marking .er-age-red-text {
+    color: #a1281f;
+}
+
+.report-evidencereporter-marking .er-age-amber-text {
+    color: #8a5a00;
+}
+
+.report-evidencereporter-marking .er-ratoconfirm {
+    color: #8a5a00;
+}
+
+.report-evidencereporter-marking .er-ready {
+    background-color: #1d6f42;
+    color: #fff;
+}
+
+.report-evidencereporter-marking tr.er-row-red > td,
+.report-evidencereporter-marking tr.er-row-amber > td {
+    border-color: #dee2e6;
+}
+
+.report-evidencereporter-marking .er-markingoverview thead th::first-letter {
+    text-transform: uppercase;
+}

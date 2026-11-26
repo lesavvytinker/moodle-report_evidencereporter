@@ -151,3 +151,23 @@ function report_evidencereporter_extend_navigation_module($navigation, $cm) {
         );
     }
 }
+
+/**
+ * Add "Marking" to the course's reports, for those who mark.
+ *
+ * @param navigation_node $navigation
+ * @param stdClass $course
+ * @param context $context
+ */
+function report_evidencereporter_extend_navigation_course($navigation, $course, $context) {
+    if (has_capability('report/evidencereporter:marking', $context)) {
+        $navigation->add(
+            get_string('marking', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/marking.php', ['courseid' => $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereportermarking',
+            new pix_icon('i/grades', '')
+        );
+    }
+}

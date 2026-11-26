@@ -163,6 +163,27 @@ if ($hassiteconfig && $settings) {
         60
     ));
 
+    // The assessor's marking page.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/markingheading',
+        get_string('settings_marking', 'report_evidencereporter'),
+        get_string('settings_marking_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/markingamber',
+        get_string('settings_markingamber', 'report_evidencereporter'),
+        get_string('settings_markingamber_desc', 'report_evidencereporter'),
+        7,
+        PARAM_INT
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/markingred',
+        get_string('settings_markingred', 'report_evidencereporter'),
+        get_string('settings_markingred_desc', 'report_evidencereporter'),
+        14,
+        PARAM_INT
+    ));
+
     // Reasonable adjustments made for learners (not the gradebook adjustments above).
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/radjheading',

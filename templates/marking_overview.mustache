@@ -1,0 +1,66 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template report_evidencereporter/marking_overview
+
+    One line per course the assessor marks in.
+
+    Example context (json):
+    {
+        "hascourses": true,
+        "courses": [{"name": "Professional practice", "url": "https://example.com/report/evidencereporter/marking.php?courseid=2",
+            "tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "nothing": false}],
+        "total": {"tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "nothing": false},
+        "thresholds": {"amber": 7, "red": 14}
+    }
+}}
+<div class="report-evidencereporter-marking">
+    <p>{{#str}} markingoverviewintro, report_evidencereporter {{/str}}</p>
+    {{^hascourses}}
+    <div class="alert alert-info">{{#str}} markingnocourses, report_evidencereporter {{/str}}</div>
+    {{/hascourses}}
+    {{#hascourses}}
+    <table class="table table-sm er-markingoverview">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}} course {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_tomark, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_amber, report_evidencereporter, {{thresholds.amber}} {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_red, report_evidencereporter, {{thresholds.red}} {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_feedback, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_notreleased, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_toconfirm, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_ready, report_evidencereporter {{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#courses}}
+            <tr class="{{#red}}er-row-red{{/red}}{{^red}}{{#amber}}er-row-amber{{/amber}}{{/red}}">
+                <th scope="row"><a href="{{url}}">{{name}}</a>{{#nothing}} <span class="small text-muted">· {{#str}} markingcaughtup, report_evidencereporter {{/str}}</span>{{/nothing}}</th>
+                <td class="text-end">{{tomark}}</td>
+                <td class="text-end">{{amber}}</td>
+                <td class="text-end">{{red}}</td>
+                <td class="text-end">{{feedback}}</td>
+                <td class="text-end">{{notreleased}}</td>
+                <td class="text-end">{{toconfirm}}</td>
+                <td class="text-end">{{ready}}</td>
+            </tr>
+            {{/courses}}
+        </tbody>
+    </table>
+    {{/hascourses}}
+</div>

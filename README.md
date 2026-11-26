@@ -152,6 +152,29 @@ Activities Evidence Reporter reads get an **Assessment tool details** section in
 
 With **Include blank assessor guides in evidence packs** on (the default), each quiz's folder in the pack gets its blank guide: the tool the learner was assessed with.
 
+## Marking page
+
+A bookmarkable page for assessors: what needs marking, what's missing feedback and which reasonable adjustments need
+confirming, per learner and assessment. Open it from the course's **Reports > Marking**, or go to
+`/report/evidencereporter/marking.php` for **All my courses** (one line per course you mark in).
+
+- **Pick the unit** (or all units the course delivers): its assessments are the columns, learners the rows. Assessors
+  don't need to know the mapping: an assessment belongs to a unit when it's linked to anything in it.
+- **Each cell** shows the status and links to where you mark it (the assignment grader, the quiz's manual grading, or
+  the gradebook): Not submitted, In progress, To mark (with days waiting), Feedback needed (Not satisfactory with no
+  feedback, flagged), Not satisfactory: awaiting resubmission, Marked, not released (marking workflow), Satisfactory,
+  with the grade and attempt (e.g. "Attempt 1 of 3"). Satisfactory and Not satisfactory follow the grade item's grade to
+  pass.
+- **Colours:** blue waiting to be marked; amber after 7 days, red after 14 (site settings *Amber after* and *Red after*).
+  Rows with the most urgent marking come first.
+- **Reasonable adjustments:** each cell shows "RA: N/A" or how many are recorded, and any Moodle overrides or extensions
+  still to confirm, linking to the assessment's Reasonable adjustments page (where the activity records them).
+- **Sign-off:** a unit is **Ready to sign off** when all its assessments are Satisfactory and the unit isn't rated in the
+  course yet; it links to the learner's rating page. Each row also links to the learner's evidence summary and, where
+  you may see it, their learning plan.
+- **Who:** `report/evidencereporter:marking` (teachers and managers by default), limited to their groups when the course
+  uses separate groups.
+
 ## Reasonable adjustments
 
 Record each reasonable adjustment made for a learner in an assessment: what was adjusted (extra time, a reader, a scribe,
