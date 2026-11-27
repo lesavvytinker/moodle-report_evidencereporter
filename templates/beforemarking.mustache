@@ -40,7 +40,7 @@
             {{#tool.complete}}<p class="mb-0">{{#str}} beforetooldone, report_evidencereporter {{/str}}</p>{{/tool.complete}}
             {{^tool.complete}}
             <p>{{#str}} beforetoolmissing, report_evidencereporter, {{tool.missing}} {{/str}}</p>
-            {{#tool.canedit}}<a class="btn btn-primary" href="{{tool.editurl}}">{{#str}} beforetooledit, report_evidencereporter {{/str}}</a>{{/tool.canedit}}
+            {{#tool.canedit}}<a class="btn btn-primary" href="{{tool.editurl}}" target="_blank" rel="noopener">{{#str}} beforetooledit, report_evidencereporter {{/str}}</a>{{/tool.canedit}}
             {{^tool.canedit}}
             {{#tool.notified}}<p class="text-muted mb-2">{{.}}</p>{{/tool.notified}}
             <a class="btn {{#tool.notified}}btn-outline-secondary{{/tool.notified}}{{^tool.notified}}btn-primary{{/tool.notified}}" href="{{tool.notifyurl}}">{{#str}} beforetoolnotify, report_evidencereporter {{/str}}</a>
@@ -64,11 +64,11 @@
             <h3 class="h5"><span class="er-stepnum">{{#declapplies}}3{{/declapplies}}{{^declapplies}}2{{/declapplies}}</span> {{#str}} beforestepmark, report_evidencereporter {{/str}}</h3>
             {{#ready}}
             <p>{{#str}} beforeready, report_evidencereporter {{/str}}</p>
-            <a class="btn btn-primary" href="{{starturl}}">{{#str}} beforestart, report_evidencereporter {{/str}}</a>
+            <a class="btn btn-primary" href="{{starturl}}" target="_blank" rel="noopener">{{#str}} beforestart, report_evidencereporter {{/str}}</a>
             {{/ready}}
             {{^ready}}
             <div class="alert alert-warning">{{#str}} beforenotready, report_evidencereporter, {{missing}} {{/str}}</div>
-            <a class="btn btn-outline-secondary" href="{{starturl}}">{{#str}} beforestartanyway, report_evidencereporter {{/str}}</a>
+            <a class="btn btn-outline-secondary" href="{{starturl}}" target="_blank" rel="noopener">{{#str}} beforestartanyway, report_evidencereporter {{/str}}</a>
             {{/ready}}
             <a class="btn btn-link" href="{{markingurl}}">{{#str}} declbacktomarking, report_evidencereporter {{/str}}</a>
         </div>

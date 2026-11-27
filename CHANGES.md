@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.32.1 (2026-12-12)
+- Links on the marking page, the all-courses overview, the before-marking checklist and the before-marking warnings open
+  in a new tab, so markers keep their place. The *Check before marking* switch, *Let the editing teachers know* and
+  *Back to marking* stay in the same tab.
+
 ## 0.32.0 (2026-12-12)
 - **One place for RA:** the activity menu has **RA and LLN** only. A detailed reasonable adjustment already recorded for
   a learner counts as RA: Yes there, shown with its details and not asked for again; *Detailed reasonable adjustments*

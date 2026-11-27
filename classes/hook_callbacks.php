@@ -30,6 +30,9 @@ class hook_callbacks {
     private const GRADING_PAGES = ['mod-assign-grader', 'mod-assign-grading', 'mod-assign-view', 'mod-quiz-report',
         'mod-data-view', 'mod-workshop-view', 'mod-workshop-assessment', 'mod-checklist-report', 'mod-forum-view'];
 
+    /** @var array Links in the warning open in a new tab, so the marker keeps their place. */
+    private const NEWTAB = ['target' => '_blank', 'rel' => 'noopener'];
+
     /**
      * Before an activity's marking page is shown: if its assessment tool details or learners' RA and LLN are missing,
      * say so to the marker, with links to fix it (marking isn't blocked).
@@ -110,7 +113,7 @@ class hook_callbacks {
         $tool = local\before_marking::tool_status($cm);
         if (!$tool->complete) {
             $link = $tool->canedit
-                ? \html_writer::link($tool->editurl, get_string('beforetooledit', 'report_evidencereporter'))
+                ? \html_writer::link($tool->editurl, get_string('beforetooledit', 'report_evidencereporter'), self::NEWTAB)
                 : \html_writer::link(
                     new moodle_url('/report/evidencereporter/beforemarking.php', ['cmid' => $cm->id,
                     'action' => 'notify', 'sesskey' => sesskey(), 'returnurl' => $PAGE->url->out_as_local_url(false)]),
@@ -125,12 +128,13 @@ class hook_callbacks {
             $learner = \core_user::get_user($userid);
             $parts[] = s(get_string('bannerdecllearner', 'report_evidencereporter', fullname($learner))) . ' '
                 . \html_writer::link(new moodle_url('/report/evidencereporter/beforemarking.php', ['cmid' => $cm->id,
-                    'userid' => $userid]), get_string('bannerrecordnow', 'report_evidencereporter'));
+                    'userid' => $userid]), get_string('bannerrecordnow', 'report_evidencereporter'), self::NEWTAB);
         } else if (!$userid && $outstanding) {
             $parts[] = s(get_string('bannerdecl', 'report_evidencereporter', count($outstanding))) . ' '
                 . \html_writer::link(
                     new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]),
-                    get_string('bannerrecordnow', 'report_evidencereporter')
+                    get_string('bannerrecordnow', 'report_evidencereporter'),
+                    self::NEWTAB
                 );
         }
         if (!$parts) {

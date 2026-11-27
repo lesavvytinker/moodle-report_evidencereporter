@@ -54,7 +54,7 @@
         </select>
         <noscript><button type="submit" class="btn btn-secondary">{{#str}} show {{/str}}</button></noscript>
         <a class="ms-auto small me-3 er-checkbefore" href="{{checkbeforeurl}}" role="switch" aria-checked="{{#checkbefore}}true{{/checkbefore}}{{^checkbefore}}false{{/checkbefore}}">{{#checkbefore}}&#9745;{{/checkbefore}}{{^checkbefore}}&#9744;{{/checkbefore}} {{#str}} markingcheckbefore, report_evidencereporter {{/str}}</a>
-        <a class="small" href="{{overviewurl}}">{{#str}} markingallcourses, report_evidencereporter {{/str}}</a>
+        <a class="small" href="{{overviewurl}}" target="_blank" rel="noopener">{{#str}} markingallcourses, report_evidencereporter {{/str}}</a>
     </form>
 
     <ul class="er-markingcounts list-inline mb-2">
@@ -85,11 +85,11 @@
             <tr>
                 <th scope="col">{{learnerlabel}}</th>
                 {{#assessments}}
-                <th scope="col"><a href="{{url}}"><img src="{{icon}}" class="icon" alt="">{{name}}</a>
+                <th scope="col"><a href="{{url}}" target="_blank" rel="noopener"><img src="{{icon}}" class="icon" alt="">{{name}}</a>
                     {{#toolmissing}}<div class="small fw-normal"><span class="badge er-readypending">{{#str}} markingtoolmissing, report_evidencereporter {{/str}}</span></div>{{/toolmissing}}
                     {{#decl}}
                     <div class="small fw-normal">
-                        <a href="{{url}}" class="er-decllink">{{#hasoutstanding}}{{#str}} markingdecl, report_evidencereporter, {{outstanding}} {{/str}}{{/hasoutstanding}}{{^hasoutstanding}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasoutstanding}}</a>
+                        <a href="{{url}}" class="er-decllink" target="_blank" rel="noopener">{{#hasoutstanding}}{{#str}} markingdecl, report_evidencereporter, {{outstanding}} {{/str}}{{/hasoutstanding}}{{^hasoutstanding}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasoutstanding}}</a>
                         {{#held}}<span class="badge er-declheld">{{#str}} markingdeclheld, report_evidencereporter {{/str}}</span>{{/held}}
                     </div>
                     {{/decl}}
@@ -104,20 +104,20 @@
             {{#rows}}
             <tr class="{{#highlight}}er-row-{{.}}{{/highlight}}">
                 <th scope="row">
-                    <a href="{{profileurl}}">{{name}}</a>
+                    <a href="{{profileurl}}" target="_blank" rel="noopener">{{name}}</a>
                     <div class="small">
-                        <a href="{{summaryurl}}">{{#str}} markingsummary, report_evidencereporter {{/str}}</a>
+                        <a href="{{summaryurl}}" target="_blank" rel="noopener">{{#str}} markingsummary, report_evidencereporter {{/str}}</a>
                     </div>
                 </th>
                 {{#cells}}
                 <td class="er-cell er-status-{{status}}{{#age}} er-age-{{.}}{{/age}}">
-                    <a href="{{url}}" class="er-celllink">{{#checkfirst}}<span class="visually-hidden">{{#str}} markingcheckfirst, report_evidencereporter {{/str}}</span>{{/checkfirst}}{{#flag}}<span class="er-flag" aria-hidden="true">&#9873;</span> {{/flag}}{{label}}</a>
+                    <a href="{{url}}" class="er-celllink" target="_blank" rel="noopener">{{#checkfirst}}<span class="visually-hidden">{{#str}} markingcheckfirst, report_evidencereporter {{/str}}</span>{{/checkfirst}}{{#flag}}<span class="er-flag" aria-hidden="true">&#9873;</span> {{/flag}}{{label}}</a>
                     {{#grade}}<div class="small">{{.}}</div>{{/grade}}
                     {{#attempt}}<div class="small text-muted">{{.}}</div>{{/attempt}}
                     {{#noattemptsleft}}<div><span class="badge er-noattempts">{{#str}} snapnoattemptsleft, report_evidencereporter {{/str}}</span></div>{{/noattemptsleft}}
                     {{#adjustmentsurl}}
                     <div class="small">
-                        <a href="{{.}}" class="er-ra">{{#declmissing}}{{#str}} markingdeclcell, report_evidencereporter {{/str}}{{/declmissing}}{{^declmissing}}{{#hasadjustments}}{{#str}} markingra, report_evidencereporter, {{adjustments}} {{/str}}{{/hasadjustments}}{{^hasadjustments}}{{#str}} markingrana, report_evidencereporter {{/str}}{{/hasadjustments}}{{/declmissing}}</a>
+                        <a href="{{.}}" class="er-ra" target="_blank" rel="noopener">{{#declmissing}}{{#str}} markingdeclcell, report_evidencereporter {{/str}}{{/declmissing}}{{^declmissing}}{{#hasadjustments}}{{#str}} markingra, report_evidencereporter, {{adjustments}} {{/str}}{{/hasadjustments}}{{^hasadjustments}}{{#str}} markingrana, report_evidencereporter {{/str}}{{/hasadjustments}}{{/declmissing}}</a>
                         {{#hastoconfirm}}<span class="er-ratoconfirm">· {{#str}} markingratoconfirm, report_evidencereporter, {{toconfirm}} {{/str}}</span>{{/hastoconfirm}}
                     </div>
                     {{/adjustmentsurl}}
@@ -125,23 +125,23 @@
                 {{/cells}}
                 {{#hasdecl}}
                 <td class="er-declcell">
-                    <a href="{{declurl}}">{{#hasdeclmissing}}<span class="badge er-declheld">{{#str}} markingdecl, report_evidencereporter, {{declmissing}} {{/str}}</span>{{/hasdeclmissing}}{{^hasdeclmissing}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasdeclmissing}}</a>
+                    <a href="{{declurl}}" target="_blank" rel="noopener">{{#hasdeclmissing}}<span class="badge er-declheld">{{#str}} markingdecl, report_evidencereporter, {{declmissing}} {{/str}}</span>{{/hasdeclmissing}}{{^hasdeclmissing}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasdeclmissing}}</a>
                 </td>
                 {{/hasdecl}}
                 <td class="er-plancell">
-                    {{#plans}}<div><a href="{{url}}">{{name}}</a></div>{{/plans}}
+                    {{#plans}}<div><a href="{{url}}" target="_blank" rel="noopener">{{name}}</a></div>{{/plans}}
                     {{^hasplans}}<span class="text-muted">{{#str}} markingnoplan, report_evidencereporter {{/str}}</span>{{/hasplans}}
                 </td>
                 <td>
                     {{#unit}}
                     {{#rated}}<span>{{.}}</span>{{/rated}}
-                    {{#ready}}<a href="{{url}}" class="badge er-ready">{{#str}} markingready, report_evidencereporter {{/str}}</a>{{/ready}}
-                    {{#readypending}}<a href="{{declurl}}" class="badge er-readypending">{{#str}} markingreadypending, report_evidencereporter {{/str}}</a>{{/readypending}}
-                    {{^rated}}{{^ready}}{{^readypending}}<a href="{{url}}" class="small text-muted">{{#str}} markingnotrated, report_evidencereporter {{/str}}</a>{{/readypending}}{{/ready}}{{/rated}}
+                    {{#ready}}<a href="{{url}}" class="badge er-ready" target="_blank" rel="noopener">{{#str}} markingready, report_evidencereporter {{/str}}</a>{{/ready}}
+                    {{#readypending}}<a href="{{declurl}}" class="badge er-readypending" target="_blank" rel="noopener">{{#str}} markingreadypending, report_evidencereporter {{/str}}</a>{{/readypending}}
+                    {{^rated}}{{^ready}}{{^readypending}}<a href="{{url}}" class="small text-muted" target="_blank" rel="noopener">{{#str}} markingnotrated, report_evidencereporter {{/str}}</a>{{/readypending}}{{/ready}}{{/rated}}
                     {{/unit}}
                     {{^unit}}
                     {{#hasready}}<span class="badge er-ready">{{#str}} markingreadycount, report_evidencereporter, {{readycount}} {{/str}}</span>{{/hasready}}
-                    {{#hasreadypending}}<a href="{{declurl}}" class="badge er-readypending">{{#str}} markingreadypendingcount, report_evidencereporter, {{readypendingcount}} {{/str}}</a>{{/hasreadypending}}
+                    {{#hasreadypending}}<a href="{{declurl}}" class="badge er-readypending" target="_blank" rel="noopener">{{#str}} markingreadypendingcount, report_evidencereporter, {{readypendingcount}} {{/str}}</a>{{/hasreadypending}}
                     {{/unit}}
                 </td>
             </tr>
