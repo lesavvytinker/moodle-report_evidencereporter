@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.29.0 (2026-12-09)
+- **RA and LLN gaps flagged:** on the evidence summary and evidence pack, staff see an alert listing the assessments
+  still to record, and each competency is flagged *RA/LLN not recorded*, rolled up from criteria to units and
+  qualifications; *Evidence complete, RA/LLN missing* when it's rated proficient or everything under it has evidence.
+  Learners don't see these on their own summary or pack.
+- **Marking page:** *Ready to sign off* waits for RA and LLN (*Ready once RA/LLN recorded* until then). New
+  **RA/LLN** column, opening the learner's own RA and LLN page, and **Learning plan** column, linking to the learner's
+  plans that cover the units. *RA/LLN to record* counts on each course and on *All my courses* (and in the Marking
+  nudge block 0.2.0).
+- **RA and LLN for one learner:** every assessment in the course on one page, with the same tick boxes, tick-all boxes
+  and details.
+- **When recorded:** the date and time each RA and LLN record was saved, and who saved it, on the RA and LLN pages and
+  in the summary and evidence pack.
+- **Date and time formats:** new settings *Date format* (site's language, DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD,
+  27 November 2026, 27 Nov 2026, November 27, 2026) and *Time format* (site's language, 24-hour, 12-hour), used for
+  every date Evidence Reporter shows: pages, summaries, evidence packs, sample registers and its report sources.
+
 ## 0.28.0 (2026-12-08)
 - **RA and LLN before release.** A new **RA and LLN** page for each assessment: for every learner, tick whether a
   reasonable adjustment was made and whether they had language, literacy and numeracy needs or support, with details

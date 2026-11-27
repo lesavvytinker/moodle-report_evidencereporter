@@ -114,9 +114,9 @@ if (!$files) {
                 display_size($file->get_filesize()),
                 'text-muted small'
             ),
-            userdate($file->get_timecreated()),
+            \report_evidencereporter\local\dates::datetime($file->get_timecreated(), 'strftimedaydatetime'),
             s((string) $file->get_source()),
-            userdate($file->get_timecreated() + bulk::KEEP_DAYS * DAYSECS, get_string('strftimedate', 'core_langconfig')),
+            \report_evidencereporter\local\dates::date($file->get_timecreated() + bulk::KEEP_DAYS * DAYSECS),
             html_writer::link($delete, get_string('delete'), ['class' => 'btn btn-sm btn-outline-danger']),
         ];
     }

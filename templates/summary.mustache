@@ -152,6 +152,15 @@
         <div class="alert alert-info">{{#str}} restrictednotice, report_evidencereporter {{/str}}</div>
     {{/restricted}}
 
+    {{#hasdeclmissing}}
+    <div class="alert {{#hasdeclcomplete}}alert-danger{{/hasdeclcomplete}}{{^hasdeclcomplete}}alert-warning{{/hasdeclcomplete}} er-declalert er-noprint" role="status">
+        <p class="fw-bold mb-1">{{#str}} declalert, report_evidencereporter, {{declmissingcount}} {{/str}}</p>
+        {{#hasdeclcomplete}}<p class="mb-1">{{#str}} declalertcomplete, report_evidencereporter {{/str}}</p>{{/hasdeclcomplete}}
+        <ul class="mb-0">
+            {{#declmissing}}<li><a href="{{url}}">{{activity}}</a> <span class="small text-muted">{{coursename}}</span></li>{{/declmissing}}
+        </ul>
+    </div>
+    {{/hasdeclmissing}}
     <h3 class="h4 mt-4">{{#str}} summaryheading, report_evidencereporter {{/str}}</h3>
     <table class="table table-sm table-bordered er-summary">
         <thead>
@@ -167,7 +176,10 @@
             {{#rows}}
             {{#group}}<tr class="er-group"><th colspan="5" scope="rowgroup">{{.}}</th></tr>{{/group}}
             <tr class="{{^indent}}er-parent{{/indent}}">
-                <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}</td>
+                <td>{{#indent}}<span class="er-indent"></span>{{/indent}}<span class="er-idnumber">{{idnumber}}</span> {{name}}
+                    {{#declcomplete}}<br><span class="badge er-declcomplete" title="{{declmissingtext}}">{{#str}} declflagcomplete, report_evidencereporter {{/str}}</span>{{/declcomplete}}
+                    {{#declmissing}}<br><span class="badge er-declflag" title="{{declmissingtext}}">{{#str}} declflagmissing, report_evidencereporter {{/str}}</span>{{/declmissing}}
+                </td>
                 <td>{{currentrating}}{{#proficient}} <span class="badge bg-success">{{terms.proficient}}</span>{{/proficient}}</td>
                 <td>{{#judgementrating}}{{.}} &middot; {{/judgementrating}}{{judgementdate}}{{#judgementby}}<br><span class="small">{{.}}</span>{{/judgementby}}</td>
                 <td>{{#noevidence}}<span class="text-muted">{{#str}} noevidence, report_evidencereporter {{/str}}</span>{{/noevidence}}{{^noevidence}}{{evidencecount}}{{/noevidence}}</td>
@@ -221,6 +233,7 @@
             <tr>
                 <th scope="col">{{#str}} assessment, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#str}} llnline, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} rarecorded, report_evidencereporter {{/str}}</th>
             </tr>
         </thead>
         <tbody>
@@ -228,6 +241,7 @@
             <tr>
                 <td>{{activity}}</td>
                 <td{{#notrecorded}} class="text-muted"{{/notrecorded}}>{{lln}}</td>
+                <td class="small">{{recordedtext}}</td>
             </tr>
             {{/llnlines}}
         </tbody>

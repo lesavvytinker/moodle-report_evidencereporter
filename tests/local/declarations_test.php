@@ -22,6 +22,7 @@ use stdClass;
 
 #[\PHPUnit\Framework\Attributes\CoversClass(declarations::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(release_hold::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(dates::class)]
 /**
  * Tests for RA and LLN records and the release hold.
  *
@@ -31,6 +32,7 @@ use stdClass;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \report_evidencereporter\local\declarations
  * @covers     \report_evidencereporter\local\release_hold
+ * @covers     \report_evidencereporter\local\dates
  * @covers     \report_evidencereporter\observer
  */
 final class declarations_test extends \advanced_testcase {
@@ -372,5 +374,89 @@ final class declarations_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists(declarations::TABLE, ['cmid' => $d->assign->id]));
         course_delete_module((int) $d->assign->id);
         $this->assertFalse($DB->record_exists(release_hold::TABLE, ['cmid' => $d->assign->id]));
+    }
+
+    /**
+     * The summary flags assessments missing RA and LLN, rolled up to the unit; "complete" when the evidence is.
+     */
+    public function test_summary_flags(): void {
+        $d = $this->setup_data();
+        $egen = $this->getDataGenerator()->get_plugin_generator('report_evidencereporter');
+        $this->setAdminUser();
+        $byid = fn($summary) => array_column(array_map(fn($c) => (array) $c, $summary->competencies), null, 'id');
+
+        $summary = summary::build((int) $d->one->id, (int) $d->framework->get('id'));
+        $comps = $byid($summary);
+        $this->assertSame('missing', $comps[$d->pc->get('id')]['declflag']);
+        $this->assertSame('missing', $comps[$d->unit->get('id')]['declflag'], 'Rolled up to the unit');
+        $this->assertSame(['AT1 Project'], $comps[$d->unit->get('id')]['declmissing']);
+        $this->assertSame('', $comps[$d->pc2->get('id')]['declflag'], 'Nothing linked to PC2');
+        $this->assertCount(1, $summary->declmissing);
+
+        // Evidence for both criteria: the unit's evidence is complete, so the flag is the serious kind.
+        foreach ([$d->pc, $d->pc2] as $pc) {
+            $egen->create_evidence(['userid' => $d->one->id, 'competencyid' => $pc->get('id'), 'cmid' => $d->assign->id,
+                'action' => \core_competency\evidence::ACTION_COMPLETE]);
+        }
+        $comps = $byid(summary::build((int) $d->one->id, (int) $d->framework->get('id')));
+        $this->assertSame('complete', $comps[$d->unit->get('id')]['declflag']);
+        $this->assertSame('complete', $comps[$d->pc->get('id')]['declflag']);
+
+        // Recorded: no flags.
+        $this->record($d, $d->assign, [$d->one->id => [false, '', false, '']]);
+        $this->setAdminUser();
+        $summary = summary::build((int) $d->one->id, (int) $d->framework->get('id'));
+        $comps = $byid($summary);
+        $this->assertSame('', $comps[$d->unit->get('id')]['declflag']);
+        $this->assertSame([], $summary->declmissing);
+        $line = array_values(array_filter($summary->assessments, fn($a) => $a->cmid === (int) $d->assign->id))[0];
+        $this->assertTrue($line->recorded);
+        $this->assertStringContainsString('Tia Teacher', $line->recordedtext);
+    }
+
+    /**
+     * Learning plans covering the units, for the marking page.
+     */
+    public function test_relevant_plans(): void {
+        $d = $this->setup_data();
+        $this->setAdminUser();
+        $plan = $d->cgen->create_plan(['userid' => $d->one->id, 'name' => 'Cert III plan',
+            'status' => \core_competency\plan::STATUS_ACTIVE]);
+        $d->cgen->create_plan_competency(['planid' => $plan->get('id'), 'competencyid' => $d->pc->get('id')]);
+        $other = $d->cgen->create_plan(['userid' => $d->one->id, 'name' => 'Other plan',
+            'status' => \core_competency\plan::STATUS_ACTIVE]);
+        $plans = marking::get_relevant_plans((int) $d->one->id, [(int) $d->unit->get('id')]);
+        $this->assertSame(['Cert III plan'], array_column($plans, 'name'));
+        $this->assertStringContainsString('plan.php?id=' . $plan->get('id'), $plans[0]['url']);
+        $this->assertSame([], marking::get_relevant_plans((int) $d->two->id, [(int) $d->unit->get('id')]));
+        $this->assertNotEmpty($other);
+    }
+
+    /**
+     * Date and time formats from the settings; Moodle's language formats by default.
+     */
+    public function test_date_formats(): void {
+        $this->resetAfterTest();
+        $this->setTimezone('Australia/Brisbane');
+        $time = make_timestamp(2026, 11, 7, 14, 5, 0, 'Australia/Brisbane');
+        $this->assertSame(userdate($time, get_string('strftimedate', 'core_langconfig')), dates::date($time));
+        set_config('dateformat', 'dmy', 'report_evidencereporter');
+        set_config('timeformat', '24', 'report_evidencereporter');
+        $this->assertSame('07/11/2026', dates::date($time));
+        $this->assertSame('07/11/2026, 14:05', dates::datetime($time));
+        set_config('dateformat', 'mdy', 'report_evidencereporter');
+        set_config('timeformat', '12', 'report_evidencereporter');
+        $this->assertSame('11/07/2026', dates::date($time));
+        $this->assertMatchesRegularExpression('/^2:05 [Pp][Mm]$/', dates::time($time));
+        set_config('dateformat', 'ymd', 'report_evidencereporter');
+        $this->assertSame('2026-11-07', dates::date($time));
+        set_config('dateformat', 'dmonthy', 'report_evidencereporter');
+        $this->assertSame('7 November 2026', dates::date($time));
+        set_config('dateformat', 'monthdy', 'report_evidencereporter');
+        $this->assertSame('November 7, 2026', dates::date($time));
+        $this->assertSame('', dates::rb_datetime(null));
+        [$datechoices, $timechoices] = dates::get_choices();
+        $this->assertArrayHasKey('dmy', $datechoices);
+        $this->assertSame('24-hour (14:05)', $timechoices['24']);
     }
 }

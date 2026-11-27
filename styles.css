@@ -264,3 +264,17 @@
 .report-evidencereporter-marking .er-declheld-text {
     color: #b91c1c;
 }
+
+.report-evidencereporter-summary .er-declflag {
+    background-color: #b45309;
+    color: #fff;
+}
+.report-evidencereporter-summary .er-declcomplete {
+    background-color: #b91c1c;
+    color: #fff;
+}
+
+.report-evidencereporter-marking .er-readypending {
+    background-color: #b45309;
+    color: #fff;
+}

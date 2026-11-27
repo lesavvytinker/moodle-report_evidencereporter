@@ -27,6 +27,7 @@ require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
 use report_evidencereporter\local\bulk;
+use report_evidencereporter\local\dates;
 use report_evidencereporter\local\sampling;
 use report_evidencereporter\local\scope;
 use report_evidencereporter\local\terms;
@@ -81,7 +82,7 @@ if (!$id) {
             $creator = core_user::get_user($sample->createdby);
             $table->data[] = [
                 html_writer::link(new moodle_url($listurl, ['id' => $sample->id]), format_string($sample->name)),
-                userdate($sample->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
+                \report_evidencereporter\local\dates::datetime($sample->timecreated),
                 $creator ? fullname($creator) : '-',
                 (int) $sample->active,
                 (int) $sample->population,
@@ -178,7 +179,8 @@ $filters = sampling::normalise_filters(json_decode($sample->filters, true) ?: []
 $active = array_filter($items, fn($i) => !$i->removed);
 $creator = core_user::get_user($sample->createdby);
 $record = [
-    $str('sampledrawnbylabel') => ($creator ? fullname($creator) : '-') . ', ' . userdate($sample->timecreated),
+    $str('sampledrawnbylabel') => ($creator ? fullname($creator) : '-') . ', '
+        . dates::datetime((int) $sample->timecreated, 'strftimedaydatetime'),
 ];
 $record += sampling::describe_filters($filters);
 $record[$str('samplepopulationcol')] = $str('samplepopulation', ['size' => count($active),
@@ -215,7 +217,7 @@ foreach ($items as $item) {
         $remover = $item->removedby ? core_user::get_user($item->removedby) : null;
         $status = html_writer::span($str('sampleswappedout'), 'badge bg-secondary') . ' ' . html_writer::div(
             s($item->removedreason) . ' — ' . ($remover ? fullname($remover) : '') . ', '
-                . userdate($item->timeremoved, get_string('strftimedatetimeshort', 'core_langconfig')),
+                . \report_evidencereporter\local\dates::datetime($item->timeremoved),
             'small text-muted'
         );
         $actions = '';
@@ -237,7 +239,7 @@ foreach ($items as $item) {
         $assessor ? fullname($assessor) : '-',
         s($item->result),
         $item->mark === null ? '-' : format_float((float) $item->mark, 1) . '%',
-        $item->judged ? userdate($item->judged, get_string('strftimedate', 'core_langconfig')) : '-',
+        $item->judged ? \report_evidencereporter\local\dates::date($item->judged) : '-',
         s($item->groupkey),
         $status,
         $actions,

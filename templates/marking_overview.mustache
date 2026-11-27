@@ -23,8 +23,8 @@
     {
         "hascourses": true,
         "courses": [{"name": "Professional practice", "url": "https://example.com/report/evidencereporter/marking.php?courseid=2",
-            "tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "nothing": false}],
-        "total": {"tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "nothing": false},
+            "tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "torecord": 2, "hastorecord": true, "nothing": false}],
+        "total": {"tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "torecord": 2, "hastorecord": true, "nothing": false},
         "thresholds": {"amber": 7, "red": 14}
     }
 }}
@@ -43,6 +43,7 @@
                 <th scope="col" class="text-end">{{#str}} markingcount_red, report_evidencereporter, {{thresholds.red}} {{/str}}</th>
                 <th scope="col" class="text-end">{{#str}} markingcount_feedback, report_evidencereporter {{/str}}</th>
                 <th scope="col" class="text-end">{{#str}} markingcount_notreleased, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} markingcount_torecord, report_evidencereporter {{/str}}</th>
                 <th scope="col" class="text-end">{{#str}} markingcount_toconfirm, report_evidencereporter {{/str}}</th>
                 <th scope="col" class="text-end">{{#str}} markingcount_ready, report_evidencereporter {{/str}}</th>
             </tr>
@@ -56,6 +57,7 @@
                 <td class="text-end">{{red}}</td>
                 <td class="text-end">{{feedback}}</td>
                 <td class="text-end">{{notreleased}}</td>
+                <td class="text-end{{#hastorecord}} er-declheld-text fw-bold{{/hastorecord}}">{{torecord}}</td>
                 <td class="text-end">{{toconfirm}}</td>
                 <td class="text-end">{{ready}}</td>
             </tr>

@@ -220,12 +220,15 @@ class workshop extends base {
         );
         $scaled = fn($value, $max) => format_float((float) $value * (float) $max / 100, 2) . ' / '
             . format_float((float) $max, 2);
-        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
 
         // The submission.
         $title = format_string($sub->title, true, ['context' => $context]);
         $html = '<p class="mb-1"><strong>' . s($redact($title)) . '</strong><br><span class="small text-muted">'
-            . s(get_string('workshopsubmitted', 'report_evidencereporter', userdate($sub->timemodified, $datefmt)))
+            . s(get_string(
+                'workshopsubmitted',
+                'report_evidencereporter',
+                \report_evidencereporter\local\dates::datetime((int) $sub->timemodified)
+            ))
             . '</span></p>';
         $content = file_rewrite_pluginfile_urls(
             $sub->content,

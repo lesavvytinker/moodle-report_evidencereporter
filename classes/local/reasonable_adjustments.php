@@ -292,7 +292,7 @@ class reasonable_adjustments {
         foreach ($DB->get_records(self::TABLE, ['cmid' => $cm->id], '', 'id, source, sourceid') as $record) {
             $confirmed[$record->source . ':' . $record->sourceid] = true;
         }
-        $date = fn($time) => userdate((int) $time, get_string('strftimedatetimeshort', 'core_langconfig'));
+        $date = fn($time) => dates::datetime((int) $time);
         $result = [];
         $add = function (int $userid, string $source, int $sourceid, string $type, array $parts) use (&$result, $confirmed) {
             if (isset($confirmed[$source . ':' . $sourceid]) || !$parts) {
@@ -491,6 +491,10 @@ class reasonable_adjustments {
                 'lln' => $lln->text,
                 'llnrecorded' => $lln->recorded,
                 'llnyes' => $lln->yes,
+                // RA and LLN recorded by the assessor (both are, or neither): when, by whom.
+                'recorded' => $declared !== null,
+                'recordedtext' => $declared ? declarations::recorded_text($declared, $identity) : '',
+                'declurl' => (new \moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]))->out(false),
             ];
         }
         usort($result, fn($a, $b) => strcmp($a->sortkey, $b->sortkey));
@@ -532,7 +536,7 @@ class reasonable_adjustments {
                 'hasreason' => trim((string) $record->reason) !== '',
                 'approvedby' => $identity ? $identity->staff((string) $record->approvedby) : (string) $record->approvedby,
                 'recordedby' => $identity ? $identity->staff($recordername) : $recordername,
-                'recorded' => userdate((int) $record->timemodified, get_string('strftimedate', 'core_langconfig')),
+                'recorded' => dates::datetime((int) $record->timemodified),
                 'source' => $record->source === self::SOURCE_MANUAL ? ''
                     : get_string('rasource_' . $record->source, 'report_evidencereporter'),
             ];

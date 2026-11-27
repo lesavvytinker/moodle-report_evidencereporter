@@ -435,7 +435,7 @@ class sampling {
             'name' => $name !== '' ? $name : get_string(
                 'sampledefaultname',
                 'report_evidencereporter',
-                userdate($now, get_string('strftimedatetimeshort', 'core_langconfig'))
+                dates::datetime($now)
             ),
             'filters' => json_encode($filters),
             'seed' => $seed,
@@ -602,7 +602,7 @@ class sampling {
         } else {
             $rows[terms::get('units')] = $str('sampleallunits');
         }
-        $date = fn(int $time) => userdate($time, get_string('strftimedate', 'core_langconfig'));
+        $date = fn(int $time) => dates::date($time);
         if ($filters['from'] || $filters['to']) {
             $rows[$str('samplejudged')] = ($filters['from'] ? $date($filters['from']) : '…') . ' – '
                 . ($filters['to'] ? $date($filters['to']) : '…');
@@ -639,7 +639,7 @@ class sampling {
         foreach ($items as $n => $item) {
             $number[(int) $item->id] = $n + 1;
         }
-        $date = fn(int $time) => $time ? userdate($time, get_string('strftimedate', 'core_langconfig')) : '';
+        $date = fn(int $time) => $time ? dates::date($time) : '';
         $units = [];
         foreach ($items as $item) {
             $learner = \core_user::get_user($item->userid) ?: (object) ['id' => $item->userid, 'firstname' => '',
@@ -716,7 +716,7 @@ class sampling {
             $str('samplerecord') . ': ' . format_string($sample->name),
             str_repeat('=', 40),
             $str('sampledrawnby', ['by' => $creator ? $identity->staff(fullname($creator)) : '-',
-                'date' => userdate($sample->timecreated)]),
+                'date' => dates::datetime((int) $sample->timecreated, 'strftimedaydatetime')]),
             '',
         ];
         foreach (self::describe_filters($filters) as $label => $value) {
@@ -740,7 +740,7 @@ class sampling {
                     'number' => $number[(int) $item->id],
                     'reason' => (string) $item->removedreason,
                     'by' => $remover ? $identity->staff(fullname($remover)) : '-',
-                    'date' => userdate((int) $item->timeremoved),
+                    'date' => dates::datetime((int) $item->timeremoved, 'strftimedaydatetime'),
                     'replacement' => $replacement ? '#' . $number[(int) $replacement[0]->id] : $str('samplenoreplacement'),
                 ]);
             }

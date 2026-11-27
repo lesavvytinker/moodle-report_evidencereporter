@@ -203,7 +203,8 @@ class summary {
         $ordered = $scope->get_competencies();
         $competencyids = array_map(fn($comp) => (int) $comp->id, $ordered);
         if (!$competencyids) {
-            return (object) ['competencies' => [], 'assessments' => [], 'adjustments' => [], 'scope' => $scope,
+            return (object) ['competencies' => [], 'assessments' => [], 'adjustments' => [], 'declmissing' => [],
+                'scope' => $scope,
                 'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
         }
         [$compinsql, $compparams] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'sc');
@@ -290,6 +291,7 @@ class summary {
                 'idnumber' => $comp->idnumber,
                 'name' => format_string($comp->shortname, true, ['context' => \context_system::instance()]),
                 'depth' => $comp->depth,
+                'path' => (string) ($comp->path ?? ''),
                 'group' => $comp->group ?? '',
                 'frozen' => isset($frozen[$comp->id]),
                 'currentrating' => $currentrating,
@@ -311,12 +313,15 @@ class summary {
                 fn($a) => in_array((int) $comp->id, $a->competencyids)
             ));
         }
+        self::add_declaration_flags($competencies);
         return (object) [
             'competencies' => $competencies,
             // Every assessment linked to these competencies, with its reasonable adjustments ("N/A" when none), and
             // the adjustments on their own; only where the viewer may see adjustments.
             'assessments' => $assessments,
             'adjustments' => array_merge([], ...array_map(fn($a) => $a->items, $assessments)),
+            // Assessments where RA and LLN aren't recorded for the learner yet.
+            'declmissing' => array_values(array_filter($assessments, fn($a) => empty($a->recorded))),
             'scope' => $scope,
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
@@ -353,6 +358,44 @@ class summary {
     }
 
     /**
+     * Flag competencies whose assessments are missing RA and LLN for the learner, rolled up to the units and
+     * qualifications above them. A flag is "complete" (the serious kind) when the evidence is otherwise complete: the
+     * competency is rated proficient, or everything under it has evidence (a criterion: it has evidence itself).
+     *
+     * Sets on each competency: declmissing (activity names, its own and those under it), declflag ('' / 'missing' /
+     * 'complete').
+     *
+     * @param stdClass[] $competencies In framework order, with path, evidence, proficient and assessments
+     */
+    private static function add_declaration_flags(array $competencies): void {
+        $own = [];
+        foreach ($competencies as $comp) {
+            $own[$comp->id] = array_map(
+                fn($a) => $a->activity,
+                array_filter($comp->assessments ?? [], fn($a) => empty($a->recorded))
+            );
+        }
+        foreach ($competencies as $comp) {
+            $missing = $own[$comp->id];
+            $under = 0;
+            $underevidenced = 0;
+            $marker = '/' . $comp->id . '/';
+            foreach ($competencies as $other) {
+                if ($other->id !== $comp->id && str_contains($other->path, $marker)) {
+                    $missing = array_merge($missing, $own[$other->id]);
+                    $under++;
+                    $underevidenced += ($other->evidence || $other->proficient) ? 1 : 0;
+                }
+            }
+            // A unit's evidence is usually on what's under it; a criterion's is its own.
+            $allevidenced = $under ? $underevidenced === $under : (bool) $comp->evidence;
+            $comp->declmissing = array_values(array_unique($missing));
+            $complete = $comp->proficient || $allevidenced;
+            $comp->declflag = $comp->declmissing ? ($complete ? 'complete' : 'missing') : '';
+        }
+    }
+
+    /**
      * Attempts at activities linked to the competencies, grouped by competency ID.
      *
      * @param int $userid
@@ -367,7 +410,6 @@ class summary {
             return self::add_snapshot_trails([], $userid, $competencyids, $identity);
         }
         $byactivity = attempts::get_for_user($userid, array_column($links, 'cmid'));
-        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
 
         $result = [];
         foreach ($links as $link) {
@@ -387,8 +429,8 @@ class summary {
                         $attempt->attemptno
                     ),
                     'attemptno' => $attempt->attemptno,
-                    'submitted' => $attempt->submitted ? userdate($attempt->submitted, $datefmt) : '',
-                    'graded' => $attempt->graded ? userdate($attempt->graded, $datefmt) : '',
+                    'submitted' => $attempt->submitted ? dates::datetime((int) $attempt->submitted) : '',
+                    'graded' => $attempt->graded ? dates::datetime((int) $attempt->graded) : '',
                     'grade' => $attempt->grade,
                     'marker' => $identity ? attempts::marker($attempt, $identity) : $attempt->marker,
                     'feedback' => evidence_link::new_tab_html(!$identity ? $attempt->feedback : ($attempt->isentry
@@ -423,7 +465,6 @@ class summary {
                                         WHERE mc.competencyid {$insql}
                                           AND EXISTS (SELECT 1 FROM {" . attempt_snapshots::TABLE . "} sn
                                                        WHERE sn.cmid = mc.cmid AND sn.userid = :userid)", $params);
-        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
         $trails = [];
         foreach ($links as $link) {
             if (!isset($trails[$link->cmid])) {
@@ -455,7 +496,7 @@ class summary {
                         ),
                         'attemptno' => $attempt->attemptno,
                         'submitted' => '',
-                        'graded' => userdate($attempt->time, $datefmt),
+                        'graded' => dates::datetime((int) $attempt->time),
                         'grade' => activity_grade::format_value($attempt->gradeitemid, $attempt->grade),
                         'marker' => $identity ? $identity->staff($name) : $name,
                         'feedback' => $identity ? $identity->text($feedback) : $feedback,
@@ -524,7 +565,7 @@ class summary {
         }
         return (object) [
             'timecreated' => (int) $row->timecreated,
-            'date' => userdate($row->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
+            'date' => dates::datetime($row->timecreated),
             'type' => $types[$action] ?? (string) $action,
             'isjudgement' => in_array($action, [evidence::ACTION_COMPLETE, evidence::ACTION_OVERRIDE]),
             'source' => $source,

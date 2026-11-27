@@ -161,7 +161,22 @@ final class marking_test extends \advanced_testcase {
         $this->assertStringContainsString('action=grader', $cells['Eve']->url);
         $this->assertSame(marking::STATUS_NOTSUBMITTED, $grid->rows[4]->cells[$d->assign['U2']->cmid]->status);
         $eve = array_values(array_filter($grid->rows, fn($r) => $r->user->firstname === 'Eve'))[0];
+        // Satisfactory in both, but RA and LLN aren't recorded yet: ready once they are.
+        $this->assertSame([], $eve->ready);
+        $this->assertSame([$d->units['U1'], $d->units['U2']], $eve->readypending);
+        $this->assertSame(2, $eve->declmissing);
+        $this->assertSame(10, $grid->counts->torecord, 'Five learners, two assessments');
+        $this->assertSame(0, $grid->counts->ready);
+
+        $modinfo = get_fast_modinfo($d->course);
+        foreach (['U1', 'U2'] as $unit) {
+            \report_evidencereporter\local\declarations::save($modinfo->get_cm($d->assign[$unit]->cmid), [
+                $d->learners['Eve']->id => ['ra' => false, 'radetails' => '', 'lln' => false, 'llndetails' => '']]);
+        }
+        $grid = marking::build((int) $d->course->id);
+        $eve = array_values(array_filter($grid->rows, fn($r) => $r->user->firstname === 'Eve'))[0];
         $this->assertSame([$d->units['U1'], $d->units['U2']], $eve->ready);
+        $this->assertSame([], $eve->readypending);
 
         $counts = $grid->counts;
         $this->assertSame(3, $counts->tomark);
@@ -169,6 +184,7 @@ final class marking_test extends \advanced_testcase {
         $this->assertSame(1, $counts->red);
         $this->assertSame(1, $counts->feedback);
         $this->assertSame(2, $counts->ready);
+        $this->assertSame(8, $counts->torecord);
 
         // Feedback given: waiting for the learner's next attempt.
         $grade = $DB->get_record('assign_grades', ['assignment' => $u1->id, 'userid' => $d->learners['Dee']->id]);

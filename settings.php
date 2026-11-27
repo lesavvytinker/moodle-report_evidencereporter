@@ -109,6 +109,28 @@ if ($hassiteconfig && $settings) {
         60
     ));
 
+    // Dates and times.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/datesheading',
+        get_string('settings_dates', 'report_evidencereporter'),
+        get_string('settings_dates_desc', 'report_evidencereporter')
+    ));
+    [$datechoices, $timechoices] = \report_evidencereporter\local\dates::get_choices();
+    $settings->add(new admin_setting_configselect(
+        'report_evidencereporter/dateformat',
+        get_string('settings_dateformat', 'report_evidencereporter'),
+        get_string('settings_dateformat_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\dates::SITE,
+        $datechoices
+    ));
+    $settings->add(new admin_setting_configselect(
+        'report_evidencereporter/timeformat',
+        get_string('settings_timeformat', 'report_evidencereporter'),
+        get_string('settings_timeformat_desc', 'report_evidencereporter'),
+        \report_evidencereporter\local\dates::SITE,
+        $timechoices
+    ));
+
     // Summary sections and sign-off.
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/sectionsheading',

@@ -110,7 +110,7 @@ class data_entries {
             $html = $identity ? $identity->text($comment->html) : $comment->html;
             $parts[] = \html_writer::div(\html_writer::tag('strong', s($author)) . ' · '
                 . \html_writer::span(
-                    userdate($comment->time, get_string('strftimedatetimeshort', 'core_langconfig')),
+                    dates::datetime($comment->time),
                     'text-muted'
                 ) . $html, 'er-comment mb-2');
         }
@@ -126,7 +126,7 @@ class data_entries {
      */
     public static function comments_plain(array $comments, ?identity $identity = null): string {
         return implode("\n", array_map(fn($c) => ($identity ? $identity->person($c->authorid, $c->author) : $c->author)
-            . ' (' . userdate($c->time, get_string('strftimedatetimeshort', 'core_langconfig')) . '): '
+            . ' (' . dates::datetime($c->time) . '): '
             . ($identity ? $identity->text($c->plain) : $c->plain), $comments));
     }
 

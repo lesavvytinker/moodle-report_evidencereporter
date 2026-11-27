@@ -302,7 +302,7 @@ class bulk {
             str_repeat('=', 40),
             get_string('bulksource', 'report_evidencereporter') . ': ' . $sourcename,
             get_string('scopechoice', 'report_evidencereporter') . ': ' . $coveringname,
-            get_string('generated', 'report_evidencereporter') . ': ' . userdate(time()) . ' · '
+            get_string('generated', 'report_evidencereporter') . ': ' . dates::datetime(time(), 'strftimedaydatetime') . ' · '
                 . $redactidentity->staff(fullname($USER)),
             get_string('includefeedback', 'report_evidencereporter') . ': ' . get_string($includefeedback ? 'yes' : 'no'),
             get_string('bulkcounts', 'report_evidencereporter', ['included' => $included, 'total' => count($jobs)]),

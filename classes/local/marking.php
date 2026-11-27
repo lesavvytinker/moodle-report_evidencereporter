@@ -280,6 +280,7 @@ class marking {
         $raavailable = reasonable_adjustments::available($cm);
         $recorded = $raavailable ? reasonable_adjustments::get_for_activity((int) $cm->id) : [];
         $declared = $raavailable ? declarations::get_effective($cm) : [];
+        $declneeded = $raavailable ? array_flip(array_map('intval', array_keys(declarations::get_learners($cm)))) : [];
         $suggested = $raavailable && reasonable_adjustments::can_manage(context_module::instance($cm->id))
             ? reasonable_adjustments::get_suggestions($cm) : [];
         $now = time();
@@ -297,6 +298,8 @@ class marking {
                 'attempt' => $fact->attempt ?? '', 'url' => self::marking_url($cm, $userid, $fact)->out(false),
                 'adjustments' => count($recorded[$userid] ?? []) ?: (!empty($declared[$userid]->ra) ? 1 : 0),
                 'toconfirm' => count($suggested[$userid] ?? []),
+                // RA and LLN still to record for this learner here.
+                'declmissing' => isset($declneeded[$userid]) && !isset($declared[$userid]),
                 'adjustmentsurl' => $raavailable
                     ? (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false) : null];
             if ($gradevalue !== null && $item) {
@@ -557,10 +560,11 @@ class marking {
         $rows = [];
         foreach ($learners as $userid => $learner) {
             $row = (object) ['userid' => (int) $userid, 'user' => $learner, 'cells' => [], 'priority' => 0, 'maxdays' => 0,
-                'ready' => [], 'unit' => null];
+                'ready' => [], 'readypending' => [], 'declmissing' => 0, 'unit' => null];
             foreach ($assessments as $cmid => $assessment) {
                 $cell = $cells[$cmid][$userid];
                 $row->cells[$cmid] = $cell;
+                $row->declmissing += empty($cell->declmissing) ? 0 : 1;
                 $p = $cell->status === self::STATUS_TOMARK ? $agepriority[$cell->age] : ($priority[$cell->status] ?? 0);
                 $row->priority = max($row->priority, $p);
                 $row->maxdays = max($row->maxdays, (int) $cell->days);
@@ -574,14 +578,20 @@ class marking {
                 $rating = $ratings[$userid][$uid] ?? null;
                 $rated = $rating && $rating->grade !== null;
                 $allsat = $unitcells && !array_filter($unitcells, fn($c) => $c->status !== self::STATUS_SATISFACTORY);
-                if ($allsat && !$rated) {
+                $declgap = (bool) array_filter($unitcells, fn($c) => !empty($c->declmissing));
+                if ($allsat && !$rated && $declgap) {
+                    // Everything's satisfactory, but RA and LLN aren't all recorded: not ready yet.
+                    $row->readypending[] = $uid;
+                    $row->priority = max($row->priority, 15);
+                } else if ($allsat && !$rated) {
                     $row->ready[] = $uid;
                     $row->priority = max($row->priority, 15);
                 }
                 if ($unitid !== null) {
                     $row->unit = (object) [
                         'rated' => $rated ? self::rating_text($rating, (int) $uid) : '',
-                        'ready' => $allsat && !$rated,
+                        'ready' => $allsat && !$rated && !$declgap,
+                        'readypending' => $allsat && !$rated && $declgap,
                         'url' => (new moodle_url('/admin/tool/lp/user_competency_in_course.php', ['courseid' => $courseid,
                             'competencyid' => $uid, 'userid' => $userid]))->out(false),
                     ];
@@ -593,6 +603,35 @@ class marking {
             <=> [$a->priority, $a->maxdays, $b->user->lastname, $b->user->firstname]);
         return (object) ['units' => $units, 'unitid' => $unitid, 'assessments' => $assessments, 'rows' => $rows,
             'counts' => self::count_cells($rows)];
+    }
+
+    /**
+     * The learner's learning plans (active or complete, that the current user may see) covering any of these units: the
+     * unit itself or a competency under it.
+     *
+     * @param int $userid
+     * @param int[] $unitids
+     * @return array[] name, url
+     */
+    public static function get_relevant_plans(int $userid, array $unitids): array {
+        $result = [];
+        foreach (scope::get_plans($userid) as $plan) {
+            $relevant = false;
+            foreach ($plan->get_competencies() as $competency) {
+                $id = (int) $competency->get('id');
+                foreach ($unitids as $unitid) {
+                    if ($id === (int) $unitid || str_contains((string) $competency->get('path'), '/' . $unitid . '/')) {
+                        $relevant = true;
+                        break 2;
+                    }
+                }
+            }
+            if ($relevant) {
+                $result[] = ['name' => format_string($plan->get('name'), true, ['context' => $plan->get_context()]),
+                    'url' => (new moodle_url('/admin/tool/lp/plan.php', ['id' => $plan->get('id')]))->out(false)];
+            }
+        }
+        return $result;
     }
 
     /**
@@ -614,11 +653,12 @@ class marking {
      *
      * @param stdClass[] $rows
      * @return stdClass tomark, amber, red (waiting past the thresholds), feedback, notreleased, toconfirm (Moodle
-     *                  adjustments not yet recorded), ready (units ready to sign off)
+     *                  adjustments not yet recorded), ready (units ready to sign off), torecord (RA and LLN
+     *                  still to record, per learner and assessment)
      */
     public static function count_cells(array $rows): stdClass {
         $counts = (object) ['tomark' => 0, 'amber' => 0, 'red' => 0, 'feedback' => 0, 'notreleased' => 0,
-            'toconfirm' => 0, 'ready' => 0];
+            'toconfirm' => 0, 'ready' => 0, 'torecord' => 0];
         foreach ($rows as $row) {
             foreach ($row->cells as $cell) {
                 if ($cell->status === self::STATUS_TOMARK) {
@@ -634,6 +674,7 @@ class marking {
                     $counts->notreleased++;
                 }
                 $counts->toconfirm += (int) $cell->toconfirm;
+                $counts->torecord += empty($cell->declmissing) ? 0 : 1;
             }
             $counts->ready += count($row->ready);
         }

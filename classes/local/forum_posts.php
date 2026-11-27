@@ -253,7 +253,7 @@ class forum_posts {
             format_string($post->discussionname, true, ['context' => $context])
         )
             : get_string('forumdiscussionstarted', 'report_evidencereporter');
-        $meta = [s($kind), s(userdate($post->created, $datefmt))];
+        $meta = [s($kind), s(dates::datetime((int) $post->created))];
         if ($post->ratings) {
             $meta[] = s(get_string('forumpostrating', 'report_evidencereporter', self::rating_text($data->forum, $post->ratings)));
         }

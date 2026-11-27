@@ -39,8 +39,25 @@ Feature: Marking page
     And I should see "Hazard task"
     And I should see "Sam Student"
     And I should see "Not submitted"
+    And I should see "RA/LLN: 1 to record"
     And I click on "All my courses" "link"
     And I should see "Course 1"
+    And I should see "RA/LLN to record"
+    And I should not see "all caught up"
+
+  Scenario: Recording RA and LLN for a learner from the marking page
+    Given I am on the "Course 1" "course" page logged in as "teacher1"
+    And I navigate to "Reports > Marking" in current page administration
+    When I click on "RA/LLN: 1 to record" "link" in the "Sam Student" "table_row"
+    Then I should see "RA and LLN: Sam Student"
+    And I should see "Hazard task"
+    And I should see "1 assessment(s) still to record."
+    And I press "Save RA and LLN"
+    And I should see "RA and LLN saved for 1 learner(s)."
+    And I should see "RA and LLN are recorded for every assessment."
+    And I click on "Back to marking" "link"
+    And I should see "RA/LLN recorded" in the "Sam Student" "table_row"
+    And I click on "All my courses" "link"
     And I should see "all caught up"
 
   Scenario: Learners don't get the marking page

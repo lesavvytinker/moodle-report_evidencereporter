@@ -382,6 +382,26 @@ class declarations {
     }
 
     /**
+     * When and by whom a learner's RA and LLN were recorded, e.g. "Recorded 27/11/2026, 14:05 by Tia Teacher".
+     *
+     * @param stdClass $record
+     * @param identity|null $identity Redaction for staff names
+     * @return string
+     */
+    public static function recorded_text(stdClass $record, ?identity $identity = null): string {
+        $recorder = $record->usermodified ? \core_user::get_user($record->usermodified) : null;
+        $name = $recorder ? fullname($recorder) : '';
+        $text = get_string('declrecordedon', 'report_evidencereporter', (object) [
+            'date' => dates::datetime((int) $record->timemodified),
+            'by' => $identity ? $identity->staff($name) : $name,
+        ]);
+        if (!empty($record->carriedname)) {
+            $text .= ' ' . get_string('declcarriedshort', 'report_evidencereporter', $record->carriedname);
+        }
+        return $text;
+    }
+
+    /**
      * The RA answer as an adjustment line, for learners with no detailed adjustment recorded.
      *
      * @param stdClass $record
@@ -402,7 +422,7 @@ class declarations {
             'hasreason' => false,
             'approvedby' => '',
             'recordedby' => $identity ? $identity->staff($name) : $name,
-            'recorded' => userdate((int) $record->timemodified, get_string('strftimedate', 'core_langconfig')),
+            'recorded' => dates::datetime((int) $record->timemodified),
             'source' => '',
         ];
     }

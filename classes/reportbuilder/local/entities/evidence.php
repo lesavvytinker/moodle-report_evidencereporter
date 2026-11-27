@@ -252,7 +252,7 @@ class evidence extends base {
             ->set_type(column::TYPE_TIMESTAMP)
             ->add_field("{$ev}.timecreated")
             ->set_is_sortable(true)
-            ->add_callback([format::class, 'userdate']);
+            ->add_callback([\report_evidencereporter\local\dates::class, 'rb_datetime']);
 
         // Evidence type (log / completed / rating set).
         $columns[] = (new column('action', new lang_string('action', 'report_evidencereporter'), $this->get_entity_name()))
@@ -531,7 +531,7 @@ class evidence extends base {
                         }
                     }
                     if ($attempt->graded) {
-                        $parts[] = userdate($attempt->graded, get_string('strftimedatefullshort', 'core_langconfig'));
+                        $parts[] = \report_evidencereporter\local\dates::date($attempt->graded, 'strftimedatefullshort');
                     }
                     $line = implode(' · ', $parts);
                     if ($attempt->feedbackplain !== '') {

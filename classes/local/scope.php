@@ -474,7 +474,6 @@ class scope {
             ]);
         }
         $rows = [];
-        $datefmt = get_string('strftimedate', 'core_langconfig');
         foreach ($this->plans as $plan) {
             $parts = [$plan->get_statusname()];
             if ($template = $plan->get_template()) {
@@ -485,9 +484,9 @@ class scope {
                 );
             }
             if ((int) $plan->get('status') === plan::STATUS_COMPLETE) {
-                $parts[] = get_string('scopecompleted', 'report_evidencereporter', userdate($plan->get('timemodified'), $datefmt));
+                $parts[] = get_string('scopecompleted', 'report_evidencereporter', dates::date((int) $plan->get('timemodified')));
             } else if ($plan->get('duedate')) {
-                $parts[] = get_string('scopedue', 'report_evidencereporter', userdate($plan->get('duedate'), $datefmt));
+                $parts[] = get_string('scopedue', 'report_evidencereporter', dates::date((int) $plan->get('duedate')));
             }
             $rows[] = format_string($plan->get('name'), true, ['context' => $context]) . ' (' . implode(', ', $parts) . ')';
         }

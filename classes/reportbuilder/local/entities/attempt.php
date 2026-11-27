@@ -240,11 +240,11 @@ class attempt extends base {
 
         $columns[] = $this->attempt_column('timesubmitted', 'timesubmitted', column::TYPE_TIMESTAMP)
             ->set_is_sortable(true, ['timesubmitted'])
-            ->add_callback([format::class, 'userdate']);
+            ->add_callback([\report_evidencereporter\local\dates::class, 'rb_datetime']);
 
         $columns[] = $this->attempt_column('timegraded', 'timegraded', column::TYPE_TIMESTAMP)
             ->set_is_sortable(true, ['timegraded'])
-            ->add_callback([format::class, 'userdate']);
+            ->add_callback([\report_evidencereporter\local\dates::class, 'rb_datetime']);
 
         $columns[] = $this->attempt_column('grade', 'activitygrade')
             ->set_is_sortable(true, ['gradevalue'])

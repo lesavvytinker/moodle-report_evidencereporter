@@ -317,7 +317,10 @@ class evidence_pack {
                     terms::get('competency'),
                     s(implode('; ', $this->competency_names($compids)))
                 )
-                . $this->table_row(get_string('timecreated', 'report_evidencereporter'), s(userdate($ue->timecreated)))
+                . $this->table_row(
+                    get_string('timecreated', 'report_evidencereporter'),
+                    s(dates::datetime((int) $ue->timecreated, 'strftimedaydatetime'))
+                )
                 . ($ue->url ? $this->table_row('URL', s($this->identity->text($ue->url))) : '')
                 . '</table>'
                 . $this->identity->text(format_text(
@@ -364,7 +367,7 @@ class evidence_pack {
             $lines[] = $label . ': ' . $value;
         }
         $lines = array_merge($lines, [
-            get_string('generated', 'report_evidencereporter') . ': ' . userdate(time()) . ' · '
+            get_string('generated', 'report_evidencereporter') . ': ' . dates::datetime(time(), 'strftimedaydatetime') . ' · '
                 . $this->identity->staff(fullname($USER)) . ' · ' . format_string($SITE->fullname),
             get_string('includefeedback', 'report_evidencereporter') . ': '
                 . get_string($this->includefeedback ? 'yes' : 'no'),
@@ -391,7 +394,7 @@ class evidence_pack {
      * @return string HTML
      */
     public function attempt_header_html(\cm_info $cm, stdClass $attempt, array $compnames): string {
-        $date = fn(?int $time) => $time ? userdate($time) : '-';
+        $date = fn(?int $time) => $time ? dates::datetime($time, 'strftimedaydatetime') : '-';
         return '<h2>' . s($cm->get_formatted_name()) . ' - '
             . s(get_string(
                 $attempt->isentry ? 'entrysummary' : 'attemptsummary',
@@ -427,7 +430,8 @@ class evidence_pack {
             . $this->scope_rows()
             . $this->table_row(
                 get_string('generated', 'report_evidencereporter'),
-                s(userdate(time()) . ' · ' . $this->identity->staff(fullname($USER)) . ' · ' . format_string($SITE->fullname))
+                s(dates::datetime(time(), 'strftimedaydatetime') . ' · ' . $this->identity->staff(fullname($USER)) . ' · '
+                    . format_string($SITE->fullname))
             )
             . '</table>';
         if ($this->identity->is_redacted()) {
@@ -440,6 +444,8 @@ class evidence_pack {
             $html .= '<p><em>' . s(get_string('feedbackexcluded', 'report_evidencereporter')) . '</em></p>';
         }
 
+        // RA and LLN gaps are flagged for staff, not in a learner's own pack.
+        $showdeclflags = (int) $USER->id !== (int) $this->userid;
         $html .= '<h2>' . s(get_string('summaryheading', 'report_evidencereporter')) . '</h2>'
             . '<table border="1" cellpadding="4" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
             . '<td width="40%">' . s(terms::get('competency')) . '</td>'
@@ -452,10 +458,17 @@ class evidence_pack {
                 $html .= '<tr><td colspan="5" style="background-color:#f8f9fa;"><strong>' . s($comp->group) . '</strong></td></tr>';
             }
             $judgement = $comp->judgementdate ? trim(($comp->judgementrating ? $comp->judgementrating . ' · ' : '')
-                . userdate($comp->judgementdate, get_string('strftimedate', 'core_langconfig'))
+                . dates::date($comp->judgementdate)
                 . ($comp->judgementby ? ' · ' . $comp->judgementby : '')) : '';
+            $flag = '';
+            if ($showdeclflags && !empty($comp->declflag)) {
+                $flag = '<br><small style="color:#b91c1c;">' . s(get_string(
+                    $comp->declflag === 'complete' ? 'declflagcomplete' : 'declflagmissing',
+                    'report_evidencereporter'
+                ) . ': ' . implode(', ', $comp->declmissing)) . '</small>';
+            }
             $html .= '<tr><td width="40%">' . str_repeat('&nbsp;&nbsp;&nbsp;', (int) $comp->depth)
-                . '<strong>' . s($comp->idnumber) . '</strong> ' . s($comp->name) . '</td>'
+                . '<strong>' . s($comp->idnumber) . '</strong> ' . s($comp->name) . $flag . '</td>'
                 . '<td width="18%">' . s($comp->currentrating) . '</td>'
                 . '<td width="22%">' . s($judgement) . '</td>'
                 . '<td width="10%">' . (count($comp->evidence) ?: '-') . '</td>'
@@ -602,10 +615,12 @@ class evidence_pack {
         $html .= '<h2>' . s(get_string('llnbyassessment', 'report_evidencereporter')) . '</h2>'
             . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
             . '<td width="30%">' . s(get_string('assessment', 'report_evidencereporter')) . '</td>'
-            . '<td width="70%">' . s(get_string('llnline', 'report_evidencereporter')) . '</td></tr>';
+            . '<td width="45%">' . s(get_string('llnline', 'report_evidencereporter')) . '</td>'
+            . '<td width="25%">' . s(get_string('rarecorded', 'report_evidencereporter')) . '</td></tr>';
         foreach ($assessments as $assessment) {
-            $html .= '<tr><td width="30%">' . s($assessment->activity) . '</td><td width="70%">'
-                . nl2br(s($assessment->lln ?? '')) . '</td></tr>';
+            $html .= '<tr><td width="30%">' . s($assessment->activity) . '</td><td width="45%">'
+                . nl2br(s($assessment->lln ?? '')) . '</td><td width="25%"><small>' . s($assessment->recordedtext ?? '')
+                . '</small></td></tr>';
         }
         return $html . '</table>';
     }

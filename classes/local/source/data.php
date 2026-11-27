@@ -152,7 +152,7 @@ class data extends base {
                 . '<table border="1" cellpadding="4" width="100%">';
             foreach ($attempt->ratings as $rating) {
                 $record .= $pack->table_row($rating->rater, s(data_entries::rating_text($rating->scaleid, $rating->rating)
-                    . ' · ' . userdate($rating->time)));
+                    . ' · ' . \report_evidencereporter\local\dates::datetime((int) $rating->time, 'strftimedaydatetime')));
             }
             $record .= '</table>';
         }

@@ -17,17 +17,19 @@
 {{!
     @template report_evidencereporter/declarations
 
-    RA and LLN for one assessment: an explainer, then a tick box and details for each learner, with tick-all boxes.
+    RA and LLN for one assessment (a row per learner) or one learner (a row per assessment): an explainer, then a tick
+    box and details for each row, with tick-all boxes.
 
     Example context (json):
     {
         "action": "https://example.com/report/evidencereporter/declarations.php?cmid=1", "sesskey": "abc",
-        "canmanage": true, "learnerlabel": "Learner", "applies": true, "held": true, "exempt": false,
+        "canmanage": true, "learnermode": false, "rowlabel": "Learner", "applies": true, "held": true, "exempt": false,
         "learnersheld": 0, "haslearnersheld": false, "outstanding": 1, "hasoutstanding": true, "hasrows": true,
-        "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "shared": "AT1 Attempt 2",
-        "rows": [{"userid": 3, "name": "Paige Palette", "recorded": false, "recordedtext": "", "ra": true,
-            "radetails": "Extra time (20 minutes)", "raerror": "", "carried": "", "lln": false, "llndetails": "", "llnerror": "",
-            "adjustments": "Extra time (20 minutes)"}]
+        "shared": "AT1 Attempt 2", "backurl": null,
+        "rows": [{"key": 3, "name": "Paige Palette", "canedit": true, "recorded": false, "recordedtext": "", "carried": "",
+            "ra": true, "radetails": "Extra time (20 minutes)", "raerror": "", "lln": false, "llndetails": "", "llnerror": "",
+            "adjustments": "Extra time (20 minutes)",
+            "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "held": false, "url": null}]
     }
 }}
 <div class="report-evidencereporter-declarations">
@@ -48,6 +50,14 @@
         </ol>
     </div>
 
+    {{#learnermode}}
+    <div class="alert {{#hasoutstanding}}alert-danger{{/hasoutstanding}}{{^hasoutstanding}}alert-success{{/hasoutstanding}} er-declhold" role="status">
+        <p class="fw-bold mb-1">{{#str}} decllearnerwarning, report_evidencereporter {{/str}}</p>
+        {{#hasoutstanding}}<p class="mb-0">{{#str}} decllearneroutstanding, report_evidencereporter, {{outstanding}} {{/str}}</p>{{/hasoutstanding}}
+        {{^hasoutstanding}}<p class="mb-0">{{#str}} decllearnerdone, report_evidencereporter {{/str}}</p>{{/hasoutstanding}}
+    </div>
+    {{/learnermode}}
+    {{^learnermode}}
     {{#applies}}
     <div class="alert {{#held}}alert-danger{{/held}}{{^held}}{{#hasoutstanding}}alert-warning{{/hasoutstanding}}{{^hasoutstanding}}alert-success{{/hasoutstanding}}{{/held}} er-declhold" role="status">
         <p class="fw-bold mb-1">{{#str}} declholdwarning, report_evidencereporter {{/str}}</p>
@@ -63,6 +73,7 @@
     {{^applies}}
     <div class="alert alert-secondary er-declhold" role="status">{{#str}} declnotcounted, report_evidencereporter {{/str}}</div>
     {{/applies}}
+    {{/learnermode}}
 
     {{#shared}}
     <p class="small er-declshared">{{#str}} declshared, report_evidencereporter, {{.}} {{/str}}</p>
@@ -78,25 +89,26 @@
         <table class="table table-sm table-bordered er-declarations">
             <thead>
                 <tr>
-                    <th scope="col">{{learnerlabel}}</th>
+                    <th scope="col">{{rowlabel}}</th>
                     <th scope="col" class="er-declcheck">
                         <label class="d-block mb-1" for="er-all-ra">{{#str}} declrashort, report_evidencereporter {{/str}}</label>
-                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-ra" data-er-all="ra" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-ra">{{#str}} declallra, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-ra" data-er-all="ra" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-ra">{{#learnermode}}{{#str}} declallraassessment, report_evidencereporter {{/str}}{{/learnermode}}{{^learnermode}}{{#str}} declallra, report_evidencereporter {{/str}}{{/learnermode}}</label>{{/canmanage}}
                     </th>
                     <th scope="col">{{#str}} declradetails, report_evidencereporter {{/str}}</th>
                     <th scope="col" class="er-declcheck">
                         <label class="d-block mb-1" for="er-all-lln">{{#str}} decllnshort, report_evidencereporter {{/str}}</label>
-                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-lln" data-er-all="lln" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-lln">{{#str}} declalllln, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-lln" data-er-all="lln" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-lln">{{#learnermode}}{{#str}} declallllnassessment, report_evidencereporter {{/str}}{{/learnermode}}{{^learnermode}}{{#str}} declalllln, report_evidencereporter {{/str}}{{/learnermode}}</label>{{/canmanage}}
                     </th>
                     <th scope="col">{{#str}} declllndetails, report_evidencereporter {{/str}}</th>
                 </tr>
             </thead>
             <tbody>
                 {{#rows}}
-                <tr data-er-learner="{{userid}}" class="{{^recorded}}er-declpending{{/recorded}}">
+                <tr data-er-row="{{key}}" class="{{^recorded}}er-declpending{{/recorded}}">
                     <th scope="row">
-                        <input type="hidden" name="learner[]" value="{{userid}}">
-                        {{name}}
+                        <input type="hidden" name="key[]" value="{{key}}">
+                        {{#url}}<a href="{{.}}">{{name}}</a>{{/url}}{{^url}}{{name}}{{/url}}
+                        {{#held}}<span class="badge er-declnotrecorded ms-1">{{#str}} markingdeclheld, report_evidencereporter {{/str}}</span>{{/held}}
                         <div class="small">
                             {{#recorded}}<span class="text-muted">{{recordedtext}}</span>{{/recorded}}
                             {{#carried}}<div class="er-declcarried">{{#str}} declcarried, report_evidencereporter, {{.}} {{/str}}</div>{{/carried}}
@@ -104,22 +116,22 @@
                         </div>
                     </th>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="ra[{{userid}}]" value="1" id="er-ra-{{userid}}" data-er-col="ra"{{#ra}} checked{{/ra}}{{^canmanage}} disabled{{/canmanage}}>
-                        <label class="visually-hidden" for="er-ra-{{userid}}">{{#str}} declrafor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <input type="checkbox" class="form-check-input" name="ra[{{key}}]" value="1" id="er-ra-{{key}}" data-er-col="ra"{{#ra}} checked{{/ra}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-ra-{{key}}">{{#str}} declrafor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td>
-                        <label class="visually-hidden" for="er-radetails-{{userid}}">{{#str}} declradetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
-                        <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{userid}}" name="radetails[{{userid}}]" rows="2" data-er-details="ra"{{^ra}} disabled{{/ra}}{{^canmanage}} readonly{{/canmanage}}>{{radetails}}</textarea>
+                        <label class="visually-hidden" for="er-radetails-{{key}}">{{#str}} declradetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{key}}" name="radetails[{{key}}]" rows="2" data-er-details="ra"{{^ra}} disabled{{/ra}}{{^canedit}} readonly{{/canedit}}>{{radetails}}</textarea>
                         {{#raerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/raerror}}
                         {{#adjustments}}<div class="small text-muted mt-1">{{#str}} decladjustmentsrecorded, report_evidencereporter {{/str}}: <a href="{{adjustmentsurl}}">{{.}}</a></div>{{/adjustments}}
                     </td>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="lln[{{userid}}]" value="1" id="er-lln-{{userid}}" data-er-col="lln"{{#lln}} checked{{/lln}}{{^canmanage}} disabled{{/canmanage}}>
-                        <label class="visually-hidden" for="er-lln-{{userid}}">{{#str}} declllnfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <input type="checkbox" class="form-check-input" name="lln[{{key}}]" value="1" id="er-lln-{{key}}" data-er-col="lln"{{#lln}} checked{{/lln}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-lln-{{key}}">{{#str}} declllnfor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td>
-                        <label class="visually-hidden" for="er-llndetails-{{userid}}">{{#str}} declllndetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
-                        <textarea class="form-control form-control-sm{{#llnerror}} is-invalid{{/llnerror}}" id="er-llndetails-{{userid}}" name="llndetails[{{userid}}]" rows="2" data-er-details="lln"{{^lln}} disabled{{/lln}}{{^canmanage}} readonly{{/canmanage}}>{{llndetails}}</textarea>
+                        <label class="visually-hidden" for="er-llndetails-{{key}}">{{#str}} declllndetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <textarea class="form-control form-control-sm{{#llnerror}} is-invalid{{/llnerror}}" id="er-llndetails-{{key}}" name="llndetails[{{key}}]" rows="2" data-er-details="lln"{{^lln}} disabled{{/lln}}{{^canedit}} readonly{{/canedit}}>{{llndetails}}</textarea>
                         {{#llnerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/llnerror}}
                     </td>
                 </tr>
@@ -131,6 +143,7 @@
         <button type="submit" class="btn btn-primary">{{#str}} declsave, report_evidencereporter {{/str}}</button>
         <span class="small text-muted ms-2">{{#str}} declsavenote, report_evidencereporter {{/str}}</span>
         {{/canmanage}}
+        {{#backurl}}<a class="btn btn-link" href="{{.}}">{{#str}} declbacktomarking, report_evidencereporter {{/str}}</a>{{/backurl}}
     </form>
     {{/hasrows}}
 </div>

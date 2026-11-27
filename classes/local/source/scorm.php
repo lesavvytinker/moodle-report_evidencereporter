@@ -118,7 +118,9 @@ class scorm extends base {
                     . ($showmarks ? '<td>' . s($track && $track->score_raw !== '' ? (string) $track->score_raw : '-') . '</td>'
                         : '')
                     . '<td>' . s($track ? (string) $track->total_time : '-') . '</td><td>'
-                    . s($track && $track->timemodified ? userdate($track->timemodified) : '-') . '</td></tr>';
+                    . s($track && $track->timemodified
+                        ? \report_evidencereporter\local\dates::datetime((int) $track->timemodified, 'strftimedaydatetime') : '-')
+                    . '</td></tr>';
             }
             $record .= '</table>';
         }

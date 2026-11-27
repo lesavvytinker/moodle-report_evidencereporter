@@ -77,13 +77,13 @@ if (groups_get_course_groupmode($course)) {
 $grid = marking::build((int) $course->id, $unitid ?: null, $groupid);
 
 $assessments = [];
-$torecord = 0;
+$hasdecl = false;
 foreach ($grid->assessments as $cmid => $assessment) {
     $decl = null;
     if (\report_evidencereporter\local\declarations::available($assessment->cm)) {
-        $outstanding = count(\report_evidencereporter\local\declarations::get_outstanding($assessment->cm));
+        $hasdecl = true;
+        $outstanding = count(array_filter($grid->rows, fn($r) => !empty($r->cells[$cmid]->declmissing)));
         $hold = \report_evidencereporter\local\release_hold::status($assessment->cm);
-        $torecord += $outstanding;
         $decl = ['url' => (new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cmid]))->out(false),
             'outstanding' => $outstanding, 'hasoutstanding' => $outstanding > 0,
             'held' => $hold->applies && ($hold->held || $hold->learnersheld > 0)];
@@ -91,6 +91,7 @@ foreach ($grid->assessments as $cmid => $assessment) {
     $assessments[] = ['name' => $assessment->cm->get_formatted_name(), 'url' => $assessment->cm->url->out(false),
         'icon' => $assessment->cm->get_icon_url()->out(false), 'decl' => $decl];
 }
+$unitids = $grid->unitid !== null ? [$grid->unitid] : array_keys($grid->units);
 $statuslabels = [];
 foreach (
     [marking::STATUS_NOTSUBMITTED, marking::STATUS_INPROGRESS, marking::STATUS_TOMARK, marking::STATUS_NOTRELEASED,
@@ -129,7 +130,9 @@ foreach ($grid->rows as $row) {
         ];
     }
     $frameworkids = $grid->unitid !== null ? [$grid->units[$grid->unitid]->frameworkid] : [];
-    $plans = \report_evidencereporter\local\scope::get_plans($row->userid);
+    $plans = marking::get_relevant_plans((int) $row->userid, $unitids);
+    $declurl = (new moodle_url('/report/evidencereporter/declarations.php', ['courseid' => $course->id,
+        'userid' => $row->userid]))->out(false);
     $rows[] = [
         'name' => fullname($row->user),
         'profileurl' => (new moodle_url('/user/view.php', ['id' => $row->userid, 'course' => $course->id]))->out(false),
@@ -140,8 +143,18 @@ foreach ($grid->rows as $row) {
         'hasready' => (bool) $row->ready,
         'summaryurl' => (new moodle_url('/report/evidencereporter/print.php', ['userid' => $row->userid]
             + ($frameworkids ? ['frameworkid' => reset($frameworkids)] : [])))->out(false),
-        'planurl' => $plans ? (new moodle_url('/admin/tool/lp/plans.php', ['userid' => $row->userid]))->out(false) : null,
+        'plans' => $plans,
+        'hasplans' => (bool) $plans,
+        'hasdecl' => $hasdecl,
+        'declurl' => $declurl,
+        'declmissing' => $row->declmissing,
+        'hasdeclmissing' => $row->declmissing > 0,
+        'readypendingcount' => count($row->readypending),
+        'hasreadypending' => (bool) $row->readypending,
     ];
+    if ($rows[count($rows) - 1]['unit']) {
+        $rows[count($rows) - 1]['unit']['declurl'] = $declurl;
+    }
 }
 $units = [['id' => 0, 'label' => get_string('markingallunits', 'report_evidencereporter'), 'selected' => $grid->unitid === null]];
 foreach ($grid->units as $unit) {
@@ -164,8 +177,7 @@ echo $OUTPUT->render_from_template('report_evidencereporter/marking', [
     'rows' => $rows,
     'hasrows' => (bool) $rows,
     'counts' => marking_count_data($grid->counts),
-    'torecord' => $torecord,
-    'hastorecord' => $torecord > 0,
+    'hasdecl' => $hasdecl,
     'thresholds' => marking_threshold_data(),
     'overviewurl' => (new moodle_url('/report/evidencereporter/marking.php'))->out(false),
 ]);
@@ -181,7 +193,8 @@ function marking_count_data(stdClass $counts): array {
     $data = (array) $counts;
     $data['overdue'] = $counts->amber + $counts->red;
     $data['nothing'] = !$counts->tomark && !$counts->feedback && !$counts->notreleased && !$counts->toconfirm
-        && !$counts->ready;
+        && !$counts->ready && empty($counts->torecord);
+    $data['hastorecord'] = !empty($counts->torecord);
     return $data;
 }
 

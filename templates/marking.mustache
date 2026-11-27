@@ -26,15 +26,19 @@
         "oneunit": false, "hasassessments": true, "hasrows": true,
         "assessments": [{"name": "AT1 Quiz", "url": "https://example.com/mod/quiz/view.php?id=1", "icon": "https://example.com/icon.svg",
             "decl": {"url": "https://example.com/report/evidencereporter/declarations.php?cmid=1", "outstanding": 2, "hasoutstanding": true, "held": true} }],
-        "torecord": 2, "hastorecord": true,
+        "hasdecl": true,
         "rows": [{"name": "Paige Palette", "profileurl": "https://example.com/user/view.php?id=3", "highlight": "amber",
             "cells": [{"status": "tomark", "age": "amber", "label": "To mark: 8 days", "grade": "", "attempt": "Attempt 1 of 3",
                 "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false, "noattemptsleft": false,
                 "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "hasadjustments": true,
                 "adjustments": 1, "hastoconfirm": false, "toconfirm": 0}],
             "unit": null, "hasready": false, "readycount": 0,
-            "summaryurl": "https://example.com/report/evidencereporter/print.php?userid=3", "planurl": null}],
-        "counts": {"tomark": 1, "overdue": 1, "amber": 1, "red": 0, "feedback": 0, "notreleased": 0, "toconfirm": 0, "ready": 0, "nothing": false},
+            "summaryurl": "https://example.com/report/evidencereporter/print.php?userid=3",
+            "hasdecl": true, "declurl": "https://example.com/report/evidencereporter/declarations.php?courseid=2&userid=3",
+            "declmissing": 1, "hasdeclmissing": true, "readypendingcount": 0, "hasreadypending": false,
+            "plans": [{"name": "Diploma of Graphic Design", "url": "https://example.com/admin/tool/lp/plan.php?id=4"}],
+            "hasplans": true}],
+        "counts": {"tomark": 1, "overdue": 1, "amber": 1, "red": 0, "feedback": 0, "notreleased": 0, "toconfirm": 0, "ready": 0, "torecord": 1, "hastorecord": true, "nothing": false},
         "thresholds": {"amber": 7, "red": 14},
         "overviewurl": "https://example.com/report/evidencereporter/marking.php"
     }
@@ -59,8 +63,8 @@
         <li class="list-inline-item"><span class="er-count">{{notreleased}}</span> {{#str}} markingcount_notreleased, report_evidencereporter {{/str}}</li>
         <li class="list-inline-item"><span class="er-count">{{toconfirm}}</span> {{#str}} markingcount_toconfirm, report_evidencereporter {{/str}}</li>
         <li class="list-inline-item"><span class="er-count">{{ready}}</span> {{#str}} markingcount_ready, report_evidencereporter {{/str}}</li>
-        {{/counts}}
         {{#hastorecord}}<li class="list-inline-item er-declheld-text"><span class="er-count">{{torecord}}</span> {{#str}} markingcount_torecord, report_evidencereporter {{/str}}</li>{{/hastorecord}}
+        {{/counts}}
     </ul>
     <p class="small text-muted">{{#str}} markinglegend, report_evidencereporter, { "amber": {{thresholds.amber}}, "red": {{thresholds.red}} } {{/str}}</p>
 
@@ -87,6 +91,8 @@
                     {{/decl}}
                 </th>
                 {{/assessments}}
+                {{#hasdecl}}<th scope="col">{{#str}} markingdeclcol, report_evidencereporter {{/str}}</th>{{/hasdecl}}
+                <th scope="col">{{#str}} markingplan, report_evidencereporter {{/str}}</th>
                 <th scope="col">{{#oneunit}}{{#str}} markingunitresult, report_evidencereporter {{/str}}{{/oneunit}}{{^oneunit}}{{#str}} markingsignoff, report_evidencereporter {{/str}}{{/oneunit}}</th>
             </tr>
         </thead>
@@ -97,7 +103,6 @@
                     <a href="{{profileurl}}">{{name}}</a>
                     <div class="small">
                         <a href="{{summaryurl}}">{{#str}} markingsummary, report_evidencereporter {{/str}}</a>
-                        {{#planurl}} · <a href="{{.}}">{{#str}} markingplan, report_evidencereporter {{/str}}</a>{{/planurl}}
                     </div>
                 </th>
                 {{#cells}}
@@ -114,14 +119,25 @@
                     {{/adjustmentsurl}}
                 </td>
                 {{/cells}}
+                {{#hasdecl}}
+                <td class="er-declcell">
+                    <a href="{{declurl}}">{{#hasdeclmissing}}<span class="badge er-declheld">{{#str}} markingdecl, report_evidencereporter, {{declmissing}} {{/str}}</span>{{/hasdeclmissing}}{{^hasdeclmissing}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasdeclmissing}}</a>
+                </td>
+                {{/hasdecl}}
+                <td class="er-plancell">
+                    {{#plans}}<div><a href="{{url}}">{{name}}</a></div>{{/plans}}
+                    {{^hasplans}}<span class="text-muted">{{#str}} markingnoplan, report_evidencereporter {{/str}}</span>{{/hasplans}}
+                </td>
                 <td>
                     {{#unit}}
                     {{#rated}}<span>{{.}}</span>{{/rated}}
                     {{#ready}}<a href="{{url}}" class="badge er-ready">{{#str}} markingready, report_evidencereporter {{/str}}</a>{{/ready}}
-                    {{^rated}}{{^ready}}<a href="{{url}}" class="small text-muted">{{#str}} markingnotrated, report_evidencereporter {{/str}}</a>{{/ready}}{{/rated}}
+                    {{#readypending}}<a href="{{declurl}}" class="badge er-readypending">{{#str}} markingreadypending, report_evidencereporter {{/str}}</a>{{/readypending}}
+                    {{^rated}}{{^ready}}{{^readypending}}<a href="{{url}}" class="small text-muted">{{#str}} markingnotrated, report_evidencereporter {{/str}}</a>{{/readypending}}{{/ready}}{{/rated}}
                     {{/unit}}
                     {{^unit}}
                     {{#hasready}}<span class="badge er-ready">{{#str}} markingreadycount, report_evidencereporter, {{readycount}} {{/str}}</span>{{/hasready}}
+                    {{#hasreadypending}}<a href="{{declurl}}" class="badge er-readypending">{{#str}} markingreadypendingcount, report_evidencereporter, {{readypendingcount}} {{/str}}</a>{{/hasreadypending}}
                     {{/unit}}
                 </td>
             </tr>

@@ -277,7 +277,6 @@ class checklist_items {
             $html .= '<th bgcolor="#eeeeee"><strong>' . s($cell) . '</strong></th>';
         }
         $html .= '</tr>';
-        $format = get_string('strftimedatetimeshort', 'core_langconfig');
         foreach ($checklist->items as $item) {
             $text = s($identity->text($item->text));
             if ($item->isheading) {
@@ -289,7 +288,7 @@ class checklist_items {
             $html .= '<tr><td>' . $text . '</td>'
                 . '<td>' . s($mark !== '' ? $mark : get_string('checklistnotmarked', 'report_evidencereporter')) . '</td>'
                 . '<td>' . s($identity->person($item->teacherid, $item->teacher)) . '</td>'
-                . '<td>' . ($time ? s(userdate($time, $format)) : '') . '</td>'
+                . '<td>' . ($time ? s(dates::datetime((int) $time)) : '') . '</td>'
                 . ($withfeedback ? '<td>' . self::comments_html($item, $identity) . '</td>' : '') . '</tr>';
         }
         return $html . '</table>';

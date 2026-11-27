@@ -197,7 +197,6 @@ class attendance extends base {
      * @return string
      */
     private static function html(stdClass $data, ?identity $identity, bool $viewfullnames): string {
-        $datefmt = get_string('strftimedatetimeshort', 'core_langconfig');
         $html = '<p class="mb-1">' . s(self::summary_text($data)) . '</p>'
             . '<table class="table table-sm table-bordered" border="1" cellpadding="3" width="100%"><thead><tr>';
         foreach (['date', 'duration', 'description', 'status', 'packpoints', 'remarks', 'takenby'] as $head) {
@@ -212,7 +211,7 @@ class attendance extends base {
             ), 0, false)));
             $taker = isset($data->takers[$session->takenby]) ? fullname($data->takers[$session->takenby], $viewfullnames) : '';
             $remarks = (string) $session->remarks;
-            $html .= '<tr><td>' . s(userdate($session->sessdate, $datefmt)) . '</td>'
+            $html .= '<tr><td>' . s(\report_evidencereporter\local\dates::datetime((int) $session->sessdate)) . '</td>'
                 . '<td>' . s($session->duration ? format_time((int) $session->duration) : '-') . '</td>'
                 . '<td>' . s(shorten_text($description, 80)) . '</td>'
                 . '<td>' . s(format_string($session->status)) . '</td>'

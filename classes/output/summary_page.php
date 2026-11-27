@@ -17,6 +17,7 @@
 namespace report_evidencereporter\output;
 
 use report_evidencereporter\local\branding;
+use report_evidencereporter\local\dates;
 use report_evidencereporter\local\identity;
 use report_evidencereporter\local\question_evidence;
 use report_evidencereporter\local\reasonable_adjustments;
@@ -71,8 +72,9 @@ class summary_page implements renderable, templatable {
     public function export_for_template(renderer_base $output): array {
         global $USER, $SITE;
         $syscontext = \context_system::instance();
-        $datefmt = get_string('strftimedate', 'core_langconfig');
 
+        // RA and LLN gaps are the assessors' to fix: flagged for staff, not for the learner.
+        $showdeclflags = (int) $USER->id !== (int) $this->learner->id;
         $rows = [];
         $details = [];
         $withevidence = 0;
@@ -89,12 +91,15 @@ class summary_page implements renderable, templatable {
                 'indent' => $comp->depth > 0,
                 'currentrating' => $comp->currentrating,
                 'proficient' => $comp->proficient,
-                'judgementdate' => $comp->judgementdate ? userdate($comp->judgementdate, $datefmt) : '',
+                'judgementdate' => $comp->judgementdate ? dates::date((int) $comp->judgementdate) : '',
                 'judgementby' => $comp->judgementby,
                 'judgementrating' => $comp->judgementrating,
                 'evidencecount' => $count,
                 'noevidence' => $count === 0,
                 'attemptcount' => $attemptcount,
+                'declcomplete' => $showdeclflags && ($comp->declflag ?? '') === 'complete',
+                'declmissing' => $showdeclflags && ($comp->declflag ?? '') === 'missing',
+                'declmissingtext' => implode(', ', $comp->declmissing ?? []),
             ];
             $showattempts = branding::show('attempts');
             $records = $comp->records ?? [];
@@ -128,7 +133,7 @@ class summary_page implements renderable, templatable {
         $llnlines = [];
         foreach ($this->summary->assessments ?? [] as $assessment) {
             $llnlines[] = ['activity' => $assessment->activity, 'lln' => $assessment->lln ?? '',
-                'notrecorded' => empty($assessment->llnrecorded)];
+                'notrecorded' => empty($assessment->llnrecorded), 'recordedtext' => $assessment->recordedtext ?? ''];
             if (!$assessment->items) {
                 $assessments[] = ['activity' => $assessment->activity, 'none' => true];
                 continue;
@@ -154,6 +159,11 @@ class summary_page implements renderable, templatable {
         return [
             'showadjustments' => $assessments || $addoptions,
             'hasadjustments' => (bool) $assessments,
+            'hasdeclmissing' => $showdeclflags && !empty($this->summary->declmissing),
+            'declmissingcount' => $showdeclflags ? count($this->summary->declmissing ?? []) : 0,
+            'declmissing' => $showdeclflags ? array_map(fn($a) => ['activity' => $a->activity, 'url' => $a->declurl,
+                'coursename' => $a->coursename], $this->summary->declmissing ?? []) : [],
+            'hasdeclcomplete' => (bool) array_filter($rows, fn($r) => $r['declcomplete']),
             'hasllnlines' => (bool) $llnlines,
             'llnlines' => $llnlines,
             'adjustments' => $assessments,
@@ -191,7 +201,7 @@ class summary_page implements renderable, templatable {
             )),
             'frozennote' => (bool) array_filter($this->summary->competencies, fn($comp) => !empty($comp->frozen)),
             'sitename' => format_string($SITE->fullname, true, ['context' => $syscontext]),
-            'generatedon' => userdate(time(), get_string('strftimedatetime', 'core_langconfig')),
+            'generatedon' => \report_evidencereporter\local\dates::datetime(time(), 'strftimedatetime'),
             'generatedby' => $identity->staff(fullname($USER)),
             'restricted' => $this->summary->restricted,
             'totalcompetencies' => count($this->summary->competencies),

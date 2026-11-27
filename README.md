@@ -81,6 +81,7 @@ Uses the same capability as bulk downloads.
 | **Branding per profile** | An organisation name and sign-off statement for each profile, e.g. "Example TAFE" for VET and "Example University" for higher education. |
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
+| **Date format** and **Time format** | How Evidence Reporter shows dates and times everywhere: as the site's language (the default), DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, 27 November 2026, 27 Nov 2026 or November 27, 2026; and the language's clock, 24-hour or 12-hour. File names always use year-month-day. |
 | **Hold grades until RA and LLN are recorded** | For assessments that count toward the final grade: keep grades and feedback hidden until RA and LLN are recorded for every learner (see *RA and LLN before release*). On by default. |
 | **Attempts allowed** | For databases, forums, workshops and checklists, which have no attempt limit of their own: the number shown on the marking page ("Attempt 2 of 3") and when **No attempts left** appears. Default 3; 0 for no limit. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
@@ -172,8 +173,12 @@ confirming, per learner and assessment. Open it from the course's **Reports > Ma
 - **Reasonable adjustments:** each cell shows "RA: N/A" or how many are recorded, and any Moodle overrides or extensions
   still to confirm, linking to the assessment's Reasonable adjustments page (where the activity records them).
 - **Sign-off:** a unit is **Ready to sign off** when all its assessments are Satisfactory and the unit isn't rated in the
-  course yet; it links to the learner's rating page. Each row also links to the learner's evidence summary and, where
-  you may see it, their learning plan.
+  course yet; it links to the learner's rating page. Each row also links to the learner's evidence summary.
+- **RA and LLN:** under each assessment heading, how many learners still need RA and LLN recorded, and **Grades held**
+  while its grades are held. A unit isn't **Ready to sign off** until RA and LLN are recorded for its assessments; until
+  then it shows *Ready once RA/LLN recorded*. The **RA/LLN** column opens the learner's own RA and LLN page (every
+  assessment in the course).
+- **Learning plan:** links to the learner's learning plans that cover the course's units (or the unit picked).
 - **Who:** `report/evidencereporter:marking` (teachers and managers by default), limited to their groups when the course
   uses separate groups.
 
@@ -226,6 +231,18 @@ that count toward the final grade aren't released until every learner is recorde
 - **Already graded:** assessments with grades when holds begin (on upgrade, or when the setting is turned on) aren't
   held as a whole, so grades learners can see stay visible. Learners without a grade in them are still held one by
   one.
+- **One learner at a time:** the marking page's **RA/LLN** column opens a learner's own RA and LLN page: every
+  assessment in the course in one table, with the same tick boxes, tick-all boxes and details, and a *Grades held*
+  badge on the assessments whose grades are waiting.
+- **Nudges:** the marking page counts *RA/LLN to record* (per course, on *All my courses*, and on the Marking nudge
+  block), shows how many learners are left under each assessment, and only offers **Ready to sign off** once RA and
+  LLN are recorded (*Ready once RA/LLN recorded* until then, linking to the learner's page). On the evidence summary
+  and evidence pack, staff see an alert listing the assessments still to record, and each competency is flagged
+  **RA/LLN not recorded**, rolled up from criteria to their units and qualification. The flag becomes **Evidence
+  complete, RA/LLN missing** when the competency is rated proficient or everything under it has evidence. Learners
+  don't see these flags on their own summary or pack.
+- **When:** each record keeps the date and time it was saved and who saved it, shown on the RA and LLN pages and in the
+  LLN table of the summary and evidence pack ("Recorded 27/11/2026, 14:05 by …").
 - **Where it shows:** the evidence summary and evidence pack list LLN by assessment ("N/A", the details, or "Not
   recorded") beside reasonable adjustments, and each competency's evidence ends with an LLN line; a recorded RA
   appears as "Adjustment made" when there's no detailed adjustment. Validation sample registers have an LLN column.

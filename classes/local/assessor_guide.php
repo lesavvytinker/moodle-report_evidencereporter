@@ -150,7 +150,7 @@ class assessor_guide {
             . '<p><small>' . s(get_string(
                 'assessorguide_blank',
                 'report_evidencereporter',
-                userdate(time(), get_string('strftimedate', 'langconfig'))
+                dates::date(time())
             )) . '</small></p>';
 
         // Tool details.
@@ -164,7 +164,7 @@ class assessor_guide {
             . $this->row(get_string('activity'), s($cm->get_formatted_name()))
             . $this->row(get_string('toolversion', 'report_evidencereporter'), $this->value($details->toolversion))
             . $this->row(get_string('toolreviewdate', 'report_evidencereporter'), $details->reviewdate
-                ? s(userdate($details->reviewdate, get_string('strftimedate', 'langconfig'))) : $this->notset())
+                ? s(dates::date($details->reviewdate)) : $this->notset())
             . $this->row(get_string('toolreviewedby', 'report_evidencereporter'), $this->value($details->reviewedby))
             . '</table>';
         if ($details->toolversion === '') {
@@ -208,9 +208,9 @@ class assessor_guide {
             . $this->row(get_string('attemptsallowed', 'quiz'), $quiz->attempts ? (int) $quiz->attempts
                 : s(get_string('unlimited')))
             . $this->row(get_string('quizopen', 'quiz'), $quiz->timeopen
-                ? s(userdate($quiz->timeopen)) : s(get_string('none')))
+                ? s(dates::datetime((int) $quiz->timeopen, 'strftimedaydatetime')) : s(get_string('none')))
             . $this->row(get_string('quizclose', 'quiz'), $quiz->timeclose
-                ? s(userdate($quiz->timeclose)) : s(get_string('none')))
+                ? s(dates::datetime((int) $quiz->timeclose, 'strftimedaydatetime')) : s(get_string('none')))
             . $this->row(get_string('gradepass', 'grades'), $this->pass_mark($quiz))
             . '</table>';
         if ($details->instructions === '') {
