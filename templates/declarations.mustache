@@ -1,0 +1,184 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template report_evidencereporter/declarations
+
+    RA and LLN for one assessment: an explainer, then a tick box and details for each learner, with tick-all boxes.
+
+    Example context (json):
+    {
+        "action": "https://example.com/report/evidencereporter/declarations.php?cmid=1", "sesskey": "abc",
+        "canmanage": true, "learnerlabel": "Learner", "applies": true, "held": true, "exempt": false,
+        "learnersheld": 0, "haslearnersheld": false, "outstanding": 1, "hasoutstanding": true, "hasrows": true,
+        "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "shared": "AT1 Attempt 2",
+        "rows": [{"userid": 3, "name": "Paige Palette", "recorded": false, "recordedtext": "", "ra": true,
+            "radetails": "Extra time (20 minutes)", "raerror": "", "carried": "", "lln": false, "llndetails": "", "llnerror": "",
+            "adjustments": "Extra time (20 minutes)"}]
+    }
+}}
+<div class="report-evidencereporter-declarations">
+    <div class="alert alert-info er-declexplainer">
+        <h3 class="h5">{{#str}} declexplainheading, report_evidencereporter {{/str}}</h3>
+        <dl class="mb-2">
+            <dt>{{#str}} declra, report_evidencereporter {{/str}}</dt>
+            <dd>{{#str}} declraexplain, report_evidencereporter {{/str}}</dd>
+            <dt>{{#str}} decllln, report_evidencereporter {{/str}}</dt>
+            <dd>{{#str}} decllnexplain, report_evidencereporter {{/str}}</dd>
+        </dl>
+        <p class="fw-bold mb-1">{{#str}} decltodo, report_evidencereporter {{/str}}</p>
+        <ol class="mb-0">
+            <li>{{#str}} decltodo1, report_evidencereporter {{/str}}</li>
+            <li>{{#str}} decltodo2, report_evidencereporter {{/str}}</li>
+            <li>{{#str}} decltodo3, report_evidencereporter {{/str}}</li>
+            <li>{{#str}} decltodo4, report_evidencereporter {{/str}}</li>
+        </ol>
+    </div>
+
+    {{#applies}}
+    <div class="alert {{#held}}alert-danger{{/held}}{{^held}}{{#hasoutstanding}}alert-warning{{/hasoutstanding}}{{^hasoutstanding}}alert-success{{/hasoutstanding}}{{/held}} er-declhold" role="status">
+        <p class="fw-bold mb-1">{{#str}} declholdwarning, report_evidencereporter {{/str}}</p>
+        {{#held}}<p class="mb-0">{{#str}} declheldnow, report_evidencereporter, {{outstanding}} {{/str}}</p>{{/held}}
+        {{^held}}
+        {{#exempt}}<p class="mb-0">{{#str}} declexempt, report_evidencereporter {{/str}}</p>{{/exempt}}
+        {{^exempt}}{{^hasoutstanding}}<p class="mb-0">{{#str}} declallrecorded, report_evidencereporter {{/str}}</p>{{/hasoutstanding}}{{/exempt}}
+        {{#hasoutstanding}}<p class="mb-0">{{#str}} decloutstanding, report_evidencereporter, {{outstanding}} {{/str}}</p>{{/hasoutstanding}}
+        {{#haslearnersheld}}<p class="mb-0">{{#str}} decllearnersheld, report_evidencereporter, {{learnersheld}} {{/str}}</p>{{/haslearnersheld}}
+        {{/held}}
+    </div>
+    {{/applies}}
+    {{^applies}}
+    <div class="alert alert-secondary er-declhold" role="status">{{#str}} declnotcounted, report_evidencereporter {{/str}}</div>
+    {{/applies}}
+
+    {{#shared}}
+    <p class="small er-declshared">{{#str}} declshared, report_evidencereporter, {{.}} {{/str}}</p>
+    {{/shared}}
+
+    {{^hasrows}}
+    <div class="alert alert-info">{{#str}} adjustmentsnonelearners, report_evidencereporter {{/str}}</div>
+    {{/hasrows}}
+    {{#hasrows}}
+    <form method="post" action="{{action}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <div class="table-responsive">
+        <table class="table table-sm table-bordered er-declarations">
+            <thead>
+                <tr>
+                    <th scope="col">{{learnerlabel}}</th>
+                    <th scope="col" class="er-declcheck">
+                        <label class="d-block mb-1" for="er-all-ra">{{#str}} declrashort, report_evidencereporter {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-ra" data-er-all="ra" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-ra">{{#str}} declallra, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                    </th>
+                    <th scope="col">{{#str}} declradetails, report_evidencereporter {{/str}}</th>
+                    <th scope="col" class="er-declcheck">
+                        <label class="d-block mb-1" for="er-all-lln">{{#str}} decllnshort, report_evidencereporter {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-lln" data-er-all="lln" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-lln">{{#str}} declalllln, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                    </th>
+                    <th scope="col">{{#str}} declllndetails, report_evidencereporter {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#rows}}
+                <tr data-er-learner="{{userid}}" class="{{^recorded}}er-declpending{{/recorded}}">
+                    <th scope="row">
+                        <input type="hidden" name="learner[]" value="{{userid}}">
+                        {{name}}
+                        <div class="small">
+                            {{#recorded}}<span class="text-muted">{{recordedtext}}</span>{{/recorded}}
+                            {{#carried}}<div class="er-declcarried">{{#str}} declcarried, report_evidencereporter, {{.}} {{/str}}</div>{{/carried}}
+                            {{^recorded}}<span class="badge er-declnotrecorded">{{#str}} declnotrecorded, report_evidencereporter {{/str}}</span>{{/recorded}}
+                        </div>
+                    </th>
+                    <td class="er-declcheck">
+                        <input type="checkbox" class="form-check-input" name="ra[{{userid}}]" value="1" id="er-ra-{{userid}}" data-er-col="ra"{{#ra}} checked{{/ra}}{{^canmanage}} disabled{{/canmanage}}>
+                        <label class="visually-hidden" for="er-ra-{{userid}}">{{#str}} declrafor, report_evidencereporter, {{name}} {{/str}}</label>
+                    </td>
+                    <td>
+                        <label class="visually-hidden" for="er-radetails-{{userid}}">{{#str}} declradetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{userid}}" name="radetails[{{userid}}]" rows="2" data-er-details="ra"{{^ra}} disabled{{/ra}}{{^canmanage}} readonly{{/canmanage}}>{{radetails}}</textarea>
+                        {{#raerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/raerror}}
+                        {{#adjustments}}<div class="small text-muted mt-1">{{#str}} decladjustmentsrecorded, report_evidencereporter {{/str}}: <a href="{{adjustmentsurl}}">{{.}}</a></div>{{/adjustments}}
+                    </td>
+                    <td class="er-declcheck">
+                        <input type="checkbox" class="form-check-input" name="lln[{{userid}}]" value="1" id="er-lln-{{userid}}" data-er-col="lln"{{#lln}} checked{{/lln}}{{^canmanage}} disabled{{/canmanage}}>
+                        <label class="visually-hidden" for="er-lln-{{userid}}">{{#str}} declllnfor, report_evidencereporter, {{name}} {{/str}}</label>
+                    </td>
+                    <td>
+                        <label class="visually-hidden" for="er-llndetails-{{userid}}">{{#str}} declllndetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <textarea class="form-control form-control-sm{{#llnerror}} is-invalid{{/llnerror}}" id="er-llndetails-{{userid}}" name="llndetails[{{userid}}]" rows="2" data-er-details="lln"{{^lln}} disabled{{/lln}}{{^canmanage}} readonly{{/canmanage}}>{{llndetails}}</textarea>
+                        {{#llnerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/llnerror}}
+                    </td>
+                </tr>
+                {{/rows}}
+            </tbody>
+        </table>
+        </div>
+        {{#canmanage}}
+        <button type="submit" class="btn btn-primary">{{#str}} declsave, report_evidencereporter {{/str}}</button>
+        <span class="small text-muted ms-2">{{#str}} declsavenote, report_evidencereporter {{/str}}</span>
+        {{/canmanage}}
+    </form>
+    {{/hasrows}}
+</div>
+{{#js}}
+(function() {
+    var root = document.querySelector('.report-evidencereporter-declarations');
+    if (!root) {
+        return;
+    }
+    var boxes = function(col) {
+        return Array.prototype.slice.call(root.querySelectorAll('input[data-er-col="' + col + '"]:not([disabled])'));
+    };
+    var sync = function(box) {
+        var details = box.closest('tr').querySelector('textarea[data-er-details="' + box.dataset.erCol + '"]');
+        if (details) {
+            details.disabled = !box.checked;
+        }
+    };
+    var syncAll = function(col) {
+        var all = root.querySelector('input[data-er-all="' + col + '"]');
+        if (!all) {
+            return;
+        }
+        var list = boxes(col);
+        var ticked = list.filter(function(b) {
+            return b.checked;
+        }).length;
+        all.checked = list.length > 0 && ticked === list.length;
+        all.indeterminate = ticked > 0 && ticked < list.length;
+    };
+    ['ra', 'lln'].forEach(function(col) {
+        boxes(col).forEach(function(box) {
+            box.addEventListener('change', function() {
+                sync(box);
+                syncAll(col);
+            });
+        });
+        var all = root.querySelector('input[data-er-all="' + col + '"]');
+        if (all) {
+            all.addEventListener('change', function() {
+                boxes(col).forEach(function(box) {
+                    box.checked = all.checked;
+                    sync(box);
+                });
+                syncAll(col);
+            });
+        }
+        syncAll(col);
+    });
+})();
+{{/js}}

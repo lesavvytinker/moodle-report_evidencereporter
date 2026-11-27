@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.28.0 (2026-12-08)
+- **RA and LLN before release.** A new **RA and LLN** page for each assessment: for every learner, tick whether a
+  reasonable adjustment was made and whether they had language, literacy and numeracy needs or support, with details
+  for each "yes". Tick boxes in the column headings tick or untick a whole column. The page explains both terms and
+  what to do, and that grades are held until it's done.
+- **Grades held until recorded:** for grade items that count toward the final grade, the item stays hidden in the
+  gradebook (hiding assignment feedback too) until every learner is recorded, then its hidden setting is put back.
+  Learners who join later are held one by one. Assessments already graded when holds begin are exempt. New setting
+  *Hold grades until RA and LLN are recorded* (on by default) and an hourly check.
+- **Attempts share records:** activities in a Highest grade category, or a category whose activities are all linked to
+  the same competencies, share one record per learner; a later attempt keeps its own only if the answers differ.
+- The marking page shows RA/LLN still to record and **Grades held** under each assessment.
+- LLN appears by assessment on the evidence summary and evidence pack, on each competency's evidence, and as a new
+  column in validation sample registers. A recorded RA shows as "Adjustment made" when there's no detailed adjustment.
+- Privacy provider covers the new records.
+
 ## 0.27.0 (2026-12-07)
 - **Attempt history for databases, forums, workshops and checklists.** These activities don't have attempts of their
   own, so when an assessor marks one Not satisfactory, Evidence Reporter keeps a snapshot: the result, who marked it,

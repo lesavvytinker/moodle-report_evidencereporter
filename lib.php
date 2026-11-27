@@ -149,6 +149,14 @@ function report_evidencereporter_extend_navigation_module($navigation, $cm) {
             'evidencereporteradjustments',
             new pix_icon('i/users', '')
         );
+        $navigation->add(
+            get_string('declarations', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereporterdeclarations',
+            new pix_icon('i/checked', '')
+        );
     }
 }
 
@@ -169,5 +177,15 @@ function report_evidencereporter_extend_navigation_course($navigation, $course, 
             'evidencereportermarking',
             new pix_icon('i/grades', '')
         );
+    }
+}
+
+/**
+ * Holding release was turned on or off: when on, assessments already graded are exempt (grades learners can see stay
+ * visible); either way, the hourly task applies the change.
+ */
+function report_evidencereporter_releasehold_updated(): void {
+    if (\report_evidencereporter\local\release_hold::enabled()) {
+        \report_evidencereporter\local\release_hold::exempt_graded();
     }
 }

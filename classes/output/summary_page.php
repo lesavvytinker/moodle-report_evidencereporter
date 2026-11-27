@@ -103,7 +103,7 @@ class summary_page implements renderable, templatable {
                 $assessmentlines = [];
                 foreach ($comp->assessments ?? [] as $i => $assessment) {
                     $assessmentlines[] = ['activity' => $assessment->activity, 'text' => $assessment->text,
-                        'none' => !$assessment->items, 'sep' => $i > 0];
+                        'none' => !$assessment->items, 'sep' => $i > 0, 'lln' => $assessment->lln ?? ''];
                 }
                 $details[] = [
                     'hasassessmentlines' => (bool) $assessmentlines,
@@ -125,7 +125,10 @@ class summary_page implements renderable, templatable {
 
         // Reasonable adjustments by assessment ("N/A" when none), and where the viewer may record one for this learner.
         $assessments = [];
+        $llnlines = [];
         foreach ($this->summary->assessments ?? [] as $assessment) {
+            $llnlines[] = ['activity' => $assessment->activity, 'lln' => $assessment->lln ?? '',
+                'notrecorded' => empty($assessment->llnrecorded)];
             if (!$assessment->items) {
                 $assessments[] = ['activity' => $assessment->activity, 'none' => true];
                 continue;
@@ -151,6 +154,8 @@ class summary_page implements renderable, templatable {
         return [
             'showadjustments' => $assessments || $addoptions,
             'hasadjustments' => (bool) $assessments,
+            'hasllnlines' => (bool) $llnlines,
+            'llnlines' => $llnlines,
             'adjustments' => $assessments,
             'adjustmentadd' => $addoptions ? [
                 'url' => (new \moodle_url('/report/evidencereporter/adjustment.php'))->out(false),

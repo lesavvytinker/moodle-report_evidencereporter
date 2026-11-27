@@ -407,8 +407,9 @@ class reasonable_adjustments {
      * @param int[] $competencyids
      * @param identity|null $identity Redaction for staff names
      * @param bool $fordownload See {@see format()}
-     * @return stdClass[] cmid, activity, courseid, competencyids (int[]), items (see {@see get_for_user()}), text
-     *                    (one line: "N/A" or the adjustments)
+     * @return stdClass[] cmid, activity, courseid, competencyids (int[]), items (see {@see get_for_user()}; with the
+     *                    assessor's recorded RA when there's no detailed adjustment), text (one line: "N/A" or the
+     *                    adjustments), lln (one line: "N/A", the details or "Not recorded"), llnrecorded, llnyes
      */
     public static function get_by_assessment(
         int $userid,
@@ -470,6 +471,11 @@ class reasonable_adjustments {
                 continue;
             }
             $items = self::format($records[$cmid] ?? [], $identity, $fordownload);
+            $declared = declarations::get_effective($cm)[$userid] ?? null;
+            if (!$items && $declared && $declared->ra && trim((string) $declared->radetails) !== '') {
+                $items = [declarations::ra_item($declared, $cm, $identity)];
+            }
+            $lln = declarations::lln_line($declared);
             $result[] = (object) [
                 'cmid' => (int) $cm->id,
                 'activity' => $cm->get_formatted_name(),
@@ -482,6 +488,9 @@ class reasonable_adjustments {
                 'competencyids' => array_values(array_unique($compids)),
                 'items' => $items,
                 'text' => $items ? self::to_text($items, false, '; ') : get_string('radjna', 'report_evidencereporter'),
+                'lln' => $lln->text,
+                'llnrecorded' => $lln->recorded,
+                'llnyes' => $lln->yes,
             ];
         }
         usort($result, fn($a, $b) => strcmp($a->sortkey, $b->sortkey));
@@ -585,7 +594,15 @@ class reasonable_adjustments {
                                                            AND (c.id = :unitid OR " . $DB->sql_like('c.path', ':path') . "))
                                        ORDER BY ra.timecreated, ra.id", ['courseid' => $courseid, 'userid' => $userid,
             'unitid' => $unitid, 'path' => '%/' . $unitid . '/%']);
-        $text = self::to_text(self::format($records, $identity, true));
+        $items = self::format($records, $identity, true);
+        // What assessors recorded, for activities with no detailed adjustment.
+        $withitems = array_map(fn($item) => (int) $item->cmid, $items);
+        foreach (declarations::for_judgement($userid, $courseid, $unitid, $identity)->ra as $cmid => $item) {
+            if (!in_array($cmid, $withitems)) {
+                $items[] = $item;
+            }
+        }
+        $text = self::to_text($items);
         return $text !== '' ? $text : get_string('radjna', 'report_evidencereporter');
     }
 

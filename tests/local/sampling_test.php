@@ -256,7 +256,8 @@ final class sampling_test extends \advanced_testcase {
         );
         $this->assertCount(5, $rows);
         $this->assertEquals('Reasonable adjustments', $rows[0][13]);
-        $this->assertEquals('Validator findings', $rows[0][15]);
+        $this->assertEquals('LLN', $rows[0][14]);
+        $this->assertEquals('Validator findings', $rows[0][16]);
         $this->assertStringStartsWith('Swapped out: Assessor is on the panel', $rows[1][12]);
         $this->assertEquals('Replacement for #1', $rows[4][11]);
         $this->assertStringNotContainsString(fullname(\core_user::get_user($first->userid)), implode(',', $rows[1]));

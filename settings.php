@@ -51,6 +51,14 @@ if ($hassiteconfig && $settings) {
         \report_evidencereporter\local\terms::AU_VET,
         \report_evidencereporter\local\terms::get_profiles()
     ));
+    $setting = new admin_setting_configcheckbox(
+        'report_evidencereporter/releasehold',
+        get_string('settings_releasehold', 'report_evidencereporter'),
+        get_string('settings_releasehold_desc', 'report_evidencereporter'),
+        1
+    );
+    $setting->set_updatedcallback('report_evidencereporter_releasehold_updated');
+    $settings->add($setting);
 
     $settings->add(new \report_evidencereporter\admin\setting_frameworkprofiles());
 

@@ -50,6 +50,9 @@ final class evidence_test extends core_reportbuilder_testcase {
      */
     protected function setUp(): void {
         parent::setUp();
+        // These test the activities' own release rules, not the RA and LLN hold.
+        $this->resetAfterTest();
+        set_config('releasehold', 0, 'report_evidencereporter');
         \report_evidencereporter\local\feedback_visibility::reset_cache();
         \report_evidencereporter\local\attempts::reset_cache();
         \report_evidencereporter\local\rating::reset_cache();

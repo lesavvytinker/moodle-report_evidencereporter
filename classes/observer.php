@@ -33,6 +33,73 @@ class observer {
         local\tool_details::delete((int) $event->objectid);
         local\reasonable_adjustments::delete_for_activity((int) $event->objectid);
         local\attempt_snapshots::delete_for_activity((int) $event->objectid);
+        local\declarations::delete_for_activity((int) $event->objectid);
+        local\release_hold::delete_for_activity((int) $event->objectid);
+    }
+
+    /**
+     * Learners joined, left or changed role: re-check the course's release holds (in the background).
+     *
+     * @param \core\event\base $event
+     */
+    public static function learners_changed(\core\event\base $event): void {
+        try {
+            if ($event->courseid && $event->courseid != SITEID && local\release_hold::enabled()) {
+                task\update_holds::queue((int) $event->courseid);
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter release hold: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * A grade item was added or changed: hold a new item, or hide a held one again if someone showed it.
+     *
+     * @param \core\event\base $event grade_item_created or grade_item_updated
+     */
+    public static function grade_item_changed(\core\event\base $event): void {
+        global $CFG, $DB;
+        if (local\release_hold::is_updating() || !local\release_hold::enabled()) {
+            return;
+        }
+        try {
+            require_once($CFG->libdir . '/gradelib.php');
+            $item = \grade_item::fetch(['id' => (int) $event->objectid]);
+            if (!$item || $item->itemtype !== 'mod' || !local\reasonable_adjustments::supports((string) $item->itemmodule)) {
+                return;
+            }
+            $row = $DB->get_record(local\release_hold::TABLE, ['gradeitemid' => $item->id, 'userid' => 0]);
+            if ($row && ($row->state !== local\release_hold::HELD || (int) $item->hidden === 1)) {
+                return;
+            }
+            $cm = get_coursemodule_from_instance($item->itemmodule, $item->iteminstance, $item->courseid);
+            $modinfo = $cm ? get_fast_modinfo($cm->course, -1) : null;
+            // An activity still being added isn't in the course yet: it's checked when it's created.
+            if ($modinfo && isset($modinfo->get_cms()[$cm->id])) {
+                local\release_hold::update($modinfo->get_cm($cm->id));
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter release hold: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * An activity was added, or its settings changed (who can access it, for example): check its release hold.
+     *
+     * @param \core\event\base $event course_module_created or course_module_updated
+     */
+    public static function course_module_updated(\core\event\base $event): void {
+        try {
+            if (!local\release_hold::enabled()) {
+                return;
+            }
+            $cm = get_fast_modinfo($event->courseid, -1)->get_cm((int) $event->objectid);
+            if (local\reasonable_adjustments::supports($cm->modname)) {
+                local\release_hold::update($cm);
+            }
+        } catch (\Throwable $e) {
+            debugging('Evidence Reporter release hold: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
 
     /**

@@ -242,3 +242,25 @@
 .er-snappiece > .small {
     display: block;
 }
+
+.report-evidencereporter-declarations .er-declcheck {
+    text-align: center;
+    width: 4.5rem;
+}
+.report-evidencereporter-declarations tr.er-declpending th {
+    border-left: 4px solid #b45309;
+}
+.report-evidencereporter-declarations .er-declnotrecorded,
+.report-evidencereporter-marking .er-declheld {
+    background-color: #b91c1c;
+    color: #fff;
+}
+.report-evidencereporter-declarations .er-declcarried {
+    color: #1d4ed8;
+}
+.report-evidencereporter-declarations textarea[disabled] {
+    background-color: #f1f3f5;
+}
+.report-evidencereporter-marking .er-declheld-text {
+    color: #b91c1c;
+}

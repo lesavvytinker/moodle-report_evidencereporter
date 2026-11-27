@@ -537,14 +537,17 @@ class evidence_pack {
                 $html .= '</ul><p><small>' . s(get_string('packseerecords', 'report_evidencereporter')) . '</small></p>';
             }
             $lines = [];
+            $llnlines = [];
             foreach ($assessments as $assessment) {
                 if (in_array((int) $comp->id, $assessment->competencyids)) {
                     $lines[] = s($assessment->activity) . ': ' . s($assessment->text);
+                    $llnlines[] = s($assessment->activity) . ': ' . s($assessment->lln ?? '');
                 }
             }
             if ($lines) {
                 $html .= '<p><small><strong>' . s(get_string('radjline', 'report_evidencereporter')) . ':</strong> '
-                    . implode(' &middot; ', $lines) . '</small></p>';
+                    . implode(' &middot; ', $lines) . '<br><strong>' . s(get_string('llnline', 'report_evidencereporter'))
+                    . ':</strong> ' . implode(' &middot; ', $llnlines) . '</small></p>';
             }
         }
         if (branding::show('signoff')) {
@@ -594,6 +597,15 @@ class evidence_pack {
                     . '<td width="20%">' . s($item->approvedby) . '<br><small>' . s($item->recorded . ' · ' . $item->recordedby)
                     . '</small></td></tr>';
             }
+        }
+        $html .= '</table>';
+        $html .= '<h2>' . s(get_string('llnbyassessment', 'report_evidencereporter')) . '</h2>'
+            . '<table border="1" cellpadding="3" width="100%"><tr style="background-color:#e9ecef;font-weight:bold;">'
+            . '<td width="30%">' . s(get_string('assessment', 'report_evidencereporter')) . '</td>'
+            . '<td width="70%">' . s(get_string('llnline', 'report_evidencereporter')) . '</td></tr>';
+        foreach ($assessments as $assessment) {
+            $html .= '<tr><td width="30%">' . s($assessment->activity) . '</td><td width="70%">'
+                . nl2br(s($assessment->lln ?? '')) . '</td></tr>';
         }
         return $html . '</table>';
     }

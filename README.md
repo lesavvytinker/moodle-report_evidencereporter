@@ -81,6 +81,7 @@ Uses the same capability as bulk downloads.
 | **Branding per profile** | An organisation name and sign-off statement for each profile, e.g. "Example TAFE" for VET and "Example University" for higher education. |
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
+| **Hold grades until RA and LLN are recorded** | For assessments that count toward the final grade: keep grades and feedback hidden until RA and LLN are recorded for every learner (see *RA and LLN before release*). On by default. |
 | **Attempts allowed** | For databases, forums, workshops and checklists, which have no attempt limit of their own: the number shown on the marking page ("Attempt 2 of 3") and when **No attempts left** appears. Default 3; 0 for no limit. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
 | **Sign-off heading and statement** | Your own heading (e.g. "Assessor declaration") and a declaration printed above the signature lines. |
@@ -200,6 +201,41 @@ spoken responses, an alternative format and so on), the details, the reason and 
   was recorded, but leave the reason out, unless *Include reasons in downloads* is on. Reasons may touch on disability
   or health.
 - Changes are logged (events), the privacy provider exports and deletes them, and they're deleted with their activity.
+
+## RA and LLN before release
+
+For every learner in an assessment, the assessor records whether a **reasonable adjustment (RA)** was made and whether
+the learner had **language, literacy and numeracy (LLN)** needs or support, with details for each "yes". Assessments
+that count toward the final grade aren't released until every learner is recorded.
+
+- **Where:** each activity's **More > RA and LLN** page, or the *RA/LLN* link under each assessment on the marking page
+  (which shows how many learners are still to record, and a **Grades held** badge). The page starts with a short
+  explainer of both terms and what to do, and says plainly that grades are held until it's done.
+- **How:** tick RA or LLN for a learner and describe it in the details box that opens; leave it unticked for No. The tick
+  box in each column heading ticks or unticks the whole column, for when everyone's the same. **Save** records every
+  learner on the page. A learner with a detailed adjustment on the Reasonable adjustments page starts ticked.
+- **What's held:** grade items that count toward the course total. Items with no grade, a weight of 0 (Natural or
+  Weighted mean), or in a category that itself doesn't count, aren't held. Held means hidden in the gradebook, which
+  also hides assignment feedback. Until every learner is recorded, the whole grade item is hidden; then the hidden
+  setting it had is put back. If a teacher shows a held item, it's hidden again and shown once the hold lifts. A learner
+  who joins after that has only their own grade held, so other learners' released grades stay visible.
+- **Attempts share records:** activities in one gradebook category (no subcategories, two or more activities) that
+  takes the **Highest grade**, or whose activities are all linked to the same competencies, are treated as attempts of
+  one assessment. A learner recorded in one is recorded in all, so a resubmission isn't held and nothing is entered
+  twice. The later attempt's page shows "Carried over from …"; a record is kept for it only if its answers differ.
+- **Already graded:** assessments with grades when holds begin (on upgrade, or when the setting is turned on) aren't
+  held as a whole, so grades learners can see stay visible. Learners without a grade in them are still held one by
+  one.
+- **Where it shows:** the evidence summary and evidence pack list LLN by assessment ("N/A", the details, or "Not
+  recorded") beside reasonable adjustments, and each competency's evidence ends with an LLN line; a recorded RA
+  appears as "Adjustment made" when there's no detailed adjustment. Validation sample registers have an LLN column.
+- **Setting:** *Hold grades until RA and LLN are recorded* (on by default) applies to frameworks that record reasonable
+  adjustments (*Record reasonable adjustments for*). Holds are re-checked when learners or grade items change, and
+  hourly (*Check release holds for RA and LLN*).
+- **Limits:** quizzes show their own marks by their review options, which the hold doesn't change (the gradebook grade
+  is held). If a teacher shows a held item and then hides it again before the hold lifts, it's shown when the hold
+  lifts.
+- Who sees and records them, logging and privacy work as for reasonable adjustments.
 
 ## Learner identity and redaction
 

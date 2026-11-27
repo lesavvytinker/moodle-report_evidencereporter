@@ -153,5 +153,47 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         \core\task\manager::queue_adhoc_task(new \report_evidencereporter\task\backfill_snapshots(), true);
         upgrade_plugin_savepoint(true, 2026120700, 'report', 'evidencereporter');
     }
+    if ($oldversion < 2026120800) {
+        // Reasonable adjustment and LLN answers per learner per assessment.
+        $table = new xmldb_table('report_evidencereporter_decl');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('ra', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('radetails', XMLDB_TYPE_TEXT);
+        $table->add_field('lln', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('llndetails', XMLDB_TYPE_TEXT);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN, ['cmid'], 'course_modules', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+        $table->add_index('cmid_userid', XMLDB_INDEX_UNIQUE, ['cmid', 'userid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Release holds.
+        $table = new xmldb_table('report_evidencereporter_hold');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('state', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'held');
+        $table->add_field('prevhidden', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN, ['cmid'], 'course_modules', ['id']);
+        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'grade_items', ['id']);
+        $table->add_index('gradeitemid_userid', XMLDB_INDEX_UNIQUE, ['gradeitemid', 'userid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Grades learners can already see stay as they are: assessments graded before now aren't held.
+        \report_evidencereporter\local\release_hold::exempt_graded();
+        upgrade_plugin_savepoint(true, 2026120800, 'report', 'evidencereporter');
+    }
     return true;
 }

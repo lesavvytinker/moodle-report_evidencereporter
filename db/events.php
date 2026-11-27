@@ -50,4 +50,40 @@ $observers = [
         'eventname' => '\mod_checklist\event\teacher_checks_updated',
         'callback' => '\report_evidencereporter\observer::checklist_checks',
     ],
+    [
+        'eventname' => '\core\event\user_enrolment_created',
+        'callback' => '\report_evidencereporter\observer::learners_changed',
+    ],
+    [
+        'eventname' => '\core\event\user_enrolment_updated',
+        'callback' => '\report_evidencereporter\observer::learners_changed',
+    ],
+    [
+        'eventname' => '\core\event\user_enrolment_deleted',
+        'callback' => '\report_evidencereporter\observer::learners_changed',
+    ],
+    [
+        'eventname' => '\core\event\role_assigned',
+        'callback' => '\report_evidencereporter\observer::learners_changed',
+    ],
+    [
+        'eventname' => '\core\event\role_unassigned',
+        'callback' => '\report_evidencereporter\observer::learners_changed',
+    ],
+    [
+        'eventname' => '\core\event\grade_item_created',
+        'callback' => '\report_evidencereporter\observer::grade_item_changed',
+    ],
+    [
+        'eventname' => '\core\event\grade_item_updated',
+        'callback' => '\report_evidencereporter\observer::grade_item_changed',
+    ],
+    [
+        'eventname' => '\core\event\course_module_created',
+        'callback' => '\report_evidencereporter\observer::course_module_updated',
+    ],
+    [
+        'eventname' => '\core\event\course_module_updated',
+        'callback' => '\report_evidencereporter\observer::course_module_updated',
+    ],
 ];

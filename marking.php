@@ -77,9 +77,19 @@ if (groups_get_course_groupmode($course)) {
 $grid = marking::build((int) $course->id, $unitid ?: null, $groupid);
 
 $assessments = [];
+$torecord = 0;
 foreach ($grid->assessments as $cmid => $assessment) {
+    $decl = null;
+    if (\report_evidencereporter\local\declarations::available($assessment->cm)) {
+        $outstanding = count(\report_evidencereporter\local\declarations::get_outstanding($assessment->cm));
+        $hold = \report_evidencereporter\local\release_hold::status($assessment->cm);
+        $torecord += $outstanding;
+        $decl = ['url' => (new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cmid]))->out(false),
+            'outstanding' => $outstanding, 'hasoutstanding' => $outstanding > 0,
+            'held' => $hold->applies && ($hold->held || $hold->learnersheld > 0)];
+    }
     $assessments[] = ['name' => $assessment->cm->get_formatted_name(), 'url' => $assessment->cm->url->out(false),
-        'icon' => $assessment->cm->get_icon_url()->out(false)];
+        'icon' => $assessment->cm->get_icon_url()->out(false), 'decl' => $decl];
 }
 $statuslabels = [];
 foreach (
@@ -154,6 +164,8 @@ echo $OUTPUT->render_from_template('report_evidencereporter/marking', [
     'rows' => $rows,
     'hasrows' => (bool) $rows,
     'counts' => marking_count_data($grid->counts),
+    'torecord' => $torecord,
+    'hastorecord' => $torecord > 0,
     'thresholds' => marking_threshold_data(),
     'overviewurl' => (new moodle_url('/report/evidencereporter/marking.php'))->out(false),
 ]);

@@ -214,6 +214,25 @@
         </tbody>
     </table>
     {{/hasadjustments}}
+    {{#hasllnlines}}
+    <h3 class="h4 mt-4">{{#str}} llnbyassessment, report_evidencereporter {{/str}}</h3>
+    <table class="table table-sm table-bordered er-lln">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}} assessment, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} llnline, report_evidencereporter {{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#llnlines}}
+            <tr>
+                <td>{{activity}}</td>
+                <td{{#notrecorded}} class="text-muted"{{/notrecorded}}>{{lln}}</td>
+            </tr>
+            {{/llnlines}}
+        </tbody>
+    </table>
+    {{/hasllnlines}}
     {{^hasadjustments}}<p class="text-muted">{{#str}} adjustmentsnoassessments, report_evidencereporter {{/str}}</p>{{/hasadjustments}}
     {{#adjustmentadd}}
     <form method="get" action="{{url}}" class="d-print-none er-noprint d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -346,6 +365,9 @@
         {{#hasassessmentlines}}
         <p class="small mb-3 er-adjustmentline"><strong>{{#str}} radjline, report_evidencereporter {{/str}}:</strong>
             {{#assessmentlines}}{{#sep}} · {{/sep}}{{activity}}: {{#none}}{{#str}} radjna, report_evidencereporter {{/str}}{{/none}}{{^none}}{{text}}{{/none}}{{/assessmentlines}}
+        </p>
+        <p class="small mb-3 er-llnline"><strong>{{#str}} llnline, report_evidencereporter {{/str}}:</strong>
+            {{#assessmentlines}}{{#sep}} · {{/sep}}{{activity}}: {{lln}}{{/assessmentlines}}
         </p>
         {{/hasassessmentlines}}
     </section>

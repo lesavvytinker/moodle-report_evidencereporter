@@ -24,7 +24,9 @@
         "action": "https://example.com/report/evidencereporter/marking.php", "courseid": 2, "learnerlabel": "Learner",
         "units": [{"id": 0, "label": "All units", "selected": true}, {"id": 5, "label": "CUAIND512 Enhance practice", "selected": false}],
         "oneunit": false, "hasassessments": true, "hasrows": true,
-        "assessments": [{"name": "AT1 Quiz", "url": "https://example.com/mod/quiz/view.php?id=1", "icon": "https://example.com/icon.svg"}],
+        "assessments": [{"name": "AT1 Quiz", "url": "https://example.com/mod/quiz/view.php?id=1", "icon": "https://example.com/icon.svg",
+            "decl": {"url": "https://example.com/report/evidencereporter/declarations.php?cmid=1", "outstanding": 2, "hasoutstanding": true, "held": true} }],
+        "torecord": 2, "hastorecord": true,
         "rows": [{"name": "Paige Palette", "profileurl": "https://example.com/user/view.php?id=3", "highlight": "amber",
             "cells": [{"status": "tomark", "age": "amber", "label": "To mark: 8 days", "grade": "", "attempt": "Attempt 1 of 3",
                 "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false, "noattemptsleft": false,
@@ -58,6 +60,7 @@
         <li class="list-inline-item"><span class="er-count">{{toconfirm}}</span> {{#str}} markingcount_toconfirm, report_evidencereporter {{/str}}</li>
         <li class="list-inline-item"><span class="er-count">{{ready}}</span> {{#str}} markingcount_ready, report_evidencereporter {{/str}}</li>
         {{/counts}}
+        {{#hastorecord}}<li class="list-inline-item er-declheld-text"><span class="er-count">{{torecord}}</span> {{#str}} markingcount_torecord, report_evidencereporter {{/str}}</li>{{/hastorecord}}
     </ul>
     <p class="small text-muted">{{#str}} markinglegend, report_evidencereporter, { "amber": {{thresholds.amber}}, "red": {{thresholds.red}} } {{/str}}</p>
 
@@ -75,7 +78,14 @@
             <tr>
                 <th scope="col">{{learnerlabel}}</th>
                 {{#assessments}}
-                <th scope="col"><a href="{{url}}"><img src="{{icon}}" class="icon" alt="">{{name}}</a></th>
+                <th scope="col"><a href="{{url}}"><img src="{{icon}}" class="icon" alt="">{{name}}</a>
+                    {{#decl}}
+                    <div class="small fw-normal">
+                        <a href="{{url}}" class="er-decllink">{{#hasoutstanding}}{{#str}} markingdecl, report_evidencereporter, {{outstanding}} {{/str}}{{/hasoutstanding}}{{^hasoutstanding}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasoutstanding}}</a>
+                        {{#held}}<span class="badge er-declheld">{{#str}} markingdeclheld, report_evidencereporter {{/str}}</span>{{/held}}
+                    </div>
+                    {{/decl}}
+                </th>
                 {{/assessments}}
                 <th scope="col">{{#oneunit}}{{#str}} markingunitresult, report_evidencereporter {{/str}}{{/oneunit}}{{^oneunit}}{{#str}} markingsignoff, report_evidencereporter {{/str}}{{/oneunit}}</th>
             </tr>

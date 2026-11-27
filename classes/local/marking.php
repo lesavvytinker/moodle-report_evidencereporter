@@ -279,6 +279,7 @@ class marking {
         $facts = self::get_facts($cm, $userids);
         $raavailable = reasonable_adjustments::available($cm);
         $recorded = $raavailable ? reasonable_adjustments::get_for_activity((int) $cm->id) : [];
+        $declared = $raavailable ? declarations::get_effective($cm) : [];
         $suggested = $raavailable && reasonable_adjustments::can_manage(context_module::instance($cm->id))
             ? reasonable_adjustments::get_suggestions($cm) : [];
         $now = time();
@@ -294,7 +295,8 @@ class marking {
             $cell = (object) ['status' => self::STATUS_NOTSUBMITTED, 'days' => null, 'age' => null,
                 'submitted' => $submitted, 'graded' => $gradedtime, 'grade' => '',
                 'attempt' => $fact->attempt ?? '', 'url' => self::marking_url($cm, $userid, $fact)->out(false),
-                'adjustments' => count($recorded[$userid] ?? []), 'toconfirm' => count($suggested[$userid] ?? []),
+                'adjustments' => count($recorded[$userid] ?? []) ?: (!empty($declared[$userid]->ra) ? 1 : 0),
+                'toconfirm' => count($suggested[$userid] ?? []),
                 'adjustmentsurl' => $raavailable
                     ? (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false) : null];
             if ($gradevalue !== null && $item) {
