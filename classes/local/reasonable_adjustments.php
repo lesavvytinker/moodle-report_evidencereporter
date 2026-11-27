@@ -492,7 +492,7 @@ class reasonable_adjustments {
                 'llnrecorded' => $lln->recorded,
                 'llnyes' => $lln->yes,
                 // RA and LLN recorded by the assessor (both are, or neither): when, by whom.
-                'recorded' => $declared !== null,
+                'recorded' => declarations::is_complete($declared),
                 'recordedtext' => $declared ? declarations::recorded_text($declared, $identity) : '',
                 'declurl' => (new \moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]))->out(false),
             ];

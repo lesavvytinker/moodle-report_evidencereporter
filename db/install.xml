@@ -122,9 +122,9 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The assessment (activity)"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The learner"/>
-        <FIELD NAME="ra" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if a reasonable adjustment was made"/>
+        <FIELD NAME="ra" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="1 if a reasonable adjustment was made, 0 if not, null if not answered yet"/>
         <FIELD NAME="radetails" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="What was adjusted"/>
-        <FIELD NAME="lln" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if the learner had LLN needs or support"/>
+        <FIELD NAME="lln" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="1 if the learner had LLN needs or support, 0 if not, null if not answered yet"/>
         <FIELD NAME="llndetails" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="The LLN needs or support"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who recorded it"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

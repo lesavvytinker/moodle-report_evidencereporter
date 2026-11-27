@@ -278,3 +278,10 @@
     background-color: #b45309;
     color: #fff;
 }
+.report-evidencereporter-declarations .er-declpartly {
+    background-color: #b45309;
+    color: #fff;
+}
+.report-evidencereporter-declarations th.er-declgroup {
+    border-bottom-width: 2px;
+}

@@ -195,5 +195,17 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         \report_evidencereporter\local\release_hold::exempt_graded();
         upgrade_plugin_savepoint(true, 2026120800, 'report', 'evidencereporter');
     }
+    if ($oldversion < 2026121000) {
+        // RA and LLN can be answered one at a time: "not answered yet" is null, never "no".
+        $table = new xmldb_table('report_evidencereporter_decl');
+        foreach (['ra', 'lln'] as $name) {
+            $field = new xmldb_field($name, XMLDB_TYPE_INTEGER, '1', null, null, null, null);
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_default($table, $field);
+                $dbman->change_field_notnull($table, $field);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026121000, 'report', 'evidencereporter');
+    }
     return true;
 }

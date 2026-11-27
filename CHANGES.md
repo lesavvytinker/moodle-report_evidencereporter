@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0 (2026-12-10)
+- **Yes and No columns** for RA and for LLN, nothing ticked to begin with. Only what's ticked is saved, so saving the
+  page after correcting one learner no longer records everyone else as No. A learner with one answer shows *Partly
+  recorded* and still counts as not recorded. Tick-all boxes on each Yes and No column.
+- RA and LLN answers can be blank (not answered yet) in the database.
+
 ## 0.29.0 (2026-12-09)
 - **RA and LLN gaps flagged:** on the evidence summary and evidence pack, staff see an alert listing the assessments
   still to record, and each competency is flagged *RA/LLN not recorded*, rolled up from criteria to units and

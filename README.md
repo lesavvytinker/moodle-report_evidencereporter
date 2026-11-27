@@ -216,9 +216,12 @@ that count toward the final grade aren't released until every learner is recorde
 - **Where:** each activity's **More > RA and LLN** page, or the *RA/LLN* link under each assessment on the marking page
   (which shows how many learners are still to record, and a **Grades held** badge). The page starts with a short
   explainer of both terms and what to do, and says plainly that grades are held until it's done.
-- **How:** tick RA or LLN for a learner and describe it in the details box that opens; leave it unticked for No. The tick
-  box in each column heading ticks or unticks the whole column, for when everyone's the same. **Save** records every
-  learner on the page. A learner with a detailed adjustment on the Reasonable adjustments page starts ticked.
+- **How:** for each learner, tick **Yes** or **No** for RA and for LLN; **Yes** opens a details box to describe what was
+  done. Nothing is ticked to begin with, and only what you tick is saved: a learner you haven't checked stays *Not
+  recorded* (or *Partly recorded* with one of the two answered), so correcting one learner never records the others.
+  The tick box in each Yes or No column heading ticks or unticks that whole column, for when everyone's the same. A
+  learner with a detailed adjustment on the Reasonable adjustments page has it ready in the RA details box, should RA be
+  Yes.
 - **What's held:** grade items that count toward the course total. Items with no grade, a weight of 0 (Natural or
   Weighted mean), or in a category that itself doesn't count, aren't held. Held means hidden in the gradebook, which
   also hides assignment feedback. Until every learner is recorded, the whole grade item is hidden; then the hidden

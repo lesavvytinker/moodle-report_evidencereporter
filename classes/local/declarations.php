@@ -23,8 +23,9 @@ use stdClass;
 
 /**
  * The assessor's reasonable adjustment (RA) and language, literacy and numeracy (LLN) answers for each learner in an
- * assessment: yes (with details) or no. A learner is "recorded" once both are answered. Assessments that count toward
- * the final grade are held from release until every learner is recorded (see {@see release_hold}).
+ * assessment: yes (with details), no, or not answered yet (null). A learner is "recorded" once both are answered.
+ * Assessments that count toward the final grade are held from release until every learner is recorded (see
+ * {@see release_hold}).
  *
  * Detailed adjustments (type, reason, approver) are still recorded on the Reasonable adjustments page; a learner with
  * one counts as RA "yes" until the assessor answers.
@@ -53,6 +54,16 @@ class declarations {
      */
     public static function available(cm_info $cm): bool {
         return reasonable_adjustments::available($cm);
+    }
+
+    /**
+     * Are both RA and LLN answered in this record?
+     *
+     * @param stdClass|null $record
+     * @return bool
+     */
+    public static function is_complete(?stdClass $record): bool {
+        return $record !== null && $record->ra !== null && $record->lln !== null;
     }
 
     /**
@@ -183,7 +194,8 @@ class declarations {
             $others = array_slice($group, 1);
             [$insql, $params] = $DB->get_in_or_equal($others, SQL_PARAMS_NAMED, 'dge');
             $modinfo = get_fast_modinfo($cm->course, -1);
-            foreach ($DB->get_records_select(self::TABLE, "cmid {$insql}", $params, 'timemodified DESC, id DESC') as $record) {
+            $select = "cmid {$insql} AND ra IS NOT NULL AND lln IS NOT NULL";
+            foreach ($DB->get_records_select(self::TABLE, $select, $params, 'timemodified DESC, id DESC') as $record) {
                 $userid = (int) $record->userid;
                 if (isset($result[$userid])) {
                     continue;
@@ -218,21 +230,22 @@ class declarations {
         $recorded = self::get_effective($cm);
         return array_values(array_filter(
             array_map('intval', array_keys(self::get_learners($cm))),
-            fn($userid) => !isset($recorded[$userid])
+            fn($userid) => !self::is_complete($recorded[$userid] ?? null)
         ));
     }
 
     /**
      * Check answers before saving.
      *
-     * @param array $answers userid => ['ra' => bool, 'radetails' => string, 'lln' => bool, 'llndetails' => string]
+     * @param array $answers userid => ['ra' => true (yes), false (no) or null (not answered), 'radetails' => string,
+     *                       'lln' => as ra, 'llndetails' => string]
      * @return array userid => ['ra' => error, 'lln' => error] for answers that are "yes" without details
      */
     public static function validate(array $answers): array {
         $errors = [];
         foreach ($answers as $userid => $answer) {
             foreach (['ra', 'lln'] as $field) {
-                if (!empty($answer[$field]) && trim((string) ($answer[$field . 'details'] ?? '')) === '') {
+                if (($answer[$field] ?? null) === true && trim((string) ($answer[$field . 'details'] ?? '')) === '') {
                     $errors[$userid][$field] = get_string('decl' . $field . 'detailsrequired', 'report_evidencereporter');
                 }
             }
@@ -256,17 +269,24 @@ class declarations {
         $now = time();
         foreach ($answers as $userid => $answer) {
             $userid = (int) $userid;
-            $record = (object) [
-                'cmid' => (int) $cm->id,
-                'userid' => $userid,
-                'ra' => empty($answer['ra']) ? 0 : 1,
-                'radetails' => empty($answer['ra']) ? '' : trim((string) $answer['radetails']),
-                'lln' => empty($answer['lln']) ? 0 : 1,
-                'llndetails' => empty($answer['lln']) ? '' : trim((string) $answer['llndetails']),
-                'usermodified' => (int) $USER->id,
-                'timemodified' => $now,
-            ];
             $old = $existing[$userid] ?? null;
+            $record = (object) ['cmid' => (int) $cm->id, 'userid' => $userid, 'usermodified' => (int) $USER->id,
+                'timemodified' => $now];
+            foreach (['ra', 'lln'] as $field) {
+                $value = $answer[$field] ?? null;
+                if ($value === null) {
+                    // Not answered here: keep what was recorded before, if anything.
+                    $record->$field = $old ? $old->$field : null;
+                    $record->{$field . 'details'} = $old ? (string) $old->{$field . 'details'} : '';
+                } else {
+                    $record->$field = $value ? 1 : 0;
+                    $record->{$field . 'details'} = $value ? trim((string) ($answer[$field . 'details'] ?? '')) : '';
+                }
+            }
+            if ($record->ra === null && $record->lln === null) {
+                // Nothing answered: nothing to record.
+                continue;
+            }
             $carried = !$old ? ($effective[$userid] ?? null) : null;
             if ($carried && self::same($carried, $record)) {
                 // The same as the attempt it carries over from: nothing new to keep.
@@ -305,8 +325,9 @@ class declarations {
      * @return bool
      */
     private static function same(stdClass $a, stdClass $b): bool {
-        return (int) $a->ra === (int) $b->ra && trim((string) $a->radetails) === trim((string) $b->radetails)
-            && (int) $a->lln === (int) $b->lln && trim((string) $a->llndetails) === trim((string) $b->llndetails);
+        $value = fn($v) => $v === null ? null : (int) $v;
+        return $value($a->ra) === $value($b->ra) && trim((string) $a->radetails) === trim((string) $b->radetails)
+            && $value($a->lln) === $value($b->lln) && trim((string) $a->llndetails) === trim((string) $b->llndetails);
     }
 
     /**
@@ -326,7 +347,7 @@ class declarations {
      * @return stdClass recorded (bool), yes (bool), text ("N/A", the details, or "Not recorded")
      */
     public static function lln_line(?stdClass $record): stdClass {
-        if (!$record) {
+        if (!$record || $record->lln === null) {
             return (object) ['recorded' => false, 'yes' => false,
                 'text' => get_string('declnotrecorded', 'report_evidencereporter')];
         }

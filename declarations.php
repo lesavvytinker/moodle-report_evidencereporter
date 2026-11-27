@@ -102,31 +102,47 @@ if ($learnermode) {
 // Save.
 $posted = null;
 $errors = [];
+$answered = [];
 if (data_submitted() && confirm_sesskey()) {
     $shown = array_map('intval', optional_param_array('key', [], PARAM_INT));
-    $ra = optional_param_array('ra', [], PARAM_BOOL);
+    $ticks = [];
+    foreach (['ra_yes', 'ra_no', 'lln_yes', 'lln_no'] as $name) {
+        $ticks[$name] = optional_param_array($name, [], PARAM_BOOL);
+    }
     $radetails = optional_param_array('radetails', [], PARAM_TEXT);
-    $lln = optional_param_array('lln', [], PARAM_BOOL);
     $llndetails = optional_param_array('llndetails', [], PARAM_TEXT);
     $posted = [];
+    $errors = [];
     foreach ($shown as $key) {
         if (!isset($items[$key]) || !$items[$key]->canmanage) {
             continue;
         }
-        $posted[$key] = ['ra' => !empty($ra[$key]), 'radetails' => (string) ($radetails[$key] ?? ''),
-            'lln' => !empty($lln[$key]), 'llndetails' => (string) ($llndetails[$key] ?? '')];
+        $answer = ['radetails' => (string) ($radetails[$key] ?? ''), 'llndetails' => (string) ($llndetails[$key] ?? '')];
+        foreach (['ra', 'lln'] as $field) {
+            $yes = !empty($ticks[$field . '_yes'][$key]);
+            $no = !empty($ticks[$field . '_no'][$key]);
+            // Yes, No, or not answered (neither ticked): only what's answered is saved.
+            $answer[$field] = $yes && !$no ? true : ($no && !$yes ? false : null);
+            if ($yes && $no) {
+                $errors[$key][$field] = get_string('declbothticked', 'report_evidencereporter');
+            }
+        }
+        $posted[$key] = $answer;
     }
-    $errors = declarations::validate($posted);
-    if (!$errors && $posted) {
+    $errors = array_replace_recursive(declarations::validate($posted), $errors);
+    $answered = array_filter($posted, fn($a) => $a['ra'] !== null || $a['lln'] !== null);
+    if (!$errors && $answered) {
         // Save per assessment (in the learner view, one learner in each).
         $byactivity = [];
-        foreach ($posted as $key => $answer) {
+        foreach ($answered as $key => $answer) {
             $byactivity[(int) $items[$key]->cm->id][$items[$key]->userid] = $answer;
         }
+        $changed = 0;
         foreach ($byactivity as $id => $answers) {
-            declarations::save(get_fast_modinfo($course)->get_cm($id), $answers);
+            $changed += declarations::save(get_fast_modinfo($course)->get_cm($id), $answers);
         }
-        $message = get_string('declsaved', 'report_evidencereporter', count($posted));
+        $message = $changed ? get_string('declsaved', 'report_evidencereporter', $changed)
+            : get_string('declnochanges', 'report_evidencereporter');
         if (!$learnermode) {
             $outstanding = count(declarations::get_outstanding($cm));
             if ($outstanding && release_hold::status($cm)->held) {
@@ -134,6 +150,14 @@ if (data_submitted() && confirm_sesskey()) {
             }
         }
         redirect($url, $message, null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+    if (!$errors && !$answered) {
+        redirect(
+            $url,
+            get_string('declnothingticked', 'report_evidencereporter'),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
     }
 }
 
@@ -151,24 +175,28 @@ foreach ($items as $key => $item) {
     if ($posted !== null && isset($posted[$key])) {
         $answer = $posted[$key];
     } else if ($record) {
-        $answer = ['ra' => (bool) $record->ra, 'radetails' => (string) $record->radetails, 'lln' => (bool) $record->lln,
-            'llndetails' => (string) $record->llndetails];
+        $answer = ['ra' => $record->ra === null ? null : (bool) $record->ra, 'radetails' => (string) $record->radetails,
+            'lln' => $record->lln === null ? null : (bool) $record->lln, 'llndetails' => (string) $record->llndetails];
     } else {
-        // Not yet recorded: a detailed adjustment means "yes", described as recorded.
-        $answer = ['ra' => (bool) $formatted, 'radetails' => $itemstext, 'lln' => false, 'llndetails' => ''];
+        // Not answered yet: nothing ticked. A detailed adjustment is offered as the details, should RA be Yes.
+        $answer = ['ra' => null, 'radetails' => $itemstext, 'lln' => null, 'llndetails' => ''];
     }
     $row = [
         'key' => $key,
         'name' => $item->name,
         'canedit' => $item->canmanage,
-        'recorded' => (bool) $record,
+        'recorded' => declarations::is_complete($record),
+        'partly' => $record && !declarations::is_complete($record),
         // The carried-over note is shown on its own line.
-        'recordedtext' => $record ? declarations::recorded_text((object) (['carriedname' => ''] + (array) $record)) : '',
+        'recordedtext' => declarations::is_complete($record)
+            ? declarations::recorded_text((object) (['carriedname' => ''] + (array) $record)) : '',
         'carried' => $record && $record->carriedfrom ? $record->carriedname : '',
-        'ra' => $answer['ra'],
+        'rayes' => $answer['ra'] === true,
+        'rano' => $answer['ra'] === false,
         'radetails' => $answer['radetails'],
         'raerror' => $errors[$key]['ra'] ?? '',
-        'lln' => $answer['lln'],
+        'llnyes' => $answer['lln'] === true,
+        'llnno' => $answer['lln'] === false,
         'llndetails' => $answer['llndetails'],
         'llnerror' => $errors[$key]['lln'] ?? '',
         'adjustments' => $itemstext,

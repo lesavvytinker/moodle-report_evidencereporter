@@ -53,8 +53,9 @@ class declaration_saved extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        $ra = empty($this->other['ra']) ? 'no' : 'yes';
-        $lln = empty($this->other['lln']) ? 'no' : 'yes';
+        $answer = fn($value) => $value === null ? 'not answered' : (empty($value) ? 'no' : 'yes');
+        $ra = $answer($this->other['ra'] ?? null);
+        $lln = $answer($this->other['lln'] ?? null);
         return "The user with id '{$this->userid}' recorded reasonable adjustment '{$ra}' and LLN '{$lln}' for the user " .
             "with id '{$this->relateduserid}' in the activity with course module id '{$this->contextinstanceid}'.";
     }

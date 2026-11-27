@@ -459,4 +459,34 @@ final class declarations_test extends \advanced_testcase {
         $this->assertArrayHasKey('dmy', $datechoices);
         $this->assertSame('24-hour (14:05)', $timechoices['24']);
     }
+
+    /**
+     * Answers one at a time: nothing ticked saves nothing; one answer is kept but not yet recorded; the other completes it.
+     */
+    public function test_partial_answers(): void {
+        global $DB;
+        $d = $this->setup_data();
+        $this->setUser($d->teacher);
+        $blank = ['ra' => null, 'radetails' => '', 'lln' => null, 'llndetails' => ''];
+        $this->assertSame(0, declarations::save($d->assign, [$d->one->id => $blank]));
+        $this->assertFalse($DB->record_exists(declarations::TABLE, ['cmid' => $d->assign->id]));
+
+        declarations::save($d->assign, [$d->one->id => ['ra' => false] + $blank]);
+        $record = declarations::get((int) $d->assign->id, (int) $d->one->id);
+        $this->assertEquals(0, $record->ra);
+        $this->assertNull($record->lln);
+        $this->assertFalse(declarations::is_complete($record));
+        $this->assertContains((int) $d->one->id, declarations::get_outstanding($d->assign));
+        $this->assertSame('Not recorded', declarations::lln_line($record)->text);
+
+        // Answering LLN later keeps RA as it was.
+        declarations::save($d->assign, [$d->one->id => ['lln' => true, 'llndetails' => 'Read aloud'] + $blank]);
+        $record = declarations::get((int) $d->assign->id, (int) $d->one->id);
+        $this->assertEquals(0, $record->ra);
+        $this->assertEquals(1, $record->lln);
+        $this->assertTrue(declarations::is_complete($record));
+        $this->assertNotContains((int) $d->one->id, declarations::get_outstanding($d->assign));
+        // And leaving both blank later changes nothing.
+        $this->assertSame(0, declarations::save($d->assign, [$d->one->id => $blank]));
+    }
 }

@@ -299,7 +299,7 @@ class marking {
                 'adjustments' => count($recorded[$userid] ?? []) ?: (!empty($declared[$userid]->ra) ? 1 : 0),
                 'toconfirm' => count($suggested[$userid] ?? []),
                 // RA and LLN still to record for this learner here.
-                'declmissing' => isset($declneeded[$userid]) && !isset($declared[$userid]),
+                'declmissing' => isset($declneeded[$userid]) && !declarations::is_complete($declared[$userid] ?? null),
                 'adjustmentsurl' => $raavailable
                     ? (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false) : null];
             if ($gradevalue !== null && $item) {

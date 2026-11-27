@@ -52,6 +52,9 @@ Feature: Marking page
     Then I should see "RA and LLN: Sam Student"
     And I should see "Hazard task"
     And I should see "1 assessment(s) still to record."
+    And I set the following fields to these values:
+      | RA: No for Hazard task  | 1 |
+      | LLN: No for Hazard task | 1 |
     And I press "Save RA and LLN"
     And I should see "RA and LLN saved for 1 learner(s)."
     And I should see "RA and LLN are recorded for every assessment."

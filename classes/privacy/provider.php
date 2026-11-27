@@ -356,9 +356,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             ))),
         ];
         $answers = fn($r) => [
-            'reasonableadjustment' => \core_privacy\local\request\transform::yesno($r->ra),
+            'reasonableadjustment' => $r->ra === null ? '' : \core_privacy\local\request\transform::yesno($r->ra),
             'radetails' => $r->radetails,
-            'lln' => \core_privacy\local\request\transform::yesno($r->lln),
+            'lln' => $r->lln === null ? '' : \core_privacy\local\request\transform::yesno($r->lln),
             'llndetails' => $r->llndetails,
             'timemodified' => \core_privacy\local\request\transform::datetime($r->timemodified),
         ];

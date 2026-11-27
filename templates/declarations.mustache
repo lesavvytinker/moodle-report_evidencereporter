@@ -26,8 +26,9 @@
         "canmanage": true, "learnermode": false, "rowlabel": "Learner", "applies": true, "held": true, "exempt": false,
         "learnersheld": 0, "haslearnersheld": false, "outstanding": 1, "hasoutstanding": true, "hasrows": true,
         "shared": "AT1 Attempt 2", "backurl": null,
-        "rows": [{"key": 3, "name": "Paige Palette", "canedit": true, "recorded": false, "recordedtext": "", "carried": "",
-            "ra": true, "radetails": "Extra time (20 minutes)", "raerror": "", "lln": false, "llndetails": "", "llnerror": "",
+        "rows": [{"key": 3, "name": "Paige Palette", "canedit": true, "recorded": false, "partly": false, "recordedtext": "",
+            "carried": "", "rayes": true, "rano": false, "radetails": "Extra time (20 minutes)", "raerror": "",
+            "llnyes": false, "llnno": false, "llndetails": "", "llnerror": "",
             "adjustments": "Extra time (20 minutes)",
             "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "held": false, "url": null}]
     }
@@ -89,15 +90,27 @@
         <table class="table table-sm table-bordered er-declarations">
             <thead>
                 <tr>
-                    <th scope="col">{{rowlabel}}</th>
+                    <th scope="col" rowspan="2">{{rowlabel}}</th>
+                    <th scope="colgroup" colspan="3" class="text-center er-declgroup">{{#str}} declra, report_evidencereporter {{/str}}</th>
+                    <th scope="colgroup" colspan="3" class="text-center er-declgroup">{{#str}} decllln, report_evidencereporter {{/str}}</th>
+                </tr>
+                <tr>
                     <th scope="col" class="er-declcheck">
-                        <label class="d-block mb-1" for="er-all-ra">{{#str}} declrashort, report_evidencereporter {{/str}}</label>
-                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-ra" data-er-all="ra" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-ra">{{#learnermode}}{{#str}} declallraassessment, report_evidencereporter {{/str}}{{/learnermode}}{{^learnermode}}{{#str}} declallra, report_evidencereporter {{/str}}{{/learnermode}}</label>{{/canmanage}}
+                        <label class="d-block mb-1" for="er-all-rayes">{{#str}} yes {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-rayes" data-er-all="ra-yes"><label class="visually-hidden" for="er-all-rayes">{{#str}} declallrayes, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                    </th>
+                    <th scope="col" class="er-declcheck">
+                        <label class="d-block mb-1" for="er-all-rano">{{#str}} no {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-rano" data-er-all="ra-no"><label class="visually-hidden" for="er-all-rano">{{#str}} declallrano, report_evidencereporter {{/str}}</label>{{/canmanage}}
                     </th>
                     <th scope="col">{{#str}} declradetails, report_evidencereporter {{/str}}</th>
                     <th scope="col" class="er-declcheck">
-                        <label class="d-block mb-1" for="er-all-lln">{{#str}} decllnshort, report_evidencereporter {{/str}}</label>
-                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-lln" data-er-all="lln" title="{{#str}} declall, report_evidencereporter {{/str}}"><label class="visually-hidden" for="er-all-lln">{{#learnermode}}{{#str}} declallllnassessment, report_evidencereporter {{/str}}{{/learnermode}}{{^learnermode}}{{#str}} declalllln, report_evidencereporter {{/str}}{{/learnermode}}</label>{{/canmanage}}
+                        <label class="d-block mb-1" for="er-all-llnyes">{{#str}} yes {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-llnyes" data-er-all="lln-yes"><label class="visually-hidden" for="er-all-llnyes">{{#str}} declallllnyes, report_evidencereporter {{/str}}</label>{{/canmanage}}
+                    </th>
+                    <th scope="col" class="er-declcheck">
+                        <label class="d-block mb-1" for="er-all-llnno">{{#str}} no {{/str}}</label>
+                        {{#canmanage}}<input type="checkbox" class="form-check-input" id="er-all-llnno" data-er-all="lln-no"><label class="visually-hidden" for="er-all-llnno">{{#str}} declallllnno, report_evidencereporter {{/str}}</label>{{/canmanage}}
                     </th>
                     <th scope="col">{{#str}} declllndetails, report_evidencereporter {{/str}}</th>
                 </tr>
@@ -112,26 +125,34 @@
                         <div class="small">
                             {{#recorded}}<span class="text-muted">{{recordedtext}}</span>{{/recorded}}
                             {{#carried}}<div class="er-declcarried">{{#str}} declcarried, report_evidencereporter, {{.}} {{/str}}</div>{{/carried}}
-                            {{^recorded}}<span class="badge er-declnotrecorded">{{#str}} declnotrecorded, report_evidencereporter {{/str}}</span>{{/recorded}}
+                            {{^recorded}}{{#partly}}<span class="badge er-declpartly">{{#str}} declpartly, report_evidencereporter {{/str}}</span>{{/partly}}{{^partly}}<span class="badge er-declnotrecorded">{{#str}} declnotrecorded, report_evidencereporter {{/str}}</span>{{/partly}}{{/recorded}}
                         </div>
                     </th>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="ra[{{key}}]" value="1" id="er-ra-{{key}}" data-er-col="ra"{{#ra}} checked{{/ra}}{{^canedit}} disabled{{/canedit}}>
-                        <label class="visually-hidden" for="er-ra-{{key}}">{{#str}} declrafor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <input type="checkbox" class="form-check-input" name="ra_yes[{{key}}]" value="1" id="er-rayes-{{key}}" data-er-col="ra-yes" data-er-field="ra" data-er-answer="yes"{{#rayes}} checked{{/rayes}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-rayes-{{key}}">{{#str}} declrayesfor, report_evidencereporter, {{name}} {{/str}}</label>
+                    </td>
+                    <td class="er-declcheck">
+                        <input type="checkbox" class="form-check-input" name="ra_no[{{key}}]" value="1" id="er-rano-{{key}}" data-er-col="ra-no" data-er-field="ra" data-er-answer="no"{{#rano}} checked{{/rano}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-rano-{{key}}">{{#str}} declranofor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td>
                         <label class="visually-hidden" for="er-radetails-{{key}}">{{#str}} declradetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
-                        <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{key}}" name="radetails[{{key}}]" rows="2" data-er-details="ra"{{^ra}} disabled{{/ra}}{{^canedit}} readonly{{/canedit}}>{{radetails}}</textarea>
+                        <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{key}}" name="radetails[{{key}}]" rows="2" data-er-details="ra"{{^rayes}} disabled{{/rayes}}{{^canedit}} readonly{{/canedit}}>{{radetails}}</textarea>
                         {{#raerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/raerror}}
                         {{#adjustments}}<div class="small text-muted mt-1">{{#str}} decladjustmentsrecorded, report_evidencereporter {{/str}}: <a href="{{adjustmentsurl}}">{{.}}</a></div>{{/adjustments}}
                     </td>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="lln[{{key}}]" value="1" id="er-lln-{{key}}" data-er-col="lln"{{#lln}} checked{{/lln}}{{^canedit}} disabled{{/canedit}}>
-                        <label class="visually-hidden" for="er-lln-{{key}}">{{#str}} declllnfor, report_evidencereporter, {{name}} {{/str}}</label>
+                        <input type="checkbox" class="form-check-input" name="lln_yes[{{key}}]" value="1" id="er-llnyes-{{key}}" data-er-col="lln-yes" data-er-field="lln" data-er-answer="yes"{{#llnyes}} checked{{/llnyes}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-llnyes-{{key}}">{{#str}} declllnyesfor, report_evidencereporter, {{name}} {{/str}}</label>
+                    </td>
+                    <td class="er-declcheck">
+                        <input type="checkbox" class="form-check-input" name="lln_no[{{key}}]" value="1" id="er-llnno-{{key}}" data-er-col="lln-no" data-er-field="lln" data-er-answer="no"{{#llnno}} checked{{/llnno}}{{^canedit}} disabled{{/canedit}}>
+                        <label class="visually-hidden" for="er-llnno-{{key}}">{{#str}} declllnnofor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td>
                         <label class="visually-hidden" for="er-llndetails-{{key}}">{{#str}} declllndetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
-                        <textarea class="form-control form-control-sm{{#llnerror}} is-invalid{{/llnerror}}" id="er-llndetails-{{key}}" name="llndetails[{{key}}]" rows="2" data-er-details="lln"{{^lln}} disabled{{/lln}}{{^canedit}} readonly{{/canedit}}>{{llndetails}}</textarea>
+                        <textarea class="form-control form-control-sm{{#llnerror}} is-invalid{{/llnerror}}" id="er-llndetails-{{key}}" name="llndetails[{{key}}]" rows="2" data-er-details="lln"{{^llnyes}} disabled{{/llnyes}}{{^canedit}} readonly{{/canedit}}>{{llndetails}}</textarea>
                         {{#llnerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/llnerror}}
                     </td>
                 </tr>
@@ -153,32 +174,46 @@
     if (!root) {
         return;
     }
+    var cols = ['ra-yes', 'ra-no', 'lln-yes', 'lln-no'];
     var boxes = function(col) {
         return Array.prototype.slice.call(root.querySelectorAll('input[data-er-col="' + col + '"]:not([disabled])'));
     };
+    // Yes and No exclude each other; the details box opens on Yes.
     var sync = function(box) {
-        var details = box.closest('tr').querySelector('textarea[data-er-details="' + box.dataset.erCol + '"]');
-        if (details) {
-            details.disabled = !box.checked;
+        var row = box.closest('tr');
+        var field = box.dataset.erField;
+        if (box.checked) {
+            var other = box.dataset.erAnswer === 'yes' ? 'no' : 'yes';
+            var sibling = row.querySelector('input[data-er-col="' + field + '-' + other + '"]');
+            if (sibling) {
+                sibling.checked = false;
+            }
+        }
+        var yes = row.querySelector('input[data-er-col="' + field + '-yes"]');
+        var details = row.querySelector('textarea[data-er-details="' + field + '"]');
+        if (details && yes) {
+            details.disabled = !yes.checked;
         }
     };
-    var syncAll = function(col) {
-        var all = root.querySelector('input[data-er-all="' + col + '"]');
-        if (!all) {
-            return;
-        }
-        var list = boxes(col);
-        var ticked = list.filter(function(b) {
-            return b.checked;
-        }).length;
-        all.checked = list.length > 0 && ticked === list.length;
-        all.indeterminate = ticked > 0 && ticked < list.length;
+    var syncAll = function() {
+        cols.forEach(function(col) {
+            var all = root.querySelector('input[data-er-all="' + col + '"]');
+            if (!all) {
+                return;
+            }
+            var list = boxes(col);
+            var ticked = list.filter(function(b) {
+                return b.checked;
+            }).length;
+            all.checked = list.length > 0 && ticked === list.length;
+            all.indeterminate = ticked > 0 && ticked < list.length;
+        });
     };
-    ['ra', 'lln'].forEach(function(col) {
+    cols.forEach(function(col) {
         boxes(col).forEach(function(box) {
             box.addEventListener('change', function() {
                 sync(box);
-                syncAll(col);
+                syncAll();
             });
         });
         var all = root.querySelector('input[data-er-all="' + col + '"]');
@@ -188,10 +223,10 @@
                     box.checked = all.checked;
                     sync(box);
                 });
-                syncAll(col);
+                syncAll();
             });
         }
-        syncAll(col);
     });
+    syncAll();
 })();
 {{/js}}
