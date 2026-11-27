@@ -94,6 +94,27 @@ class declarations {
     }
 
     /**
+     * May the current user see this learner in this activity? Not when the activity uses separate groups and they share
+     * no group (in the activity's grouping), unless they may access all groups.
+     *
+     * @param cm_info $cm
+     * @param int $userid
+     * @return bool
+     */
+    public static function can_see_learner(cm_info $cm, int $userid): bool {
+        global $USER;
+        if (
+            groups_get_activity_groupmode($cm) != SEPARATEGROUPS
+                || has_capability('moodle/site:accessallgroups', context_module::instance($cm->id))
+        ) {
+            return true;
+        }
+        $mine = array_keys(groups_get_all_groups($cm->course, $USER->id, $cm->groupingid));
+        $theirs = array_keys(groups_get_all_groups($cm->course, $userid, $cm->groupingid));
+        return (bool) array_intersect($mine, $theirs);
+    }
+
+    /**
      * An activity's answers, by learner.
      *
      * @param int $cmid
@@ -232,6 +253,97 @@ class declarations {
             array_map('intval', array_keys(self::get_learners($cm))),
             fn($userid) => !self::is_complete($recorded[$userid] ?? null)
         ));
+    }
+
+    /**
+     * Read submitted Yes and No ticks (ra_yes, ra_no, lln_yes, lln_no) and details (radetails, llndetails), keyed by row.
+     *
+     * @param int[] $keys The rows to read
+     * @return array [answers (key => see {@see validate()}), errors (key => field => message: both Yes and No ticked)]
+     */
+    public static function from_request(array $keys): array {
+        $ticks = [];
+        foreach (['ra_yes', 'ra_no', 'lln_yes', 'lln_no'] as $name) {
+            $ticks[$name] = optional_param_array($name, [], PARAM_BOOL);
+        }
+        $details = ['ra' => optional_param_array('radetails', [], PARAM_TEXT),
+            'lln' => optional_param_array('llndetails', [], PARAM_TEXT)];
+        $answers = [];
+        $errors = [];
+        foreach ($keys as $key) {
+            $answer = [];
+            foreach (['ra', 'lln'] as $field) {
+                $yes = !empty($ticks[$field . '_yes'][$key]);
+                $no = !empty($ticks[$field . '_no'][$key]);
+                // Yes, No, or not answered (neither ticked): only what's answered is saved.
+                $answer[$field] = $yes && !$no ? true : ($no && !$yes ? false : null);
+                $answer[$field . 'details'] = (string) ($details[$field][$key] ?? '');
+                if ($yes && $no) {
+                    $errors[$key][$field] = get_string('declbothticked', 'report_evidencereporter');
+                }
+            }
+            $answers[$key] = $answer;
+        }
+        return [$answers, array_replace_recursive(self::validate($answers), $errors)];
+    }
+
+    /**
+     * One row of the RA and LLN table, for the template (see declarations_table).
+     *
+     * @param cm_info $cm
+     * @param int $key The row's key (a learner's or an activity's id)
+     * @param string $name The row's label
+     * @param bool $canedit
+     * @param stdClass|null $record The learner's answers here (see {@see get_effective()})
+     * @param stdClass[] $adjustments The learner's detailed adjustments here
+     * @param array|null $posted Answers just submitted (shown again when they had errors)
+     * @param array $errors field => message
+     * @return array
+     */
+    public static function export_row(
+        cm_info $cm,
+        int $key,
+        string $name,
+        bool $canedit,
+        ?stdClass $record,
+        array $adjustments,
+        ?array $posted = null,
+        array $errors = []
+    ): array {
+        $formatted = reasonable_adjustments::format($adjustments);
+        $itemstext = $formatted ? reasonable_adjustments::to_text($formatted, false, '; ') : '';
+        if ($posted !== null) {
+            $answer = $posted;
+        } else if ($record) {
+            $answer = ['ra' => $record->ra === null ? null : (bool) $record->ra, 'radetails' => (string) $record->radetails,
+                'lln' => $record->lln === null ? null : (bool) $record->lln, 'llndetails' => (string) $record->llndetails];
+        } else {
+            // Not answered yet: nothing ticked. A detailed adjustment is offered as the details, should RA be Yes.
+            $answer = ['ra' => null, 'radetails' => $itemstext, 'lln' => null, 'llndetails' => ''];
+        }
+        $complete = self::is_complete($record);
+        return [
+            'key' => $key,
+            'name' => $name,
+            'canedit' => $canedit,
+            'recorded' => $complete,
+            'partly' => $record && !$complete,
+            // The carried-over note is shown on its own line.
+            'recordedtext' => $complete ? self::recorded_text((object) (['carriedname' => ''] + (array) $record)) : '',
+            'carried' => $record && !empty($record->carriedfrom) ? $record->carriedname : '',
+            'rayes' => $answer['ra'] === true,
+            'rano' => $answer['ra'] === false,
+            'radetails' => $answer['radetails'],
+            'raerror' => $errors['ra'] ?? '',
+            'llnyes' => $answer['lln'] === true,
+            'llnno' => $answer['lln'] === false,
+            'llndetails' => $answer['llndetails'],
+            'llnerror' => $errors['lln'] ?? '',
+            'adjustments' => $itemstext,
+            'adjustmentsurl' => (new \moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false),
+            'held' => false,
+            'url' => null,
+        ];
     }
 
     /**

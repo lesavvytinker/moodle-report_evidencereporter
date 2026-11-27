@@ -70,6 +70,58 @@ class tool_details {
     }
 
     /**
+     * Every field, in form order.
+     *
+     * @return string[]
+     */
+    public static function get_fields(): array {
+        return array_merge(['toolversion', 'reviewdate', 'reviewedby'], self::TEXTFIELDS);
+    }
+
+    /**
+     * A field's label.
+     *
+     * @param string $field
+     * @return string
+     */
+    public static function field_label(string $field): string {
+        return get_string($field === 'toolversion' ? 'toolversion' : 'tool' . $field, 'report_evidencereporter');
+    }
+
+    /**
+     * The fields that must be filled in before marking (site setting; by default version, review date and reviewer).
+     *
+     * @return string[]
+     */
+    public static function get_required_fields(): array {
+        $value = get_config('report_evidencereporter', 'toolrequired');
+        if ($value === false || $value === null) {
+            return ['toolversion', 'reviewdate', 'reviewedby'];
+        }
+        return array_values(array_intersect(self::get_fields(), explode(',', (string) $value)));
+    }
+
+    /**
+     * Required fields not yet filled in for an activity (example text counts as not filled in).
+     *
+     * @param int $cmid
+     * @return string[] Field names, in form order
+     */
+    public static function get_missing_fields(int $cmid): array {
+        $details = self::get($cmid);
+        $missing = [];
+        foreach (self::get_required_fields() as $field) {
+            $value = $details->$field ?? '';
+            $filled = $field === 'reviewdate' ? (int) $value > 0
+                : trim((string) $value) !== '' && !self::is_example((string) $value);
+            if (!$filled) {
+                $missing[] = $field;
+            }
+        }
+        return $missing;
+    }
+
+    /**
      * Does the activity have tool details saved?
      *
      * @param int $cmid

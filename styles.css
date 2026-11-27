@@ -285,3 +285,20 @@
 .report-evidencereporter-declarations th.er-declgroup {
     border-bottom-width: 2px;
 }
+.report-evidencereporter-beforemarking .er-stepnum {
+    display: inline-block;
+    width: 1.6em;
+    height: 1.6em;
+    line-height: 1.6em;
+    border-radius: 50%;
+    background-color: #1d4ed8;
+    color: #fff;
+    text-align: center;
+    font-size: .9em;
+}
+.report-evidencereporter-beforemarking .er-stepmark {
+    color: #15803d;
+}
+.report-evidencereporter-beforemarking .er-stepdone {
+    border-left: 4px solid #15803d;
+}

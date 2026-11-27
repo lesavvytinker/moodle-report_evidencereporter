@@ -131,6 +131,24 @@ if ($hassiteconfig && $settings) {
         $timechoices
     ));
 
+    // Before marking.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/beforemarkingheading',
+        get_string('settings_beforemarking', 'report_evidencereporter'),
+        get_string('settings_beforemarking_desc', 'report_evidencereporter')
+    ));
+    $toolfields = [];
+    foreach (\report_evidencereporter\local\tool_details::get_fields() as $field) {
+        $toolfields[$field] = \report_evidencereporter\local\tool_details::field_label($field);
+    }
+    $settings->add(new admin_setting_configmulticheckbox(
+        'report_evidencereporter/toolrequired',
+        get_string('settings_toolrequired', 'report_evidencereporter'),
+        get_string('settings_toolrequired_desc', 'report_evidencereporter'),
+        ['toolversion' => 1, 'reviewdate' => 1, 'reviewedby' => 1],
+        $toolfields
+    ));
+
     // Summary sections and sign-off.
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/sectionsheading',

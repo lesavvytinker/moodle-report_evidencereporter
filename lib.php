@@ -189,3 +189,19 @@ function report_evidencereporter_releasehold_updated(): void {
         \report_evidencereporter\local\release_hold::exempt_graded();
     }
 }
+
+/**
+ * User preferences Evidence Reporter keeps.
+ *
+ * @return array
+ */
+function report_evidencereporter_user_preferences(): array {
+    return [
+        \report_evidencereporter\local\before_marking::PREFERENCE => [
+            'type' => PARAM_BOOL,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 0,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+    ];
+}

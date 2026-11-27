@@ -25,11 +25,13 @@
         "units": [{"id": 0, "label": "All units", "selected": true}, {"id": 5, "label": "CUAIND512 Enhance practice", "selected": false}],
         "oneunit": false, "hasassessments": true, "hasrows": true,
         "assessments": [{"name": "AT1 Quiz", "url": "https://example.com/mod/quiz/view.php?id=1", "icon": "https://example.com/icon.svg",
+            "toolmissing": true,
             "decl": {"url": "https://example.com/report/evidencereporter/declarations.php?cmid=1", "outstanding": 2, "hasoutstanding": true, "held": true} }],
-        "hasdecl": true,
+        "hasdecl": true, "checkbefore": false,
+        "checkbeforeurl": "https://example.com/report/evidencereporter/marking.php?courseid=2&checkbeforemarking=1",
         "rows": [{"name": "Paige Palette", "profileurl": "https://example.com/user/view.php?id=3", "highlight": "amber",
             "cells": [{"status": "tomark", "age": "amber", "label": "To mark: 8 days", "grade": "", "attempt": "Attempt 1 of 3",
-                "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false, "noattemptsleft": false,
+                "url": "https://example.com/mod/quiz/report.php?id=1&mode=grading", "flag": false, "noattemptsleft": false, "checkfirst": false,
                 "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "hasadjustments": true,
                 "adjustments": 1, "hastoconfirm": false, "toconfirm": 0}],
             "unit": null, "hasready": false, "readycount": 0,
@@ -51,7 +53,8 @@
             {{#units}}<option value="{{id}}"{{#selected}} selected{{/selected}}>{{label}}</option>{{/units}}
         </select>
         <noscript><button type="submit" class="btn btn-secondary">{{#str}} show {{/str}}</button></noscript>
-        <a class="ms-auto small" href="{{overviewurl}}">{{#str}} markingallcourses, report_evidencereporter {{/str}}</a>
+        <a class="ms-auto small me-3 er-checkbefore" href="{{checkbeforeurl}}" role="switch" aria-checked="{{#checkbefore}}true{{/checkbefore}}{{^checkbefore}}false{{/checkbefore}}">{{#checkbefore}}&#9745;{{/checkbefore}}{{^checkbefore}}&#9744;{{/checkbefore}} {{#str}} markingcheckbefore, report_evidencereporter {{/str}}</a>
+        <a class="small" href="{{overviewurl}}">{{#str}} markingallcourses, report_evidencereporter {{/str}}</a>
     </form>
 
     <ul class="er-markingcounts list-inline mb-2">
@@ -83,6 +86,7 @@
                 <th scope="col">{{learnerlabel}}</th>
                 {{#assessments}}
                 <th scope="col"><a href="{{url}}"><img src="{{icon}}" class="icon" alt="">{{name}}</a>
+                    {{#toolmissing}}<div class="small fw-normal"><span class="badge er-readypending">{{#str}} markingtoolmissing, report_evidencereporter {{/str}}</span></div>{{/toolmissing}}
                     {{#decl}}
                     <div class="small fw-normal">
                         <a href="{{url}}" class="er-decllink">{{#hasoutstanding}}{{#str}} markingdecl, report_evidencereporter, {{outstanding}} {{/str}}{{/hasoutstanding}}{{^hasoutstanding}}{{#str}} markingdecldone, report_evidencereporter {{/str}}{{/hasoutstanding}}</a>
@@ -107,7 +111,7 @@
                 </th>
                 {{#cells}}
                 <td class="er-cell er-status-{{status}}{{#age}} er-age-{{.}}{{/age}}">
-                    <a href="{{url}}" class="er-celllink">{{#flag}}<span class="er-flag" aria-hidden="true">&#9873;</span> {{/flag}}{{label}}</a>
+                    <a href="{{url}}" class="er-celllink">{{#checkfirst}}<span class="visually-hidden">{{#str}} markingcheckfirst, report_evidencereporter {{/str}}</span>{{/checkfirst}}{{#flag}}<span class="er-flag" aria-hidden="true">&#9873;</span> {{/flag}}{{label}}</a>
                     {{#grade}}<div class="small">{{.}}</div>{{/grade}}
                     {{#attempt}}<div class="small text-muted">{{.}}</div>{{/attempt}}
                     {{#noattemptsleft}}<div><span class="badge er-noattempts">{{#str}} snapnoattemptsleft, report_evidencereporter {{/str}}</span></div>{{/noattemptsleft}}

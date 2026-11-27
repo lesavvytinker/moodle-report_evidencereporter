@@ -62,6 +62,14 @@ $course = get_course($courseid);
 require_login($course, false);
 $context = context_course::instance($course->id);
 require_capability('report/evidencereporter:marking', $context);
+// Each marker chooses whether to "Check before marking".
+$check = optional_param('checkbeforemarking', -1, PARAM_INT);
+if ($check >= 0 && confirm_sesskey()) {
+    \report_evidencereporter\local\before_marking::set((bool) $check);
+    redirect(new moodle_url('/report/evidencereporter/marking.php', ['courseid' => $course->id]
+        + ($unitid ? ['unitid' => $unitid] : [])));
+}
+$checkbefore = \report_evidencereporter\local\before_marking::is_on();
 $params = ['courseid' => $course->id] + ($unitid ? ['unitid' => $unitid] : []);
 $url = new moodle_url('/report/evidencereporter/marking.php', $params);
 $PAGE->set_url($url);
@@ -89,9 +97,14 @@ foreach ($grid->assessments as $cmid => $assessment) {
             'held' => $hold->applies && ($hold->held || $hold->learnersheld > 0)];
     }
     $assessments[] = ['name' => $assessment->cm->get_formatted_name(), 'url' => $assessment->cm->url->out(false),
-        'icon' => $assessment->cm->get_icon_url()->out(false), 'decl' => $decl];
+        'icon' => $assessment->cm->get_icon_url()->out(false), 'decl' => $decl,
+        'toolmissing' => (bool) \report_evidencereporter\local\tool_details::get_missing_fields((int) $cmid)];
 }
 $unitids = $grid->unitid !== null ? [$grid->unitid] : array_keys($grid->units);
+$toolcomplete = [];
+foreach ($grid->assessments as $cmid => $assessment) {
+    $toolcomplete[$cmid] = !\report_evidencereporter\local\tool_details::get_missing_fields((int) $cmid);
+}
 $statuslabels = [];
 foreach (
     [marking::STATUS_NOTSUBMITTED, marking::STATUS_INPROGRESS, marking::STATUS_TOMARK, marking::STATUS_NOTRELEASED,
@@ -119,7 +132,11 @@ foreach ($grid->rows as $row) {
             'label' => $label,
             'grade' => $cell->grade,
             'attempt' => in_array($cell->status, [marking::STATUS_NOTSUBMITTED, marking::STATUS_NOTMARKED]) ? '' : $cell->attempt,
-            'url' => $cell->url,
+            // With "Check before marking" on, a learner with something still to do goes through the checklist first.
+            'url' => $checkbefore && (!$toolcomplete[$cmid] || !empty($cell->declmissing))
+                ? (new moodle_url('/report/evidencereporter/beforemarking.php', ['cmid' => $cmid,
+                    'userid' => $row->userid]))->out(false) : $cell->url,
+            'checkfirst' => $checkbefore && (!$toolcomplete[$cmid] || !empty($cell->declmissing)),
             'flag' => $cell->status === marking::STATUS_FEEDBACK,
             'noattemptsleft' => !empty($cell->noattemptsleft),
             'adjustmentsurl' => $cell->adjustmentsurl,
@@ -178,6 +195,10 @@ echo $OUTPUT->render_from_template('report_evidencereporter/marking', [
     'hasrows' => (bool) $rows,
     'counts' => marking_count_data($grid->counts),
     'hasdecl' => $hasdecl,
+    'checkbefore' => $checkbefore,
+    'checkbeforeurl' => (new moodle_url('/report/evidencereporter/marking.php', ['courseid' => $course->id,
+        'checkbeforemarking' => $checkbefore ? 0 : 1, 'sesskey' => sesskey()] + ($unitid ? ['unitid' => $unitid] : [])))
+        ->out(false),
     'thresholds' => marking_threshold_data(),
     'overviewurl' => (new moodle_url('/report/evidencereporter/marking.php'))->out(false),
 ]);

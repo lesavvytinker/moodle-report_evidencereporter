@@ -20,6 +20,7 @@ use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
+use core_privacy\local\request\user_preference_provider;
 use core_privacy\local\request\{approved_contextlist, approved_userlist, contextlist, userlist, writer};
 use report_evidencereporter\local\bulk;
 use report_evidencereporter\local\reasonable_adjustments;
@@ -41,7 +42,7 @@ use report_evidencereporter\local\sampling;
  * @copyright  2026 Daniel Maloney
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements core_userlist_provider, metadata_provider, plugin_provider {
+class provider implements core_userlist_provider, metadata_provider, plugin_provider, user_preference_provider {
     /**
      * Describe stored data.
      *
@@ -90,6 +91,14 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'usermodified' => 'privacy:metadata:decl:usermodified',
             'timemodified' => 'privacy:metadata:decl:timemodified',
         ], 'privacy:metadata:decl');
+        $collection->add_database_table(\report_evidencereporter\local\before_marking::TABLE, [
+            'userid' => 'privacy:metadata:ntf:userid',
+            'timecreated' => 'privacy:metadata:ntf:timecreated',
+        ], 'privacy:metadata:ntf');
+        $collection->add_user_preference(
+            \report_evidencereporter\local\before_marking::PREFERENCE,
+            'privacy:metadata:preference:checkbeforemarking'
+        );
         $collection->add_database_table(release_hold::TABLE, [
             'userid' => 'privacy:metadata:hold:userid',
         ], 'privacy:metadata:hold');
@@ -129,6 +138,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
                   JOIN {" . declarations::TABLE . "} d ON d.cmid = ctx.instanceid
                  WHERE ctx.contextlevel = :modlevel AND (d.userid = :u1 OR d.usermodified = :u2)";
         $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid, 'u2' => $userid]);
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {" . \report_evidencereporter\local\before_marking::TABLE . "} n ON n.cmid = ctx.instanceid
+                 WHERE ctx.contextlevel = :modlevel AND n.userid = :u1";
+        $contextlist->add_from_sql($sql, ['modlevel' => CONTEXT_MODULE, 'u1' => $userid]);
         return $contextlist;
     }
 
@@ -168,6 +182,12 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
                     ['cmid' => $context->instanceid]
                 );
             }
+            $userlist->add_from_sql(
+                'userid',
+                "SELECT userid FROM {" . \report_evidencereporter\local\before_marking::TABLE . "}
+                  WHERE cmid = :cmid AND userid > 0",
+                ['cmid' => $context->instanceid]
+            );
             return;
         }
         if ($context->contextlevel != CONTEXT_USER) {
@@ -215,6 +235,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             $DB->delete_records(reasonable_adjustments::TABLE, ['cmid' => $context->instanceid]);
             $DB->delete_records(attempt_snapshots::TABLE, ['cmid' => $context->instanceid]);
             $DB->delete_records(declarations::TABLE, ['cmid' => $context->instanceid]);
+            $DB->delete_records(\report_evidencereporter\local\before_marking::TABLE, ['cmid' => $context->instanceid]);
         }
         if ($context->contextlevel == CONTEXT_USER) {
             get_file_storage()->delete_area_files($context->id, 'report_evidencereporter', bulk::FILEAREA);
@@ -362,6 +383,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'llndetails' => $r->llndetails,
             'timemodified' => \core_privacy\local\request\transform::datetime($r->timemodified),
         ];
+        $data['tooldetailsreported'] = array_values(array_map(
+            fn($n) => ['timecreated' => \core_privacy\local\request\transform::datetime($n->timecreated)],
+            $DB->get_records(\report_evidencereporter\local\before_marking::TABLE, ['cmid' => $context->instanceid,
+                'userid' => $userid], 'id')
+        ));
         $foryou = $DB->get_record(declarations::TABLE, ['cmid' => $context->instanceid, 'userid' => $userid]);
         $data['raandllnforyou'] = $foryou ? $answers($foryou) : [];
         $data['raandllnrecordedbyyou'] = array_values(array_map($answers, $DB->get_records(
@@ -395,6 +421,13 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $DB->delete_records_select(declarations::TABLE, "cmid = :cmid AND userid $in", $params);
         $DB->set_field_select(declarations::TABLE, 'usermodified', 0, "cmid = :cmid AND usermodified $in", $params);
         $DB->delete_records_select(release_hold::TABLE, "cmid = :cmid AND userid $in", $params);
+        $DB->set_field_select(
+            \report_evidencereporter\local\before_marking::TABLE,
+            'userid',
+            0,
+            "cmid = :cmid AND userid $in",
+            $params
+        );
     }
 
     /**
@@ -425,6 +458,23 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         ];
         if (array_filter($data)) {
             writer::with_context($context)->export_data([get_string('snapattempts', 'report_evidencereporter')], (object) $data);
+        }
+    }
+
+    /**
+     * Export the user's preferences.
+     *
+     * @param int $userid
+     */
+    public static function export_user_preferences(int $userid) {
+        $value = get_user_preferences(\report_evidencereporter\local\before_marking::PREFERENCE, null, $userid);
+        if ($value !== null) {
+            writer::export_user_preference(
+                'report_evidencereporter',
+                \report_evidencereporter\local\before_marking::PREFERENCE,
+                \core_privacy\local\request\transform::yesno($value),
+                get_string('privacy:metadata:preference:checkbeforemarking', 'report_evidencereporter')
+            );
         }
     }
 }

@@ -44,6 +44,15 @@ if ($learnermode) {
     require_login($course, false);
     require_capability('report/evidencereporter:marking', context_course::instance($course->id));
     $learner = core_user::get_user($userid, '*', MUST_EXIST);
+    // Only learners the assessor marks: in the course, and in their groups when the course separates them.
+    if (!isset(\report_evidencereporter\local\marking::get_learners((int) $course->id)[$userid])) {
+        throw new required_capability_exception(
+            context_course::instance($course->id),
+            'moodle/site:accessallgroups',
+            'nopermissions',
+            ''
+        );
+    }
     $url = new moodle_url('/report/evidencereporter/declarations.php', ['courseid' => $course->id, 'userid' => $userid]);
     $PAGE->set_url($url);
     $PAGE->set_pagelayout('report');
@@ -58,7 +67,10 @@ if ($learnermode) {
             continue;
         }
         $context = context_module::instance($cm->id);
-        if (!has_any_capability($cancapabilities, $context) || !isset(declarations::get_learners($cm)[$userid])) {
+        if (
+            !has_any_capability($cancapabilities, $context) || !isset(declarations::get_learners($cm)[$userid])
+                || !declarations::can_see_learner($cm, $userid)
+        ) {
             continue;
         }
         $items[(int) $cm->id] = (object) ['key' => (int) $cm->id, 'cm' => $cm, 'userid' => $userid,
@@ -104,32 +116,11 @@ $posted = null;
 $errors = [];
 $answered = [];
 if (data_submitted() && confirm_sesskey()) {
-    $shown = array_map('intval', optional_param_array('key', [], PARAM_INT));
-    $ticks = [];
-    foreach (['ra_yes', 'ra_no', 'lln_yes', 'lln_no'] as $name) {
-        $ticks[$name] = optional_param_array($name, [], PARAM_BOOL);
-    }
-    $radetails = optional_param_array('radetails', [], PARAM_TEXT);
-    $llndetails = optional_param_array('llndetails', [], PARAM_TEXT);
-    $posted = [];
-    $errors = [];
-    foreach ($shown as $key) {
-        if (!isset($items[$key]) || !$items[$key]->canmanage) {
-            continue;
-        }
-        $answer = ['radetails' => (string) ($radetails[$key] ?? ''), 'llndetails' => (string) ($llndetails[$key] ?? '')];
-        foreach (['ra', 'lln'] as $field) {
-            $yes = !empty($ticks[$field . '_yes'][$key]);
-            $no = !empty($ticks[$field . '_no'][$key]);
-            // Yes, No, or not answered (neither ticked): only what's answered is saved.
-            $answer[$field] = $yes && !$no ? true : ($no && !$yes ? false : null);
-            if ($yes && $no) {
-                $errors[$key][$field] = get_string('declbothticked', 'report_evidencereporter');
-            }
-        }
-        $posted[$key] = $answer;
-    }
-    $errors = array_replace_recursive(declarations::validate($posted), $errors);
+    $shown = array_values(array_filter(
+        array_map('intval', optional_param_array('key', [], PARAM_INT)),
+        fn($key) => isset($items[$key]) && $items[$key]->canmanage
+    ));
+    [$posted, $errors] = declarations::from_request($shown);
     $answered = array_filter($posted, fn($a) => $a['ra'] !== null || $a['lln'] !== null);
     if (!$errors && $answered) {
         // Save per assessment (in the learner view, one learner in each).
@@ -169,41 +160,16 @@ foreach ($items as $key => $item) {
     $id = (int) $item->cm->id;
     $effective[$id] ??= declarations::get_effective($item->cm);
     $adjustments[$id] ??= reasonable_adjustments::get_for_activity($id);
-    $record = $effective[$id][$item->userid] ?? null;
-    $formatted = reasonable_adjustments::format($adjustments[$id][$item->userid] ?? []);
-    $itemstext = $formatted ? reasonable_adjustments::to_text($formatted, false, '; ') : '';
-    if ($posted !== null && isset($posted[$key])) {
-        $answer = $posted[$key];
-    } else if ($record) {
-        $answer = ['ra' => $record->ra === null ? null : (bool) $record->ra, 'radetails' => (string) $record->radetails,
-            'lln' => $record->lln === null ? null : (bool) $record->lln, 'llndetails' => (string) $record->llndetails];
-    } else {
-        // Not answered yet: nothing ticked. A detailed adjustment is offered as the details, should RA be Yes.
-        $answer = ['ra' => null, 'radetails' => $itemstext, 'lln' => null, 'llndetails' => ''];
-    }
-    $row = [
-        'key' => $key,
-        'name' => $item->name,
-        'canedit' => $item->canmanage,
-        'recorded' => declarations::is_complete($record),
-        'partly' => $record && !declarations::is_complete($record),
-        // The carried-over note is shown on its own line.
-        'recordedtext' => declarations::is_complete($record)
-            ? declarations::recorded_text((object) (['carriedname' => ''] + (array) $record)) : '',
-        'carried' => $record && $record->carriedfrom ? $record->carriedname : '',
-        'rayes' => $answer['ra'] === true,
-        'rano' => $answer['ra'] === false,
-        'radetails' => $answer['radetails'],
-        'raerror' => $errors[$key]['ra'] ?? '',
-        'llnyes' => $answer['lln'] === true,
-        'llnno' => $answer['lln'] === false,
-        'llndetails' => $answer['llndetails'],
-        'llnerror' => $errors[$key]['lln'] ?? '',
-        'adjustments' => $itemstext,
-        'adjustmentsurl' => (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $id]))->out(false),
-        'held' => false,
-        'url' => null,
-    ];
+    $row = declarations::export_row(
+        $item->cm,
+        $key,
+        $item->name,
+        $item->canmanage,
+        $effective[$id][$item->userid] ?? null,
+        $adjustments[$id][$item->userid] ?? [],
+        $posted[$key] ?? null,
+        $errors[$key] ?? []
+    );
     if ($learnermode) {
         $hold = release_hold::status($item->cm);
         $row['held'] = $hold->applies && ($hold->held || $hold->learnersheld > 0);

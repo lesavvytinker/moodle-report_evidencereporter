@@ -66,3 +66,24 @@ Feature: Marking page
   Scenario: Learners don't get the marking page
     Given I am on the "Course 1" "course" page logged in as "student1"
     Then "Marking" "link" should not exist
+
+  Scenario: Check before marking: tool details, then RA and LLN, then marking
+    Given I am on the "Course 1" "course" page logged in as "teacher1"
+    And I navigate to "Reports > Marking" in current page administration
+    And I should see "Tool details missing"
+    When I click on "Check before marking" "link"
+    And I click on "Not submitted" "link" in the "Sam Student" "table_row"
+    Then I should see "Before marking: Sam Student"
+    And I should see "The assessment tool details are missing: Tool version, Reviewed before use on, Reviewed by."
+    And I should see "Not done yet: assessment tool details, RA and LLN."
+    And I click on "Let the editing teachers know" "link"
+    And I should see "No one in this course can edit the activity, so no one was told."
+    And I set the following fields to these values:
+      | RA: No for Sam Student  | 1 |
+      | LLN: Yes for Sam Student | 1 |
+      | LLN details for Sam Student | Glossary of key terms |
+    And I press "Save RA and LLN"
+    And I should see "RA and LLN saved for 1 learner(s)."
+    And I should see "Not done yet: assessment tool details."
+    And I click on "Mark anyway" "link"
+    And I should see "Hazard task"

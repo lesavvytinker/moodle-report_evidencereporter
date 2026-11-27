@@ -82,6 +82,7 @@ Uses the same capability as bulk downloads.
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
 | **Date format** and **Time format** | How Evidence Reporter shows dates and times everywhere: as the site's language (the default), DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, 27 November 2026, 27 Nov 2026 or November 27, 2026; and the language's clock, 24-hour or 12-hour. File names always use year-month-day. |
+| **Required tool details** | The assessment tool details that must be filled in before marking (see *Before marking*). Version, review date and reviewer by default. |
 | **Hold grades until RA and LLN are recorded** | For assessments that count toward the final grade: keep grades and feedback hidden until RA and LLN are recorded for every learner (see *RA and LLN before release*). On by default. |
 | **Attempts allowed** | For databases, forums, workshops and checklists, which have no attempt limit of their own: the number shown on the marking page ("Attempt 2 of 3") and when **No attempts left** appears. Default 3; 0 for no limit. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
@@ -256,6 +257,26 @@ that count toward the final grade aren't released until every learner is recorde
   is held). If a teacher shows a held item and then hides it again before the hold lifts, it's shown when the hold
   lifts.
 - Who sees and records them, logging and privacy work as for reasonable adjustments.
+
+## Before marking
+
+The order assessors work in: the assessment tool's details are filled in, the learner's RA and LLN are recorded, then
+the work is marked.
+
+- **Check before marking** (on the marking page, each marker's own choice): when something's still to do for a learner,
+  their cell opens a short checklist instead of the grader. 1. **Assessment tool details**: done, or which required
+  details are missing, with **Fill in the tool details** for those who can edit the activity, or **Let the editing
+  teachers know** for those who can't (a Moodle message to everyone who can edit the activity; the checklist then shows
+  who told them and when). 2. **Reasonable adjustment and LLN** for this learner, with the same Yes and No tick boxes.
+  3. **Start marking** opens the grader. Marking is never blocked: **Mark anyway** works too, and is noted in the log
+  (*Marking started before checks*). When everything's done, the cell goes straight to the grader.
+- **Warnings where marking happens:** the activities' own marking pages (assignment submissions and grader, quiz
+  results, database entries, workshop, checklist report, forum) tell markers what's missing, with the same links.
+- **Required tool details** (setting): which assessment tool details must be filled in. By default the tool version,
+  the review date and who reviewed it. Example text doesn't count. The marking page shows **Tool details missing**
+  under an assessment until they're done.
+- **Groups:** assessors only see, and record RA and LLN for, learners in their groups when the course or activity uses
+  separate groups.
 
 ## Learner identity and redaction
 

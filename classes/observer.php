@@ -35,6 +35,7 @@ class observer {
         local\attempt_snapshots::delete_for_activity((int) $event->objectid);
         local\declarations::delete_for_activity((int) $event->objectid);
         local\release_hold::delete_for_activity((int) $event->objectid);
+        local\before_marking::delete_for_activity((int) $event->objectid);
     }
 
     /**

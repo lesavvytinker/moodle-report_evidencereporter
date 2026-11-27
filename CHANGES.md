@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.31.0 (2026-12-11)
+- **Check before marking** (each marker's choice, on the marking page): a learner with something still to do opens a
+  short checklist first: the assessment tool details, then their RA and LLN, then **Start marking**. Marking isn't
+  blocked; starting before the checks are done is logged.
+- **Let the editing teachers know:** assessors who can't edit the activity can message those who can that its tool
+  details are missing. The checklist shows who told them and when.
+- **Warnings on the activities' marking pages** (assignment submissions and grader, quiz results and others) when tool
+  details or RA and LLN are missing.
+- New setting **Required tool details** (default: version, review date, reviewed by). *Tool details missing* shows
+  under assessments on the marking page.
+- RA and LLN pages only show learners in the assessor's groups when groups are separate.
+- Details boxes stay usable without JavaScript.
+
 ## 0.30.0 (2026-12-10)
 - **Yes and No columns** for RA and for LLN, nothing ticked to begin with. Only what's ticked is saved, so saving the
   page after correcting one learner no longer records everyone else as No. A learner with one answer shows *Partly
