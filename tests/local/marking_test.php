@@ -230,4 +230,32 @@ final class marking_test extends \advanced_testcase {
         $this->setUser($d->learners['Ann']);
         $this->assertSame([0], array_keys(marking::get_overview()));
     }
+
+    /**
+     * The overview for a category: only the courses in it and its sub-categories, totalled.
+     */
+    public function test_overview_for_category(): void {
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $parent = $gen->create_category();
+        $child = $gen->create_category(['parent' => $parent->id]);
+        $other = $gen->create_category();
+        $teacher = $gen->create_user();
+        $ids = [];
+        foreach ([$parent, $child, $other] as $category) {
+            $course = $gen->create_course(['category' => $category->id]);
+            $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+            $ids[$category->id] = (int) $course->id;
+        }
+        $this->setUser($teacher);
+        $courses = fn(int $categoryid) => array_values(array_diff(array_keys(marking::get_overview($categoryid)), [0]));
+        $mine = $courses(0);
+        sort($mine);
+        $this->assertSame(array_values($ids), $mine);
+        $inparent = $courses((int) $parent->id);
+        sort($inparent);
+        $this->assertSame([$ids[$parent->id], $ids[$child->id]], $inparent);
+        $this->assertSame([$ids[$other->id]], $courses((int) $other->id));
+        $this->assertSame([0], array_keys(marking::get_overview((int) $other->id + 1000)), 'No such category');
+    }
 }

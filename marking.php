@@ -31,14 +31,18 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 $unitid = optional_param('unitid', 0, PARAM_INT);
 
 if (!$courseid) {
+    // Every course the user marks in, or those in one category (from a category's Marking nudge block).
+    $categoryid = optional_param('categoryid', 0, PARAM_INT);
     require_login(null, false);
-    $context = context_system::instance();
+    $category = $categoryid ? core_course_category::get($categoryid) : null;
+    $context = $category ? context_coursecat::instance($category->id) : context_system::instance();
     $PAGE->set_context($context);
-    $PAGE->set_url(new moodle_url('/report/evidencereporter/marking.php'));
+    $PAGE->set_url(new moodle_url('/report/evidencereporter/marking.php', $category ? ['categoryid' => $category->id] : []));
     $PAGE->set_pagelayout('standard');
-    $PAGE->set_title(get_string('marking', 'report_evidencereporter'));
-    $PAGE->set_heading(get_string('marking', 'report_evidencereporter'));
-    $overview = marking::get_overview();
+    $heading = get_string('marking', 'report_evidencereporter') . ($category ? ': ' . $category->get_formatted_name() : '');
+    $PAGE->set_title($heading);
+    $PAGE->set_heading($heading);
+    $overview = marking::get_overview((int) ($category->id ?? 0));
     $total = $overview[0]->counts;
     unset($overview[0]);
     $courses = [];
@@ -53,6 +57,7 @@ if (!$courseid) {
         'courses' => $courses,
         'total' => marking_count_data($total),
         'thresholds' => marking_threshold_data(),
+        'allcoursesurl' => $category ? (new moodle_url('/report/evidencereporter/marking.php'))->out(false) : null,
     ]);
     echo $OUTPUT->footer();
     die();

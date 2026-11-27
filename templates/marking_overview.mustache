@@ -21,7 +21,7 @@
 
     Example context (json):
     {
-        "hascourses": true,
+        "hascourses": true, "allcoursesurl": null,
         "courses": [{"name": "Professional practice", "url": "https://example.com/report/evidencereporter/marking.php?courseid=2",
             "tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "torecord": 2, "hastorecord": true, "nothing": false}],
         "total": {"tomark": 5, "overdue": 2, "amber": 1, "red": 1, "feedback": 1, "notreleased": 0, "toconfirm": 1, "ready": 0, "torecord": 2, "hastorecord": true, "nothing": false},
@@ -29,6 +29,7 @@
     }
 }}
 <div class="report-evidencereporter-marking">
+    {{#allcoursesurl}}<p class="small"><a href="{{.}}">{{#str}} markingallcourses, report_evidencereporter {{/str}}</a></p>{{/allcoursesurl}}
     <p>{{#str}} markingoverviewintro, report_evidencereporter {{/str}}</p>
     {{^hascourses}}
     <div class="alert alert-info">{{#str}} markingnocourses, report_evidencereporter {{/str}}</div>

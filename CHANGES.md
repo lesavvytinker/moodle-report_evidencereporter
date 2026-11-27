@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.35.0 (2026-12-15)
+- **Marking for a category:** the all-courses marking overview can be narrowed to a course category (and its
+  sub-categories), headed *Marking: <category>*, with a link back to all your courses. Used by Marking nudge 0.3.0 on
+  category pages.
+
 ## 0.34.0 (2026-12-14)
 - **Backup and restore:** an activity's assessment tool details, and the assessment a Feedback activity asks about,
   now go with the activity in course backups, restores, imports and duplicates. A restored survey points at the

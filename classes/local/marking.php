@@ -91,11 +91,21 @@ class marking {
     /**
      * Courses where the current user marks: they have the marking page's capability there.
      *
+     * @param int $categoryid Only courses in this category (or under it); 0 for all
      * @return stdClass[] courseid => course
      */
-    public static function get_my_courses(): array {
+    public static function get_my_courses(int $categoryid = 0): array {
         $courses = [];
-        foreach (enrol_get_my_courses(['id', 'shortname', 'fullname', 'visible'], 'fullname ASC') as $course) {
+        $categories = null;
+        if ($categoryid) {
+            // The category and every category under it.
+            $category = \core_course_category::get($categoryid, IGNORE_MISSING, true);
+            $categories = $category ? array_merge([$categoryid], array_map('intval', $category->get_all_children_ids())) : [];
+        }
+        foreach (enrol_get_my_courses(['id', 'shortname', 'fullname', 'visible', 'category'], 'fullname ASC') as $course) {
+            if ($categories !== null && !in_array((int) $course->category, $categories)) {
+                continue;
+            }
             if (has_capability('report/evidencereporter:marking', context_course::instance($course->id))) {
                 $courses[(int) $course->id] = $course;
             }
@@ -683,14 +693,16 @@ class marking {
     }
 
     /**
-     * Totals for every course the current user marks in, for the overview and the Dashboard nudge.
+     * Totals for every course the current user marks in (or those in a category), for the overview and the Marking
+     * nudge block.
      *
+     * @param int $categoryid Only courses in this category (or under it); 0 for all
      * @return stdClass[] courseid => stdClass (course, counts); and the total under key 0 (counts only)
      */
-    public static function get_overview(): array {
+    public static function get_overview(int $categoryid = 0): array {
         $result = [];
         $total = self::count_cells([]);
-        foreach (self::get_my_courses() as $courseid => $course) {
+        foreach (self::get_my_courses($categoryid) as $courseid => $course) {
             $counts = self::build($courseid)->counts;
             $result[$courseid] = (object) ['course' => $course, 'counts' => $counts];
             foreach ((array) $counts as $key => $value) {

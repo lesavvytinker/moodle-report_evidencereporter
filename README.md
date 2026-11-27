@@ -241,13 +241,13 @@ that count toward the final grade aren't released until every learner is recorde
 - **One learner at a time:** the marking page's **RA/LLN** column opens a learner's own RA and LLN page: every
   assessment in the course in one table, with the same tick boxes, tick-all boxes and details, and a *Grades held*
   badge on the assessments whose grades are waiting.
-- **Nudges:** the marking page counts *RA/LLN to record* (per course, on *All my courses*, and on the Marking nudge
-  block), shows how many learners are left under each assessment, and only offers **Ready to sign off** once RA and
-  LLN are recorded (*Ready once RA/LLN recorded* until then, linking to the learner's page). On the evidence summary
-  and evidence pack, staff see an alert listing the assessments still to record, and each competency is flagged
-  **RA/LLN not recorded**, rolled up from criteria to their units and qualification. The flag becomes **Evidence
-  complete, RA/LLN missing** when the competency is rated proficient or everything under it has evidence. Learners
-  don't see these flags on their own summary or pack.
+- **Nudges:** the marking page counts *RA/LLN to record* (per course, on *All my courses* or one category's courses, and
+  on the Marking nudge block on the Dashboard, a course page or a category page), shows how many learners are left under
+  each assessment, and only offers **Ready to sign off** once RA and LLN are recorded (*Ready once RA/LLN recorded*
+  until then, linking to the learner's page). On the evidence summary and evidence pack, staff see an alert listing the
+  assessments still to record, and each competency is flagged **RA/LLN not recorded**, rolled up from criteria to their
+  units and qualification. The flag becomes **Evidence complete, RA/LLN missing** when the competency is rated
+  proficient or everything under it has evidence. Learners don't see these flags on their own summary or pack.
 - **When:** each record keeps the date and time it was saved and who saved it, shown on the RA and LLN pages and in the
   LLN table of the summary and evidence pack ("Recorded 27/11/2026, 14:05 by …").
 - **Where it shows:** the evidence summary and evidence pack list LLN by assessment ("N/A", the details, or "Not
