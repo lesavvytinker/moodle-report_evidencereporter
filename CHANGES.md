@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.34.0 (2026-12-14)
+- **Backup and restore:** an activity's assessment tool details, and the assessment a Feedback activity asks about,
+  now go with the activity in course backups, restores, imports and duplicates. A restored survey points at the
+  restored copy of its assessment. Learner records (RA and LLN, adjustments, attempt history, release holds) stay with
+  the course they were recorded in, so a new intake starts fresh.
+
 ## 0.33.0 (2026-12-13)
 - **Learner feedback on assessments**, collected with Moodle's Feedback activity (one survey after each assessment).
   A survey's assessment is read from its Restrict access, or chosen under *Feedback on an assessment* in its settings.

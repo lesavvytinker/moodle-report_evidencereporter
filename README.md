@@ -299,7 +299,17 @@ to anonymous. Evidence Reporter collates it.
   (default 5) are hidden so answers can't be traced in small groups. Download as CSV for the continuous-improvement
   file.
 - Feedback is voluntary: offer it after every assessment and prompt for it, but don't make it a condition of
-  anything a learner is owed. Resetting a course deletes its Feedback responses, so download the report first.
+  anything a learner is owed. Resetting a course deletes its Feedback responses, so roll courses over by backup and
+  restore instead (see *Rolling courses over*), or download the report first.
+
+## Rolling courses over
+
+Back up the course and restore it as a new course (for example into a new sub-category for the next intake), rather
+than resetting it. Moodle brings the activities, competency links, Restrict access, gradebook and Feedback surveys;
+Evidence Reporter brings each activity's assessment tool details and which assessment each survey asks about (pointed
+at the restored copies). Learner records (RA and LLN, adjustments, attempt history, release holds) stay with the
+original course as that intake's record, and the new intake's assessments are held until RA and LLN are recorded for
+its learners. Duplicating an activity copies its tool details too.
 
 ## Learner identity and redaction
 
