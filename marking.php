@@ -142,6 +142,7 @@ foreach ($grid->rows as $row) {
             'adjustmentsurl' => $cell->adjustmentsurl,
             'hasadjustments' => $cell->adjustments > 0,
             'adjustments' => $cell->adjustments,
+            'declmissing' => !empty($cell->declmissing),
             'toconfirm' => $cell->toconfirm,
             'hastoconfirm' => $cell->toconfirm > 0,
         ];

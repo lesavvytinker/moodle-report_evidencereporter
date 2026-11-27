@@ -59,6 +59,35 @@ class hook_callbacks {
             ) {
                 return;
             }
+            if (
+                $PAGE->pagetype === 'mod-assign-grader'
+                    || ($PAGE->pagetype === 'mod-assign-view' && optional_param('action', '', PARAM_ALPHA) === 'grader')
+            ) {
+                // The grader is a full-screen layout that switches learners without reloading: the warning goes in its
+                // grade panel, about the assessment rather than one learner.
+                $html = self::warning_html($cm, 0);
+                if ($html !== '') {
+                    $PAGE->requires->js_init_code('(function() {
+                        var html = ' . json_encode(\html_writer::div(
+                        $html,
+                        'alert alert-warning er-grader-warning',
+                        ['role' => 'status']
+                    )) . ';
+                        var place = function() {
+                            var panel = document.querySelector(\'[data-region="grade-panel"]\');
+                            if (!panel) {
+                                return false;
+                            }
+                            panel.insertAdjacentHTML(\'afterbegin\', html);
+                            return true;
+                        };
+                        if (!place()) {
+                            document.addEventListener(\'DOMContentLoaded\', place);
+                        }
+                    })();');
+                }
+                return;
+            }
             $html = self::warning_html($cm, optional_param('userid', 0, PARAM_INT));
             if ($html !== '') {
                 \core\notification::add($html, \core\notification::WARNING);

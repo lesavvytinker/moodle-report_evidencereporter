@@ -297,11 +297,12 @@ class marking {
                 'submitted' => $submitted, 'graded' => $gradedtime, 'grade' => '',
                 'attempt' => $fact->attempt ?? '', 'url' => self::marking_url($cm, $userid, $fact)->out(false),
                 'adjustments' => count($recorded[$userid] ?? []) ?: (!empty($declared[$userid]->ra) ? 1 : 0),
-                'toconfirm' => count($suggested[$userid] ?? []),
+                // Moodle overrides or extensions to consider, while RA isn't answered yet.
+                'toconfirm' => ($declared[$userid]->ra ?? null) === null ? count($suggested[$userid] ?? []) : 0,
                 // RA and LLN still to record for this learner here.
                 'declmissing' => isset($declneeded[$userid]) && !declarations::is_complete($declared[$userid] ?? null),
                 'adjustmentsurl' => $raavailable
-                    ? (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false) : null];
+                    ? (new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]))->out(false) : null];
             if ($gradevalue !== null && $item) {
                 $cell->grade = grade_format_gradevalue($gradevalue, $item);
             }

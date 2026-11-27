@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.32.0 (2026-12-12)
+- **One place for RA:** the activity menu has **RA and LLN** only. A detailed reasonable adjustment already recorded for
+  a learner counts as RA: Yes there, shown with its details and not asked for again; *Detailed reasonable adjustments*
+  (reason and approver) is linked at the foot of the page. Moodle's overrides and extensions show as a hint under RA
+  details until RA is answered. The marking page's RA links open RA and LLN, and cells show *RA/LLN to record* until
+  done.
+- **RA and LLN details columns** are the same width.
+- **Profile per framework** lists only frameworks with their own profile, with an *Add a framework* row and a count of
+  those using the site profile.
+- **Assignment grader:** the before-marking warning sits in the grade panel instead of over the page header.
+
 ## 0.31.0 (2026-12-11)
 - **Check before marking** (each marker's choice, on the marking page): a learner with something still to do opens a
   short checklist first: the assessment tool details, then their RA and LLN, then **Start marking**. Marking isn't

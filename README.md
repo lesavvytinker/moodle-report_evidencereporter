@@ -77,7 +77,7 @@ Uses the same capability as bulk downloads.
 | **Terminology profile** | The words documents use. *Australian VET* (the default), *Higher education* (Student, Learning outcome, Marker, Achieved), *UK apprenticeships* (Apprentice, KSB, Apprenticeship standard, Met), *South African occupational* (Outcome, Qualification, Portfolio of evidence) or *Generic*. To change one word, use Moodle's language customisation on the `term_` strings. |
 | **Similarity checks** | Shows the result from your similarity plugin (Turnitin, Ouriginal, Copyleaks or any plugin using Moodle's plagiarism API) beside assignment evidence, as the same badge and link the plugin shows in the assignment. Staff who can grade the activity see it; learners don't. Choose summary and report only (default), also in evidence packs (as text), or off. The full similarity report stays in the similarity tool. |
 | **Gradebook adjustments** | When an assessment sits in its own gradebook category with penalty items (late, academic misconduct), documents show the category total as the final result, each penalty with its feedback, the calculation, and any hand override. Choose full detail, "Adjusted" only, or off. Penalties whose names contain academic integrity words (misconduct, plagiarism…) are flagged so reviewers check the evidence is still valid. |
-| **Profile per framework** | For dual-sector providers (e.g. VET and degrees): give a framework its own profile. Documents use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. |
+| **Profile per framework** | For dual-sector providers (e.g. VET and degrees): give a framework its own profile. Only frameworks with their own profile are listed; add one with **Add a framework** (or set it back to the site profile to remove it). The rest use the site profile. Documents use the profile of the frameworks they cover; a learning plan mixing frameworks with different profiles uses the site profile. |
 | **Branding per profile** | An organisation name and sign-off statement for each profile, e.g. "Example TAFE" for VET and "Example University" for higher education. |
 | **Organisation name, logo, header and footer text** | Shown at the top and end of the summary, every PDF and the README. The name defaults to the site name. |
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
@@ -192,10 +192,12 @@ spoken responses, an alternative format and so on), the details, the reason and 
   and UK apprenticeships by default). An activity follows the profile of the frameworks it's linked to, so a higher
   education course shows nothing about adjustments. Untick every profile to turn the feature off.
 
-- **Where:** each activity's **More > Reasonable adjustments** page lists its learners and their adjustments, or use
-  **Record an adjustment for** on a learner's evidence summary.
-- **Moodle's own:** quiz user overrides, assignment user overrides and assignment extensions are listed as suggestions.
-  **Confirm** records one with its reason and approver.
+- **Where:** RA is recorded with LLN on each activity's **More > RA and LLN** page (see *RA and LLN before release*).
+  For an adjustment that needs its reason and approver on record, **Detailed reasonable adjustments** at the foot of
+  that page (or **Record an adjustment for** on a learner's evidence summary) records one; it then counts as RA: Yes on
+  the RA and LLN page, shown there and not asked for again.
+- **Moodle's own:** quiz user overrides, assignment user overrides and assignment extensions are shown as a hint under
+  the learner's RA details until RA is answered, and can be confirmed with a reason and approver on the detailed page.
 - **Where they appear, per assessment:** the evidence summary and the evidence pack's summary PDF list every assessment
   linked to the learner's competencies, with its adjustments or "N/A"; each competency's evidence ends with a
   "Reasonable adjustment" line for its assessments; validation sample registers have a column (the learner's

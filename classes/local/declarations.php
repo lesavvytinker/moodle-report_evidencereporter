@@ -226,6 +226,28 @@ class declarations {
                 $result[$userid] = $record;
             }
         }
+        // A detailed reasonable adjustment recorded for the learner here answers RA: Yes, described by that record, so
+        // the assessor isn't asked again.
+        foreach (reasonable_adjustments::get_for_activity((int) $cm->id) as $userid => $adjustments) {
+            $record = $result[$userid] ?? null;
+            if ($record && (int) $record->ra === 0 && $record->ra !== null) {
+                continue;
+            }
+            if ($record && $record->ra !== null && trim((string) $record->radetails) !== '') {
+                continue;
+            }
+            $latest = end($adjustments);
+            $text = reasonable_adjustments::to_text(reasonable_adjustments::format($adjustments), false, '; ');
+            if (!$record) {
+                $record = (object) ['id' => 0, 'cmid' => (int) $cm->id, 'userid' => (int) $userid, 'lln' => null,
+                    'llndetails' => '', 'usermodified' => (int) $latest->usermodified,
+                    'timemodified' => (int) $latest->timemodified, 'carriedfrom' => 0, 'carriedname' => ''];
+            }
+            $record->ra = 1;
+            $record->radetails = $text;
+            $record->fromadjustment = true;
+            $result[(int) $userid] = $record;
+        }
         return $result;
     }
 
@@ -298,6 +320,7 @@ class declarations {
      * @param stdClass[] $adjustments The learner's detailed adjustments here
      * @param array|null $posted Answers just submitted (shown again when they had errors)
      * @param array $errors field => message
+     * @param string $suggestion Moodle's own override or extension for the learner, as a hint for RA
      * @return array
      */
     public static function export_row(
@@ -308,7 +331,8 @@ class declarations {
         ?stdClass $record,
         array $adjustments,
         ?array $posted = null,
-        array $errors = []
+        array $errors = [],
+        string $suggestion = ''
     ): array {
         $formatted = reasonable_adjustments::format($adjustments);
         $itemstext = $formatted ? reasonable_adjustments::to_text($formatted, false, '; ') : '';
@@ -331,6 +355,10 @@ class declarations {
             // The carried-over note is shown on its own line.
             'recordedtext' => $complete ? self::recorded_text((object) (['carriedname' => ''] + (array) $record)) : '',
             'carried' => $record && !empty($record->carriedfrom) ? $record->carriedname : '',
+            // RA answered by a detailed adjustment: shown, not asked again.
+            'rafromadjustment' => !empty($record->fromadjustment),
+            'ralocked' => !$canedit || !empty($record->fromadjustment),
+            'suggestion' => $record && $record->ra !== null ? '' : $suggestion,
             'rayes' => $answer['ra'] === true,
             'rano' => $answer['ra'] === false,
             'radetails' => $answer['radetails'],
@@ -393,13 +421,16 @@ class declarations {
                 } else {
                     $record->$field = $value ? 1 : 0;
                     $record->{$field . 'details'} = $value ? trim((string) ($answer[$field . 'details'] ?? '')) : '';
+                    if ($field === 'ra' && $value && $record->radetails === '' && !empty($effective[$userid]->fromadjustment)) {
+                        $record->radetails = (string) $effective[$userid]->radetails;
+                    }
                 }
             }
             if ($record->ra === null && $record->lln === null) {
                 // Nothing answered: nothing to record.
                 continue;
             }
-            $carried = !$old ? ($effective[$userid] ?? null) : null;
+            $carried = !$old && !empty($effective[$userid]->carriedfrom) ? $effective[$userid] : null;
             if ($carried && self::same($carried, $record)) {
                 // The same as the attempt it carries over from: nothing new to keep.
                 continue;

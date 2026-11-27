@@ -266,7 +266,21 @@ final class configurable_test extends \advanced_testcase {
         $this->assertSame('', $setting->write_setting([0 => '', $heframework->get('id') => terms::HIGHER_ED,
             $vetframework->get('id') => '', 999 => 'nonsense']));
         $this->assertEquals([$heframework->get('id') => terms::HIGHER_ED], terms::get_framework_profiles());
-        $this->assertStringContainsString('Site profile (Australian vocational', $setting->output_html($setting->get_setting()));
+        // Only frameworks with their own profile are listed; the others are offered in the "Add a framework" row.
+        $html = $setting->output_html($setting->get_setting());
+        $this->assertStringContainsString('1 other framework(s) use the site profile (Australian vocational', $html);
+        $this->assertMatchesRegularExpression('/<option value="' . $vetframework->get('id') . '">Certificate IV/', $html);
+        $this->assertSame('', $setting->write_setting([0 => '', $heframework->get('id') => terms::HIGHER_ED,
+            'add' => $vetframework->get('id'), 'addprofile' => terms::GENERIC]));
+        $this->assertEquals(
+            [$heframework->get('id') => terms::HIGHER_ED, $vetframework->get('id') => terms::GENERIC],
+            terms::get_framework_profiles()
+        );
+        $this->assertStringContainsString('Every framework has its own profile.', $setting->output_html($setting->get_setting()));
+        // Removed again: back to the site's profile.
+        $this->assertSame('', $setting->write_setting([0 => '', $heframework->get('id') => terms::HIGHER_ED,
+            $vetframework->get('id') => '', 'add' => 0, 'addprofile' => terms::AU_VET]));
+        $this->assertEquals([$heframework->get('id') => terms::HIGHER_ED], terms::get_framework_profiles());
         set_config('orgname', 'Example Institute', 'report_evidencereporter');
         set_config('orgname_highered', 'Example University', 'report_evidencereporter');
         set_config('signoffstatement', 'Valid, sufficient, authentic and current.', 'report_evidencereporter');

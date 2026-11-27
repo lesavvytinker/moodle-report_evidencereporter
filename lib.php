@@ -141,14 +141,7 @@ function report_evidencereporter_extend_navigation_module($navigation, $cm) {
             $context
         )
     ) {
-        $navigation->add(
-            get_string('adjustments', 'report_evidencereporter'),
-            new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]),
-            navigation_node::TYPE_SETTING,
-            null,
-            'evidencereporteradjustments',
-            new pix_icon('i/users', '')
-        );
+        // Reasonable adjustments are recorded with LLN on one page; earlier detailed adjustments stay linked from it.
         $navigation->add(
             get_string('declarations', 'report_evidencereporter'),
             new moodle_url('/report/evidencereporter/declarations.php', ['cmid' => $cm->id]),

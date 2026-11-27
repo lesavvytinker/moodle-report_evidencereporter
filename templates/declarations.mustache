@@ -26,6 +26,7 @@
         "canmanage": true, "learnermode": false, "rowlabel": "Learner", "applies": true, "held": true, "exempt": false,
         "learnersheld": 0, "haslearnersheld": false, "outstanding": 1, "hasoutstanding": true, "hasrows": true,
         "shared": "AT1 Attempt 2", "backurl": null,
+        "detailedurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1",
         "rows": [{"key": 3, "name": "Paige Palette", "canedit": true, "recorded": false, "partly": false, "recordedtext": "",
             "carried": "", "rayes": true, "rano": false, "radetails": "Extra time (20 minutes)", "raerror": "",
             "llnyes": false, "llnno": false, "llndetails": "", "llnerror": "",
@@ -86,4 +87,7 @@
     {{#hasrows}}
     {{> report_evidencereporter/declarations_table }}
     {{/hasrows}}
+    {{#detailedurl}}
+    <p class="small mt-3"><a href="{{.}}">{{#str}} decldetailedlink, report_evidencereporter {{/str}}</a> &middot; {{#str}} decldetailednote, report_evidencereporter {{/str}}</p>
+    {{/detailedurl}}
 </div>

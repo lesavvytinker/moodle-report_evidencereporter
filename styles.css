@@ -302,3 +302,20 @@
 .report-evidencereporter-beforemarking .er-stepdone {
     border-left: 4px solid #15803d;
 }
+
+.report-evidencereporter-declarations table.er-declarations {
+    table-layout: fixed;
+    width: 100%;
+}
+.report-evidencereporter-declarations .er-col-name {
+    width: 16%;
+}
+.report-evidencereporter-declarations .er-col-tick {
+    width: 4.5rem;
+}
+.report-evidencereporter-declarations .er-declfromadjustment {
+    color: #1d4ed8;
+}
+.er-grader-warning {
+    margin: .5rem;
+}

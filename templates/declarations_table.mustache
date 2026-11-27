@@ -27,13 +27,19 @@
         "rows": [{"key": 3, "name": "Paige Palette", "canedit": true, "recorded": false, "partly": false, "recordedtext": "",
             "carried": "", "rayes": true, "rano": false, "radetails": "Extra time (20 minutes)", "raerror": "",
             "llnyes": false, "llnno": false, "llndetails": "", "llnerror": "", "adjustments": "Extra time (20 minutes)",
-            "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "held": false, "url": null}]
+            "adjustmentsurl": "https://example.com/report/evidencereporter/adjustments.php?cmid=1", "held": false, "url": null,
+            "rafromadjustment": false, "ralocked": false, "suggestion": "Extension to 3 Dec 2026"}]
     }
 }}
     <form method="post" action="{{action}}" class="er-declform">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <div class="table-responsive">
         <table class="table table-sm table-bordered er-declarations">
+            <colgroup>
+                <col class="er-col-name">
+                <col class="er-col-tick"><col class="er-col-tick"><col class="er-col-details">
+                <col class="er-col-tick"><col class="er-col-tick"><col class="er-col-details">
+            </colgroup>
             <thead>
                 <tr>
                     <th scope="col" rowspan="2">{{rowlabel}}</th>
@@ -75,18 +81,23 @@
                         </div>
                     </th>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="ra_yes[{{key}}]" value="1" id="er-rayes-{{key}}" data-er-col="ra-yes" data-er-field="ra" data-er-answer="yes"{{#rayes}} checked{{/rayes}}{{^canedit}} disabled{{/canedit}}>
+                        <input type="checkbox" class="form-check-input" name="ra_yes[{{key}}]" value="1" id="er-rayes-{{key}}" data-er-col="ra-yes" data-er-field="ra" data-er-answer="yes"{{#rayes}} checked{{/rayes}}{{#ralocked}} disabled{{/ralocked}}>
                         <label class="visually-hidden" for="er-rayes-{{key}}">{{#str}} declrayesfor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td class="er-declcheck">
-                        <input type="checkbox" class="form-check-input" name="ra_no[{{key}}]" value="1" id="er-rano-{{key}}" data-er-col="ra-no" data-er-field="ra" data-er-answer="no"{{#rano}} checked{{/rano}}{{^canedit}} disabled{{/canedit}}>
+                        <input type="checkbox" class="form-check-input" name="ra_no[{{key}}]" value="1" id="er-rano-{{key}}" data-er-col="ra-no" data-er-field="ra" data-er-answer="no"{{#rano}} checked{{/rano}}{{#ralocked}} disabled{{/ralocked}}>
                         <label class="visually-hidden" for="er-rano-{{key}}">{{#str}} declranofor, report_evidencereporter, {{name}} {{/str}}</label>
                     </td>
                     <td>
+                        {{#rafromadjustment}}
+                        <div class="small er-declfromadjustment">{{#str}} decladjustmentsrecorded, report_evidencereporter {{/str}}: <a href="{{adjustmentsurl}}">{{adjustments}}</a></div>
+                        {{/rafromadjustment}}
+                        {{^rafromadjustment}}
                         <label class="visually-hidden" for="er-radetails-{{key}}">{{#str}} declradetailsfor, report_evidencereporter, {{name}} {{/str}}</label>
                         <textarea class="form-control form-control-sm{{#raerror}} is-invalid{{/raerror}}" id="er-radetails-{{key}}" name="radetails[{{key}}]" rows="2" data-er-details="ra"{{^canedit}} readonly{{/canedit}}>{{radetails}}</textarea>
                         {{#raerror}}<div class="invalid-feedback d-block">{{.}}</div>{{/raerror}}
-                        {{#adjustments}}<div class="small text-muted mt-1">{{#str}} decladjustmentsrecorded, report_evidencereporter {{/str}}: <a href="{{adjustmentsurl}}">{{.}}</a></div>{{/adjustments}}
+                        {{#suggestion}}<div class="small text-muted mt-1">{{#str}} declsuggestion, report_evidencereporter, {{.}} {{/str}}</div>{{/suggestion}}
+                        {{/rafromadjustment}}
                     </td>
                     <td class="er-declcheck">
                         <input type="checkbox" class="form-check-input" name="lln_yes[{{key}}]" value="1" id="er-llnyes-{{key}}" data-er-col="lln-yes" data-er-field="lln" data-er-answer="yes"{{#llnyes}} checked{{/llnyes}}{{^canedit}} disabled{{/canedit}}>

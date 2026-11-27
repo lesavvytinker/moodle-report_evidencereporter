@@ -489,4 +489,43 @@ final class declarations_test extends \advanced_testcase {
         // And leaving both blank later changes nothing.
         $this->assertSame(0, declarations::save($d->assign, [$d->one->id => $blank]));
     }
+
+    /**
+     * A detailed adjustment answers RA: Yes (not asked again); saving LLN alone then records the learner, and saving
+     * the page unchanged changes nothing.
+     */
+    public function test_adjustment_answers_ra(): void {
+        global $DB;
+        $d = $this->setup_data();
+        $this->setUser($d->teacher);
+        reasonable_adjustments::save((object) ['cmid' => $d->assign->id, 'userid' => $d->one->id, 'adjtype' => 'environment',
+            'details' => 'Did the test from home', 'reason' => 'Fire at the centre', 'approvedby' => 'Bobby Doona']);
+        $record = declarations::get_effective($d->assign)[$d->one->id];
+        $this->assertTrue($record->fromadjustment);
+        $this->assertEquals(1, $record->ra);
+        $this->assertStringContainsString('Did the test from home', $record->radetails);
+        $this->assertNull($record->lln);
+        $this->assertFalse(declarations::is_complete($record));
+        $row = declarations::export_row($d->assign, (int) $d->one->id, 'Ari One', true, $record, []);
+        $this->assertTrue($row['rafromadjustment']);
+        $this->assertTrue($row['ralocked']);
+        $this->assertTrue($row['rayes']);
+
+        // RA isn't posted (its boxes are locked); LLN is.
+        $blank = ['ra' => null, 'radetails' => '', 'lln' => null, 'llndetails' => ''];
+        $this->assertSame(1, declarations::save($d->assign, [$d->one->id => ['lln' => false] + $blank]));
+        $this->assertNull($DB->get_field(declarations::TABLE, 'ra', ['cmid' => $d->assign->id, 'userid' => $d->one->id]));
+        $this->assertTrue(declarations::is_complete(declarations::get_effective($d->assign)[$d->one->id]));
+        $this->assertNotContains((int) $d->one->id, declarations::get_outstanding($d->assign));
+        $time = $DB->get_field(declarations::TABLE, 'timemodified', ['cmid' => $d->assign->id, 'userid' => $d->one->id]);
+        // Saved again unchanged: nothing written, the time stays.
+        $this->assertSame(0, declarations::save($d->assign, [$d->one->id => ['lln' => false] + $blank]));
+        $this->assertEquals($time, $DB->get_field(declarations::TABLE, 'timemodified', ['cmid' => $d->assign->id,
+            'userid' => $d->one->id]));
+        // An explicit No stays No.
+        declarations::save($d->assign, [$d->two->id => ['ra' => false, 'lln' => false] + $blank]);
+        reasonable_adjustments::save((object) ['cmid' => $d->assign->id, 'userid' => $d->two->id, 'adjtype' => 'other',
+            'details' => 'Later note']);
+        $this->assertEquals(0, declarations::get_effective($d->assign)[$d->two->id]->ra);
+    }
 }

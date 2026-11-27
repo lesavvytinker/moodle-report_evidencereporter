@@ -155,11 +155,20 @@ if (data_submitted() && confirm_sesskey()) {
 // Rows.
 $effective = [];
 $adjustments = [];
+$suggestions = [];
 $rows = [];
 foreach ($items as $key => $item) {
     $id = (int) $item->cm->id;
     $effective[$id] ??= declarations::get_effective($item->cm);
     $adjustments[$id] ??= reasonable_adjustments::get_for_activity($id);
+    if (!isset($suggestions[$id])) {
+        $suggestions[$id] = [];
+        if ($item->canmanage) {
+            foreach (reasonable_adjustments::get_suggestions($item->cm) as $uid => $list) {
+                $suggestions[$id][$uid] = implode('; ', array_map(fn($x) => $x->details, $list));
+            }
+        }
+    }
     $row = declarations::export_row(
         $item->cm,
         $key,
@@ -168,7 +177,8 @@ foreach ($items as $key => $item) {
         $effective[$id][$item->userid] ?? null,
         $adjustments[$id][$item->userid] ?? [],
         $posted[$key] ?? null,
-        $errors[$key] ?? []
+        $errors[$key] ?? [],
+        $suggestions[$id][$item->userid] ?? ''
     );
     if ($learnermode) {
         $hold = release_hold::status($item->cm);
@@ -200,6 +210,8 @@ if (!$learnermode) {
         'haslearnersheld' => $status->learnersheld > 0,
         'outstanding' => count($outstanding),
         'hasoutstanding' => (bool) $outstanding,
+        'detailedurl' => $canmanage
+            ? (new moodle_url('/report/evidencereporter/adjustments.php', ['cmid' => $cm->id]))->out(false) : null,
         'shared' => implode(', ', array_map(
             fn($id) => get_fast_modinfo($course)->get_cm($id)->get_formatted_name(),
             array_slice(declarations::get_group($cm), 1)

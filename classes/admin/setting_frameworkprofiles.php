@@ -50,10 +50,18 @@ class setting_frameworkprofiles extends \admin_setting {
     public function write_setting($data) {
         $profiles = terms::get_profiles();
         $map = [];
-        foreach (is_array($data) ? $data : [] as $frameworkid => $profile) {
-            if ((int) $frameworkid > 0 && isset($profiles[$profile])) {
-                $map[(int) $frameworkid] = $profile;
+        $data = is_array($data) ? $data : [];
+        foreach ($data as $frameworkid => $profile) {
+            if (is_int($frameworkid) || ctype_digit((string) $frameworkid)) {
+                if ((int) $frameworkid > 0 && isset($profiles[$profile])) {
+                    $map[(int) $frameworkid] = $profile;
+                }
             }
+        }
+        // The "Add a framework" row.
+        $add = (int) ($data['add'] ?? 0);
+        if ($add > 0 && isset($profiles[$data['addprofile'] ?? ''])) {
+            $map[$add] = $data['addprofile'];
         }
         ksort($map);
         return $this->config_write($this->name, $map ? json_encode($map) : '') ? '' : get_string('errorsetting', 'admin');
@@ -68,31 +76,71 @@ class setting_frameworkprofiles extends \admin_setting {
             $element = html_writer::div(get_string('settings_frameworkprofiles_none', 'report_evidencereporter'), 'text-muted');
             return format_admin_setting($this, $this->visiblename, $element, $this->description, false, '', null, $query);
         }
-        $default = get_string(
-            'settings_frameworkprofiles_default',
-            'report_evidencereporter',
-            terms::get_profiles()[terms::get_site_profile()]
-        );
-        $options = ['' => $default] + terms::get_profiles();
+        $profiles = terms::get_profiles();
+        $label = fn($framework) => format_string($framework->shortname)
+            . ($framework->idnumber ? ' (' . s($framework->idnumber) . ')' : '');
+        // Only the frameworks with their own profile are listed; the rest use the site's.
         $rows = '';
         foreach ($frameworks as $framework) {
+            if (!isset($map[$framework->id]) || !isset($profiles[$map[$framework->id]])) {
+                continue;
+            }
             $id = $this->get_id() . '_' . $framework->id;
-            $label = format_string($framework->shortname) . ($framework->idnumber ? ' (' . s($framework->idnumber) . ')' : '');
             $rows .= html_writer::tag(
                 'tr',
-                html_writer::tag('td', html_writer::label($label, $id)) .
+                html_writer::tag('td', html_writer::label($label($framework), $id)) .
                 html_writer::tag('td', html_writer::select(
-                    $options,
+                    ['' => get_string('settings_frameworkprofiles_remove', 'report_evidencereporter')] + $profiles,
                     $this->get_full_name() . '[' . $framework->id . ']',
-                    $map[$framework->id] ?? '',
+                    $map[$framework->id],
                     false,
                     ['id' => $id, 'class' => 'form-select']
                 ))
             );
         }
+        $others = array_filter($frameworks, fn($f) => !isset($map[$f->id]) || !isset($profiles[$map[$f->id]]));
+        $site = $profiles[terms::get_site_profile()];
+        if ($others) {
+            $choices = [0 => get_string('settings_frameworkprofiles_choose', 'report_evidencereporter')];
+            foreach ($others as $framework) {
+                $choices[$framework->id] = $label($framework);
+            }
+            $addid = $this->get_id() . '_add';
+            $rows .= html_writer::tag(
+                'tr',
+                html_writer::tag('td', html_writer::label(
+                    get_string('settings_frameworkprofiles_add', 'report_evidencereporter'),
+                    $addid,
+                    true,
+                    ['class' => 'visually-hidden']
+                ) . html_writer::select(
+                    $choices,
+                    $this->get_full_name() . '[add]',
+                    0,
+                    false,
+                    ['id' => $addid, 'class' => 'form-select']
+                )) .
+                html_writer::tag('td', html_writer::select(
+                    $profiles,
+                    $this->get_full_name() . '[addprofile]',
+                    terms::get_site_profile(),
+                    false,
+                    ['id' => $addid . 'profile', 'class' => 'form-select',
+                        'aria-label' => get_string('settings_frameworkprofiles_add', 'report_evidencereporter')]
+                )),
+                ['class' => 'er-addframework']
+            );
+        }
+        $note = $others ? get_string(
+            'settings_frameworkprofiles_others',
+            'report_evidencereporter',
+            (object) ['count' => count($others), 'profile' => $site]
+        )
+            : get_string('settings_frameworkprofiles_noothers', 'report_evidencereporter');
         // An empty value keeps the field in the submitted form when every framework uses the default.
         $element = html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $this->get_full_name() . '[0]', 'value' => ''])
-            . html_writer::tag('table', html_writer::tag('tbody', $rows), ['class' => 'table table-sm w-auto']);
+            . html_writer::tag('table', html_writer::tag('tbody', $rows), ['class' => 'table table-sm w-auto mb-1'])
+            . html_writer::div(s($note), 'small text-muted');
         return format_admin_setting($this, $this->visiblename, $element, $this->description, false, '', null, $query);
     }
 }

@@ -22,7 +22,8 @@ Feature: Reasonable adjustments
 
   Scenario: A teacher records an adjustment and can change it
     Given I am on the "Knowledge quiz" "quiz activity" page logged in as "teacher1"
-    When I navigate to "Reasonable adjustments" in current page administration
+    When I navigate to "RA and LLN" in current page administration
+    And I click on "Detailed reasonable adjustments" "link"
     Then I should see "Sam Student"
     And I should see "None recorded"
     And I click on "Record an adjustment" "link"
@@ -41,3 +42,4 @@ Feature: Reasonable adjustments
   Scenario: Learners don't get the adjustments page
     Given I am on the "Knowledge quiz" "quiz activity" page logged in as "student1"
     Then "Reasonable adjustments" "link" should not exist
+    And "RA and LLN" "link" should not exist
