@@ -77,4 +77,13 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // See learner feedback on assessments, collated (no names) for a course, its units, or a category.
+    'report/evidencereporter:viewfeedback' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 ];

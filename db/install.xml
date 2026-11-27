@@ -175,5 +175,17 @@
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
+    <TABLE NAME="report_evidencereporter_fbk" COMMENT="Feedback activities set to collect feedback on a particular assessment.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The Feedback activity"/>
+        <FIELD NAME="assesscmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The assessment it collects feedback on"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="cmid" TYPE="foreign-unique" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
+        <KEY NAME="assesscmid" TYPE="foreign" FIELDS="assesscmid" REFTABLE="course_modules" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
   </TABLES>
 </XMLDB>

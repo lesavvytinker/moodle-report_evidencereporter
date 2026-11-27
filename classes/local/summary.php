@@ -204,6 +204,7 @@ class summary {
         $competencyids = array_map(fn($comp) => (int) $comp->id, $ordered);
         if (!$competencyids) {
             return (object) ['competencies' => [], 'assessments' => [], 'adjustments' => [], 'declmissing' => [],
+                'feedback' => (object) ['offered' => 0, 'total' => 0],
                 'scope' => $scope,
                 'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null];
         }
@@ -322,6 +323,8 @@ class summary {
             'adjustments' => array_merge([], ...array_map(fn($a) => $a->items, $assessments)),
             // Assessments where RA and LLN aren't recorded for the learner yet.
             'declmissing' => array_values(array_filter($assessments, fn($a) => empty($a->recorded))),
+            // After how many of the learner's assessments (linked to these competencies) feedback was offered.
+            'feedback' => feedback_surveys::offered_to($userid, self::get_assessment_cmids($userid, $competencyids)),
             'scope' => $scope,
             // Restricted: the viewer isn't the learner and doesn't have site-wide access.
             'restricted' => (int) $USER->id !== $userid && access::get_sql('uc.userid', 'NULL') !== null,
@@ -393,6 +396,30 @@ class summary {
             $complete = $comp->proficient || $allevidenced;
             $comp->declflag = $comp->declmissing ? ($complete ? 'complete' : 'missing') : '';
         }
+    }
+
+    /**
+     * Activities linked to these competencies in the learner's courses.
+     *
+     * @param int $userid
+     * @param int[] $competencyids
+     * @return int[] cmids
+     */
+    private static function get_assessment_cmids(int $userid, array $competencyids): array {
+        global $DB;
+        $courseids = array_keys(enrol_get_users_courses($userid, true, 'id'));
+        if (!$courseids || !$competencyids) {
+            return [];
+        }
+        [$compsql, $params] = $DB->get_in_or_equal($competencyids, SQL_PARAMS_NAMED, 'acmp');
+        [$coursesql, $courseparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'acrs');
+        return array_map('intval', $DB->get_fieldset_sql(
+            "SELECT DISTINCT mc.cmid
+               FROM {competency_modulecomp} mc
+               JOIN {course_modules} cm ON cm.id = mc.cmid
+              WHERE mc.competencyid {$compsql} AND cm.course {$coursesql} AND cm.deletioninprogress = 0",
+            $params + $courseparams
+        ));
     }
 
     /**

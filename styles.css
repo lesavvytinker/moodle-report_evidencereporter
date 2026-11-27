@@ -319,3 +319,17 @@
 .er-grader-warning {
     margin: .5rem;
 }
+
+.report-evidencereporter-feedback .er-feedbackoptions {
+    table-layout: fixed;
+    width: 100%;
+}
+.report-evidencereporter-feedback .er-fbk-label {
+    width: 30%;
+}
+.report-evidencereporter-feedback .er-fbk-count {
+    width: 8rem;
+}
+.report-evidencereporter-feedback .er-fbk-bar .progress {
+    margin-top: .35rem;
+}

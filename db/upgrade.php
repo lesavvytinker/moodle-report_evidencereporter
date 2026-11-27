@@ -224,5 +224,19 @@ function xmldb_report_evidencereporter_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026121100, 'report', 'evidencereporter');
     }
+    if ($oldversion < 2026121300) {
+        // Feedback activities set to collect feedback on a particular assessment.
+        $table = new xmldb_table('report_evidencereporter_fbk');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('assesscmid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN_UNIQUE, ['cmid'], 'course_modules', ['id']);
+        $table->add_key('assesscmid', XMLDB_KEY_FOREIGN, ['assesscmid'], 'course_modules', ['id']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026121300, 'report', 'evidencereporter');
+    }
     return true;
 }

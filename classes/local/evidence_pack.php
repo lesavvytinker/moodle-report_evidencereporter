@@ -481,6 +481,10 @@ class evidence_pack {
             $this->identity,
             true
         );
+        if (!empty($summary->feedback->total)) {
+            $html .= '<p><strong>' . s(get_string('feedbacklearnerheading', 'report_evidencereporter')) . ':</strong> '
+                . s(get_string('feedbackofferedline', 'report_evidencereporter', $summary->feedback)) . '</p>';
+        }
         $html .= $this->adjustments_html($assessments);
 
         // Evidence detail per competency (unless switched off in the settings).

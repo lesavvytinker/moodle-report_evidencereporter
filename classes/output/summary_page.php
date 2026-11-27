@@ -164,6 +164,9 @@ class summary_page implements renderable, templatable {
             'declmissing' => $showdeclflags ? array_map(fn($a) => ['activity' => $a->activity, 'url' => $a->declurl,
                 'coursename' => $a->coursename], $this->summary->declmissing ?? []) : [],
             'hasdeclcomplete' => (bool) array_filter($rows, fn($r) => $r['declcomplete']),
+            'hasfeedbackline' => !empty($this->summary->feedback->total),
+            'feedbackline' => !empty($this->summary->feedback->total)
+                ? get_string('feedbackofferedline', 'report_evidencereporter', $this->summary->feedback) : '',
             'hasllnlines' => (bool) $llnlines,
             'llnlines' => $llnlines,
             'adjustments' => $assessments,

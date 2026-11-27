@@ -149,6 +149,20 @@ if ($hassiteconfig && $settings) {
         $toolfields
     ));
 
+    // Learner feedback on assessments.
+    $settings->add(new admin_setting_heading(
+        'report_evidencereporter/feedbackheading',
+        get_string('settings_feedback', 'report_evidencereporter'),
+        get_string('settings_feedback_desc', 'report_evidencereporter')
+    ));
+    $settings->add(new admin_setting_configtext(
+        'report_evidencereporter/feedbackmin',
+        get_string('settings_feedbackmin', 'report_evidencereporter'),
+        get_string('settings_feedbackmin_desc', 'report_evidencereporter'),
+        5,
+        PARAM_INT
+    ));
+
     // Summary sections and sign-off.
     $settings->add(new admin_setting_heading(
         'report_evidencereporter/sectionsheading',

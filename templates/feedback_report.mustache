@@ -1,0 +1,126 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template report_evidencereporter/feedback_report
+
+    Learners' feedback on assessments, collated: response rates per survey, then each question's results across the
+    surveys that ask it. No names; results from too few responses are hidden.
+
+    Example context (json):
+    {
+        "action": "https://example.com/report/evidencereporter/feedback.php", "courseid": 2, "categoryid": null,
+        "categorymode": false, "hasunits": true,
+        "units": [{"id": 0, "name": "All units", "selected": true}, {"id": 5, "name": "BSBWRT411 Write complex documents", "selected": false}],
+        "hassurveys": true,
+        "surveys": [{"course": "CUA50725", "assessment": "AT1 Report", "survey": "AT1 feedback",
+            "surveyurl": "https://example.com/mod/feedback/analysis.php?id=9", "offered": 12, "responses": 9, "rate": 75, "shown": true}],
+        "hasquestions": true,
+        "questions": [{"question": "The instructions were clear", "surveys": "AT1 Report", "responses": 9, "shown": true,
+            "rated": true, "text": false, "average": "4.2", "hasaverage": true, "outof": "5",
+            "options": [{"label": "Agree", "count": 6, "percent": 67}], "comments": [], "commentcount": 0}],
+        "min": 5, "totaloffered": 12, "totalresponses": 9, "totalrate": 75,
+        "downloadurl": "https://example.com/report/evidencereporter/feedback.php?courseid=2&download=csv"
+    }
+}}
+<div class="report-evidencereporter-feedback">
+    <p>{{#str}} feedbackintro, report_evidencereporter, {{min}} {{/str}}</p>
+
+    <form method="get" action="{{action}}" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        {{#courseid}}<input type="hidden" name="courseid" value="{{.}}">{{/courseid}}
+        {{#categoryid}}<input type="hidden" name="categoryid" value="{{.}}">{{/categoryid}}
+        {{#hasunits}}
+        <div>
+            <label for="er-feedback-unit" class="form-label">{{#str}} feedbackunit, report_evidencereporter {{/str}}</label>
+            <select id="er-feedback-unit" name="unitid" class="form-select">
+                {{#units}}<option value="{{id}}"{{#selected}} selected{{/selected}}>{{name}}</option>{{/units}}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">{{#str}} show {{/str}}</button>
+        {{/hasunits}}
+        {{#hassurveys}}<a class="btn btn-outline-secondary ms-auto" href="{{downloadurl}}">{{#str}} feedbackdownload, report_evidencereporter {{/str}}</a>{{/hassurveys}}
+    </form>
+
+    {{^hassurveys}}
+    <div class="alert alert-info">{{#str}} feedbacknone, report_evidencereporter {{/str}}</div>
+    {{/hassurveys}}
+
+    {{#hassurveys}}
+    <h3 class="h4">{{#str}} feedbackresponserates, report_evidencereporter {{/str}}</h3>
+    <p>{{#str}} feedbackoverall, report_evidencereporter, { "responses": {{totalresponses}}, "offered": {{totaloffered}}, "rate": {{totalrate}} } {{/str}}</p>
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered er-feedbacksurveys">
+        <thead>
+            <tr>
+                {{#categorymode}}<th scope="col">{{#str}} feedbackcolcourse, report_evidencereporter {{/str}}</th>{{/categorymode}}
+                <th scope="col">{{#str}} assessment, report_evidencereporter {{/str}}</th>
+                <th scope="col">{{#str}} feedbackcolsurvey, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} feedbackcoloffered, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} feedbackcolresponses, report_evidencereporter {{/str}}</th>
+                <th scope="col" class="text-end">{{#str}} feedbackcolrate, report_evidencereporter {{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#surveys}}
+            <tr>
+                {{#categorymode}}<td>{{course}}</td>{{/categorymode}}
+                <td>{{assessment}}</td>
+                <td><a href="{{surveyurl}}" target="_blank" rel="noopener">{{survey}}</a></td>
+                <td class="text-end">{{offered}}</td>
+                <td class="text-end">{{responses}}</td>
+                <td class="text-end">{{rate}}%</td>
+            </tr>
+            {{/surveys}}
+        </tbody>
+    </table>
+    </div>
+
+    {{#hasquestions}}
+    <h3 class="h4 mt-4">{{#str}} feedbackquestions, report_evidencereporter {{/str}}</h3>
+    {{#questions}}
+    <section class="card mb-3 er-feedbackquestion">
+        <div class="card-body">
+            <h4 class="h6 mb-1">{{question}}</h4>
+            <p class="small text-muted mb-2">{{#str}} feedbackasked, report_evidencereporter, { "surveys": {{#quote}}{{surveys}}{{/quote}}, "responses": {{responses}} } {{/str}}</p>
+            {{^shown}}<p class="mb-0 fst-italic">{{#str}} feedbacktoofew, report_evidencereporter, {{min}} {{/str}}</p>{{/shown}}
+            {{#shown}}
+            {{#hasaverage}}<p class="mb-2"><strong>{{#str}} feedbackcolaverage, report_evidencereporter {{/str}}: {{average}}{{#outof}} / {{.}}{{/outof}}</strong></p>{{/hasaverage}}
+            {{#options.0}}
+            <table class="table table-sm mb-0 er-feedbackoptions">
+                <tbody>
+                    {{#options}}
+                    <tr>
+                        <td class="er-fbk-label">{{label}}</td>
+                        <td class="er-fbk-bar"><div class="progress" role="img" aria-label="{{percent}}%"><div class="progress-bar" style="width: {{percent}}%"></div></div></td>
+                        <td class="er-fbk-count text-end text-nowrap">{{count}} ({{percent}}%)</td>
+                    </tr>
+                    {{/options}}
+                </tbody>
+            </table>
+            {{/options.0}}
+            {{#text}}
+            <details>
+                <summary>{{#str}} feedbackcomments, report_evidencereporter, {{commentcount}} {{/str}}</summary>
+                <ul class="mt-2 mb-0">{{#comments}}<li>{{.}}</li>{{/comments}}</ul>
+            </details>
+            {{/text}}
+            {{/shown}}
+        </div>
+    </section>
+    {{/questions}}
+    {{/hasquestions}}
+    {{/hassurveys}}
+</div>

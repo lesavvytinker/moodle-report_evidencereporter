@@ -36,6 +36,7 @@ class observer {
         local\declarations::delete_for_activity((int) $event->objectid);
         local\release_hold::delete_for_activity((int) $event->objectid);
         local\before_marking::delete_for_activity((int) $event->objectid);
+        local\feedback_surveys::delete_for_activity((int) $event->objectid);
     }
 
     /**

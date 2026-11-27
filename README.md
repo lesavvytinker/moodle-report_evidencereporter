@@ -83,6 +83,7 @@ Uses the same capability as bulk downloads.
 | **Evidence pack file name** | A pattern using `{document}`, `{learner}`, `{covering}`, `{date}` and `{orgname}`. `{learner}` is required, so bulk downloads never collide. |
 | **Date format** and **Time format** | How Evidence Reporter shows dates and times everywhere: as the site's language (the default), DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, 27 November 2026, 27 Nov 2026 or November 27, 2026; and the language's clock, 24-hour or 12-hour. File names always use year-month-day. |
 | **Required tool details** | The assessment tool details that must be filled in before marking (see *Before marking*). Version, review date and reviewer by default. |
+| **Fewest responses shown** | In the Assessment feedback report, results from fewer responses are hidden to keep answers confidential. Default 5. |
 | **Hold grades until RA and LLN are recorded** | For assessments that count toward the final grade: keep grades and feedback hidden until RA and LLN are recorded for every learner (see *RA and LLN before release*). On by default. |
 | **Attempts allowed** | For databases, forums, workshops and checklists, which have no attempt limit of their own: the number shown on the marking page ("Attempt 2 of 3") and when **No attempts left** appears. Default 3; 0 for no limit. |
 | **Summary sections** | Show or hide the evidence detail, the assessment attempts and the sign-off block. |
@@ -279,6 +280,26 @@ the work is marked.
   under an assessment until they're done.
 - **Groups:** assessors only see, and record RA and LLN for, learners in their groups when the course or activity uses
   separate groups.
+
+## Learner feedback on assessments
+
+Learners give feedback on each assessment with Moodle's own Feedback activity: one survey after each assessment, set
+to anonymous. Evidence Reporter collates it.
+
+- **Which assessment a survey is about:** read from the survey's *Restrict access* (available once a particular
+  assessment is complete, or has a grade), or chosen under **Feedback on an assessment > Feedback on** in the
+  survey's settings.
+- **On the learner's record** (summary and evidence pack): only "Feedback was offered after 3 of 4 assessments".
+  Never whether they answered, or what. A survey counts as offered once it's open to the learner (or they've
+  answered it).
+- **Assessment feedback report** (course *Reports*, and each course category's menu; for editing teachers and
+  managers): response rates per survey, then each question's results, with the same question combined across
+  surveys (rating averages and the spread of answers, and written comments in no particular order), for the whole
+  course or one unit, or a whole category. No names. Results from fewer responses than **Fewest responses shown**
+  (default 5) are hidden so answers can't be traced in small groups. Download as CSV for the continuous-improvement
+  file.
+- Feedback is voluntary: offer it after every assessment and prompt for it, but don't make it a condition of
+  anything a learner is owed. Resetting a course deletes its Feedback responses, so download the report first.
 
 ## Learner identity and redaction
 

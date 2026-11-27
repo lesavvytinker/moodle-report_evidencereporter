@@ -102,6 +102,13 @@ function report_evidencereporter_coursemodule_standard_elements($formwrapper, $m
     $cm = $formwrapper->get_coursemodule();
     $modname = $formwrapper->get_current()->modulename ?? ($cm->modname ?? '');
     \report_evidencereporter\local\tool_details::add_form_elements($mform, (string) $modname, $cm ? (int) $cm->id : 0);
+    if ($modname === 'feedback') {
+        \report_evidencereporter\local\feedback_surveys::add_form_elements(
+            $mform,
+            (int) $formwrapper->get_course()->id,
+            $cm ? (int) $cm->id : 0
+        );
+    }
 }
 
 /**
@@ -113,6 +120,7 @@ function report_evidencereporter_coursemodule_standard_elements($formwrapper, $m
  */
 function report_evidencereporter_coursemodule_edit_post_actions($data, $course) {
     \report_evidencereporter\local\tool_details::save_from_form($data);
+    \report_evidencereporter\local\feedback_surveys::save_from_form($data);
     return $data;
 }
 
@@ -169,6 +177,35 @@ function report_evidencereporter_extend_navigation_course($navigation, $course, 
             null,
             'evidencereportermarking',
             new pix_icon('i/grades', '')
+        );
+    }
+    if (has_capability('report/evidencereporter:viewfeedback', $context)) {
+        $navigation->add(
+            get_string('feedbackreport', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/feedback.php', ['courseid' => $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereporterfeedback',
+            new pix_icon('i/report', '')
+        );
+    }
+}
+
+/**
+ * Add "Assessment feedback" to a course category's menu, for feedback collated across its courses.
+ *
+ * @param navigation_node $navigation
+ * @param context_coursecat $context
+ */
+function report_evidencereporter_extend_navigation_category_settings($navigation, $context) {
+    if (has_capability('report/evidencereporter:viewfeedback', $context)) {
+        $navigation->add(
+            get_string('feedbackreport', 'report_evidencereporter'),
+            new moodle_url('/report/evidencereporter/feedback.php', ['categoryid' => $context->instanceid]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'evidencereporterfeedback',
+            new pix_icon('i/report', '')
         );
     }
 }

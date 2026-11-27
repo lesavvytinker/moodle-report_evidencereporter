@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.33.0 (2026-12-13)
+- **Learner feedback on assessments**, collected with Moodle's Feedback activity (one survey after each assessment).
+  A survey's assessment is read from its Restrict access, or chosen under *Feedback on an assessment* in its settings.
+- **Learner's record:** "Feedback was offered after X of Y assessments" on the summary and evidence pack. Never
+  whether or what the learner answered.
+- **Assessment feedback report** (course reports and course category menu; new capability *See learner feedback on
+  assessments, collated*): response rates, each question combined across surveys (averages against the scale, answer
+  spread in scale order, comments in no particular order), by course, unit or category; no names; results from too
+  few responses hidden (new setting *Fewest responses shown*, default 5); CSV download.
+
 ## 0.32.1 (2026-12-12)
 - Links on the marking page, the all-courses overview, the before-marking checklist and the before-marking warnings open
   in a new tab, so markers keep their place. The *Check before marking* switch, *Let the editing teachers know* and
